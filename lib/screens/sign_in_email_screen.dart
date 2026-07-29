@@ -82,6 +82,8 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
       body: body,
       footerPrompt: "Don't have an account? ",
       footerAction: 'Sign up',
+      logoWidth: 80,
+      compact: true,
       onFooterActionTap: () {
         Navigator.pushReplacement(context, kashfRoute(const SignUpScreen()));
       },

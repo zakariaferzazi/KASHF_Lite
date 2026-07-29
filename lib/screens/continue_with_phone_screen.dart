@@ -96,6 +96,8 @@ class _ContinueWithPhoneScreenState extends State<ContinueWithPhoneScreen> {
       body: body,
       footerPrompt: "Don't have an account? ",
       footerAction: 'Sign up',
+      logoWidth: 120,
+      compact: true,
       onFooterActionTap: () {
         Navigator.pushReplacement(context, kashfRoute(const SignUpScreen()));
       },

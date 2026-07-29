@@ -46,6 +46,7 @@ class WelcomeScreen extends StatelessWidget {
       footerAction: 'Sign up',
       showBackButton: false,
       compact: true,
+      logoWidth: 120,
       onFooterActionTap: () {
         Navigator.push(context, kashfRoute(const SignUpScreen()));
       },

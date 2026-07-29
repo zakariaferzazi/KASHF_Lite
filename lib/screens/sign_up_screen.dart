@@ -178,8 +178,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: body,
       footerPrompt: 'Already have an account? ',
       footerAction: 'Sign in',
+      logoWidth: 120,
+      compact: true,
       onFooterActionTap: () {
-        Navigator.pushReplacement(context, kashfRoute(const SignInEmailScreen()));
+        Navigator.pushReplacement(
+          context,
+          kashfRoute(const SignInEmailScreen()),
+        );
       },
     );
   }

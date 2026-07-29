@@ -86,7 +86,7 @@ class AuthSpacing {
   static const double logoWidth = 150;
 
   /// Horizontal page padding used by all buttons, fields, and dividers.
-  static const double pagePaddingX = 24;
+  static const double pagePaddingX = 20;
 
   /// Logo -> Title
   static const double gapLogoTitle = 32;
@@ -104,7 +104,7 @@ class AuthSpacing {
   static const double gapDividerApple = 24;
 
   /// Apple button -> bottom text
-  static const double gapAppleFooter = 16;
+  static const double gapAppleFooter = 0;
 }
 
 // ===================== Shared Auth Scaffold =====================
@@ -121,6 +121,7 @@ class AuthScaffold extends StatelessWidget {
     required this.onFooterActionTap,
     this.showBackButton = true,
     this.compact = false,
+    this.logoWidth,
   });
 
   final String title;
@@ -140,6 +141,9 @@ class AuthScaffold extends StatelessWidget {
   /// flexible spacer. Use for short screens like the welcome screen.
   final bool compact;
 
+  /// Optional override for the logo width. Defaults to [AuthSpacing.logoWidth].
+  final double? logoWidth;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,6 +152,7 @@ class AuthScaffold extends StatelessWidget {
         children: [
           const BackgroundDecorations(),
           SafeArea(
+            bottom: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -171,8 +176,8 @@ class AuthScaffold extends StatelessWidget {
                             const SizedBox(height: 4),
                           ] else
                             const SizedBox(height: 8),
-                          const KashfBrandHeader(
-                            logoWidth: AuthSpacing.logoWidth,
+                          KashfBrandHeader(
+                            logoWidth: logoWidth ?? AuthSpacing.logoWidth,
                           ),
                           const SizedBox(height: AuthSpacing.gapLogoTitle),
                           Text(
