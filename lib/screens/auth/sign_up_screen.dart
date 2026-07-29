@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+import '../../main.dart';
 import 'sign_in_email_screen.dart';
-import '../theme.dart';
+import '../../theme.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -16,10 +18,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _agreedToTerms = false;
 
   Future<void> _handleCreateAccount() async {
+    final l = AppLocalizations.of(context);
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms of Service'),
+        SnackBar(
+          content: Text(l.t('auth_signup_snackbar_terms')),
           backgroundColor: KashfColors.gold,
           behavior: SnackBarBehavior.floating,
         ),
@@ -29,39 +32,42 @@ class _SignUpScreenState extends State<SignUpScreen> {
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Account created'),
+      SnackBar(
+        content: Text(l.t('auth_signup_snackbar_created')),
         backgroundColor: KashfColors.gold,
         behavior: SnackBarBehavior.floating,
       ),
     );
+    if (!mounted) return;
+    navigateToHome(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const CustomTextField(
-          hint: 'Full name',
+        CustomTextField(
+          hint: l.t('auth_signup_fullname_hint'),
           icon: Icons.person_outline,
           keyboardType: TextInputType.name,
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
-        const CustomTextField(
-          hint: 'Email address',
+        SizedBox(height: AuthSpacing.gapBetweenItems),
+        CustomTextField(
+          hint: l.t('auth_signup_email_hint'),
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
-        const CustomTextField(
-          hint: 'Phone number (optional)',
+        SizedBox(height: AuthSpacing.gapBetweenItems),
+        CustomTextField(
+          hint: l.t('auth_signup_phone_hint'),
           icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         CustomTextField(
-          hint: 'Create password',
+          hint: l.t('auth_signup_password_hint'),
           icon: Icons.lock_outline,
           obscureText: !_showPassword,
           suffixIcon: IconButton(
@@ -69,16 +75,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _showPassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: KashfColors.textSecondary,
+              color: KashfPalette.active.textSecondary,
             ),
             onPressed: () {
               setState(() => _showPassword = !_showPassword);
             },
           ),
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         CustomTextField(
-          hint: 'Confirm password',
+          hint: l.t('auth_signup_confirm_hint'),
           icon: Icons.lock_outline,
           obscureText: !_showConfirmPassword,
           suffixIcon: IconButton(
@@ -86,14 +92,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _showConfirmPassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: KashfColors.textSecondary,
+              color: KashfPalette.active.textSecondary,
             ),
             onPressed: () {
               setState(() => _showConfirmPassword = !_showConfirmPassword);
             },
           ),
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         Row(
           children: [
             SizedBox(
@@ -104,8 +110,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
                 activeColor: KashfColors.gold,
                 checkColor: Colors.black,
-                side: const BorderSide(
-                  color: KashfColors.fieldBorder,
+                side: BorderSide(
+                  color: KashfPalette.active.fieldBorder,
                   width: 2,
                 ),
                 shape: RoundedRectangleBorder(
@@ -118,36 +124,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text(
-                    'I agree to the ',
+                  Text(
+                    l.t('auth_signup_agree'),
                     style: TextStyle(
-                      color: KashfColors.textSecondary,
+                      color: KashfPalette.active.textSecondary,
                       fontSize: 13,
                     ),
                   ),
                   GestureDetector(
                     onTap: () {},
-                    child: const Text(
-                      'Terms of Service',
-                      style: TextStyle(
+                    child: Text(
+                      ' ${l.t('auth_signup_terms')}',
+                      style: const TextStyle(
                         color: KashfColors.gold,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const Text(
-                    ' and ',
+                  Text(
+                    ' ${l.t('auth_signup_and')}',
                     style: TextStyle(
-                      color: KashfColors.textSecondary,
+                      color: KashfPalette.active.textSecondary,
                       fontSize: 13,
                     ),
                   ),
                   GestureDetector(
                     onTap: () {},
-                    child: const Text(
-                      'Privacy Policy',
-                      style: TextStyle(
+                    child: Text(
+                      ' ${l.t('auth_signup_privacy')}',
+                      style: const TextStyle(
                         color: KashfColors.gold,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -159,25 +165,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ],
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         KashfPrimaryButton(
-          label: 'Create Account',
+          label: l.t('auth_signup_submit'),
           onPressed: _handleCreateAccount,
           enabled: _agreedToTerms,
         ),
-        const SizedBox(height: AuthSpacing.gapDividerApple),
+        SizedBox(height: AuthSpacing.gapDividerApple),
         const OrDivider(),
-        const SizedBox(height: AuthSpacing.gapDividerApple),
-        AppleButton(onTap: () {}, label: 'Continue with Apple'),
+        SizedBox(height: AuthSpacing.gapDividerApple),
+        AppleButton(
+          onTap: () => navigateToHome(context),
+          label: l.t('auth_welcome_body_apple'),
+        ),
       ],
     );
 
     return AuthScaffold(
-      title: 'Create your account',
-      subtitle: 'Start your research journey',
+      title: l.t('auth_signup_title'),
+      subtitle: l.t('auth_signup_subtitle'),
       body: body,
-      footerPrompt: 'Already have an account? ',
-      footerAction: 'Sign in',
+      footerPrompt: l.t('auth_footer_already'),
+      footerAction: l.t('auth_signup_footer_action'),
       logoWidth: 120,
       compact: true,
       onFooterActionTap: () {

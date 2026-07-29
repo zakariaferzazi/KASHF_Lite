@@ -1,29 +1,134 @@
 import 'package:flutter/material.dart';
 
 // ===================== Brand Colors =====================
+/// A palette for a brightness. Light / Dark / Main (== dark with the
+/// brand gold accent) are picked by the [ThemeController].
+class KashfPalette {
+  const KashfPalette({
+    required this.background,
+    required this.surface,
+    required this.surfaceLight,
+    required this.cardBorder,
+    required this.fieldFill,
+    required this.fieldBorder,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.divider,
+    required this.brightness,
+  });
+
+  final Color background;
+  final Color surface;
+  final Color surfaceLight;
+  final Color cardBorder;
+  final Color fieldFill;
+  final Color fieldBorder;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color divider;
+  final Brightness brightness;
+
+  static const KashfPalette dark = KashfPalette(
+    background: Color(0xFF14151A),
+    surface: Color(0xFF1C1E2A),
+    surfaceLight: Color(0xFF1C1E2A),
+    cardBorder: Color(0xFF2D3142),
+    fieldFill: Color(0xFF1C1E2A),
+    fieldBorder: Color(0xFF31344A),
+    textPrimary: Color(0xFFFFFFFF),
+    textSecondary: Color(0xFF9CA3B0),
+    divider: Color(0xFF31344A),
+    brightness: Brightness.dark,
+  );
+
+  static const KashfPalette main = KashfPalette(
+    background: Color(0xFF050608),
+    surface: Color(0xFF0C0D14),
+    surfaceLight: Color(0xFF0C0D14),
+    cardBorder: Color(0xFF1A1C28),
+    fieldFill: Color(0xFF0C0D14),
+    fieldBorder: Color(0xFF1A1C28),
+    textPrimary: Color(0xFFF1E2B0),
+    textSecondary: Color(0xFF8A8273),
+    divider: Color(0xFF1A1C28),
+    brightness: Brightness.dark,
+  );
+
+  static const KashfPalette light = KashfPalette(
+    background: Color(0xFFF6F7FB),
+    surface: Color(0xFFFFFFFF),
+    surfaceLight: Color(0xFFF1F2F8),
+    cardBorder: Color(0xFFE3E6F0),
+    fieldFill: Color(0xFFFFFFFF),
+    fieldBorder: Color(0xFFD3D8E5),
+    textPrimary: Color(0xFF0F1116),
+    textSecondary: Color(0xFF5A6273),
+    divider: Color(0xFFE3E6F0),
+    brightness: Brightness.light,
+  );
+
+  /// The active palette, set by [KashfApp] when the user changes mode.
+  static KashfPalette _active = KashfPalette.main;
+
+  static KashfPalette get active => _active;
+
+  static void setActive(KashfPalette palette) {
+    _active = palette;
+  }
+}
+
+/// Brand colors. The default palette is [KashfPalette.dark]; legacy
+/// code can keep using the static const fields below. New code should
+/// resolve colors from [KashfPalette.active] to react to the picked
+/// theme mode.
 class KashfColors {
-  // Flat reference background
+  // Dark palette constants (original brand colors).
   static const Color background = Color(0xFF14151A);
   static const Color backgroundTop = background;
   static const Color backgroundBottom = background;
-
-  // Button / card surface (dark cards)
   static const Color surface = Color(0xFF1C1E2A);
   static const Color surfaceLight = Color(0xFF1C1E2A);
   static const Color cardBorder = Color(0xFF2D3142);
 
-  // Premium gold palette
+  // Brand gold palette stays the same across themes.
   static const Color gold = Color(0xFFF4C542);
   static const Color goldDeep = Color(0xFFB8861B);
   static const Color goldLight = Color(0xFFFFE08A);
   static const Color goldShadow = Color(0xFF7A5A0F);
 
-  // Form fields and dividers
   static const Color fieldFill = Color(0xFF1C1E2A);
   static const Color fieldBorder = Color(0xFF31344A);
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFF9CA3B0);
   static const Color divider = Color(0xFF31344A);
+}
+
+// ===================== Directional Chevron =====================
+// A tiny helper that auto-mirrors a chevron icon based on the
+// current [Directionality]. Use this anywhere you'd otherwise drop
+// a plain `Icons.chevron_right` so the arrow always points forward
+// (toward the destination) in both LTR and RTL layouts.
+class DirectionalChevron extends StatelessWidget {
+  const DirectionalChevron({
+    super.key,
+    this.size = 20,
+    this.color = KashfColors.textSecondary,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    return Transform(
+      alignment: Alignment.center,
+      transform: isRtl
+          ? (Matrix4.identity()..scaleByDouble(-1.0, 1.0, 1.0, 1.0))
+          : Matrix4.identity(),
+      child: Icon(Icons.chevron_right, size: size, color: color),
+    );
+  }
 }
 
 // ===================== Kashf Logo =====================
@@ -170,7 +275,7 @@ class AuthScaffold extends StatelessWidget {
                           if (showBackButton) ...[
                             const SizedBox(height: 4),
                             const Align(
-                              alignment: Alignment.centerLeft,
+                              alignment: AlignmentDirectional.centerStart,
                               child: CircleBackButton(),
                             ),
                             const SizedBox(height: 4),
@@ -475,8 +580,7 @@ class OptionTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
+              const DirectionalChevron(
                 color: KashfColors.textPrimary,
                 size: 22,
               ),

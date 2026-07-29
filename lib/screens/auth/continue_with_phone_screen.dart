@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+import '../../main.dart';
 import 'sign_up_screen.dart';
-import '../theme.dart';
+import '../../theme.dart';
 
 class ContinueWithPhoneScreen extends StatefulWidget {
   const ContinueWithPhoneScreen({super.key});
@@ -13,65 +15,78 @@ class ContinueWithPhoneScreen extends StatefulWidget {
 
 class _ContinueWithPhoneScreenState extends State<ContinueWithPhoneScreen> {
   Future<void> _handleSend() async {
+    final l = AppLocalizations.of(context);
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Verification code sent'),
+      SnackBar(
+        content: Text(l.t('auth_phone_snackbar_sent')),
         backgroundColor: KashfColors.gold,
         behavior: SnackBarBehavior.floating,
       ),
     );
+    if (!mounted) return;
+    navigateToHome(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           decoration: BoxDecoration(
-            color: KashfColors.fieldFill,
+            color: KashfPalette.active.fieldFill,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: KashfColors.fieldBorder),
+            border: Border.all(color: KashfPalette.active.fieldBorder),
           ),
           child: Row(
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
                 child: Row(
                   children: [
-                    Text('🇸🇦', style: TextStyle(fontSize: 20)),
-                    SizedBox(width: 8),
+                    const Text('🇸🇦', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
                     Text(
-                      '+966',
+                      l.t('auth_phone_dial_code'),
                       style: TextStyle(
-                        color: KashfColors.textPrimary,
+                        color: KashfPalette.active.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Icon(
                       Icons.keyboard_arrow_down,
-                      color: KashfColors.textSecondary,
+                      color: KashfPalette.active.textSecondary,
                       size: 20,
                     ),
                   ],
                 ),
               ),
-              Container(height: 28, width: 1, color: KashfColors.fieldBorder),
-              const Expanded(
+              Container(
+                height: 28,
+                width: 1,
+                color: KashfPalette.active.fieldBorder,
+              ),
+              Expanded(
                 child: TextField(
                   keyboardType: TextInputType.phone,
                   style: TextStyle(
-                    color: KashfColors.textPrimary,
+                    color: KashfPalette.active.textPrimary,
                     fontSize: 15,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Phone number',
-                    hintStyle: TextStyle(color: KashfColors.textSecondary),
+                    hintText: l.t('auth_phone_hint'),
+                    hintStyle: TextStyle(
+                      color: KashfPalette.active.textSecondary,
+                    ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 18,
                     ),
@@ -82,20 +97,26 @@ class _ContinueWithPhoneScreenState extends State<ContinueWithPhoneScreen> {
           ),
         ),
         const SizedBox(height: AuthSpacing.gapBetweenItems),
-        KashfPrimaryButton(label: 'Send Code', onPressed: _handleSend),
+        KashfPrimaryButton(
+          label: l.t('auth_phone_submit'),
+          onPressed: _handleSend,
+        ),
         const SizedBox(height: AuthSpacing.gapDividerApple),
         const OrDivider(),
         const SizedBox(height: AuthSpacing.gapDividerApple),
-        AppleButton(onTap: () {}, label: 'Continue with Apple'),
+        AppleButton(
+          onTap: () => navigateToHome(context),
+          label: l.t('auth_welcome_body_apple'),
+        ),
       ],
     );
 
     return AuthScaffold(
-      title: 'Continue with Phone',
-      subtitle: "We'll send a verification code to your number",
+      title: l.t('auth_phone_title'),
+      subtitle: l.t('auth_phone_subtitle'),
       body: body,
-      footerPrompt: "Don't have an account? ",
-      footerAction: 'Sign up',
+      footerPrompt: l.t('auth_signup_agree_fallback'),
+      footerAction: l.t('auth_phone_footer_action'),
       logoWidth: 120,
       compact: true,
       onFooterActionTap: () {

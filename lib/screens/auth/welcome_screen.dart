@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+import '../../main.dart';
 import 'sign_in_email_screen.dart';
 import 'continue_with_phone_screen.dart';
 import 'sign_up_screen.dart';
-import '../theme.dart';
+import '../../theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         OptionTile(
           icon: Icons.mail_outline,
-          label: 'Continue with Email',
+          label: l.t('auth_welcome_body_email'),
           onTap: () {
             Navigator.push(context, kashfRoute(const SignInEmailScreen()));
           },
@@ -23,7 +26,7 @@ class WelcomeScreen extends StatelessWidget {
         const SizedBox(height: AuthSpacing.gapBetweenItems),
         OptionTile(
           icon: Icons.phone_outlined,
-          label: 'Continue with Phone',
+          label: l.t('auth_welcome_body_phone'),
           onTap: () {
             Navigator.push(
               context,
@@ -34,16 +37,19 @@ class WelcomeScreen extends StatelessWidget {
         const SizedBox(height: AuthSpacing.gapBetweenItems),
         const OrDivider(),
         const SizedBox(height: AuthSpacing.gapBetweenItems),
-        AppleButton(onTap: () {}, label: 'Continue with Apple'),
+        AppleButton(
+          onTap: () => navigateToHome(context),
+          label: l.t('auth_welcome_body_apple'),
+        ),
       ],
     );
 
     return AuthScaffold(
-      title: 'Welcome back',
-      subtitle: 'Sign in to continue your research',
+      title: l.t('auth_welcome_title'),
+      subtitle: l.t('auth_welcome_subtitle'),
       body: body,
-      footerPrompt: "Don't have an account? ",
-      footerAction: 'Sign up',
+      footerPrompt: l.t('auth_signup_agree_fallback'),
+      footerAction: l.t('auth_welcome_footer_action'),
       showBackButton: false,
       compact: true,
       logoWidth: 120,

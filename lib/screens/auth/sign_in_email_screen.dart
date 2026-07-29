@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kashf_lite/screens/sign_up_screen.dart';
 
-import 'theme.dart';
+import '../../l10n/app_strings.dart';
+import '../../main.dart';
+import 'sign_up_screen.dart';
+import '../../theme.dart';
 
 class SignInEmailScreen extends StatefulWidget {
   const SignInEmailScreen({super.key});
@@ -14,30 +16,34 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
   bool _showPassword = false;
 
   Future<void> _handleSignIn() async {
+    final l = AppLocalizations.of(context);
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Signed in'),
+      SnackBar(
+        content: Text(l.t('auth_signin_snackbar')),
         backgroundColor: KashfColors.gold,
         behavior: SnackBarBehavior.floating,
       ),
     );
+    if (!mounted) return;
+    navigateToHome(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const CustomTextField(
-          hint: 'Email address',
+        CustomTextField(
+          hint: l.t('auth_signin_email_hint'),
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         CustomTextField(
-          hint: 'Password',
+          hint: l.t('auth_signin_password_hint'),
           icon: Icons.lock_outline,
           obscureText: !_showPassword,
           suffixIcon: IconButton(
@@ -45,21 +51,21 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
               _showPassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: KashfColors.textSecondary,
+              color: KashfPalette.active.textSecondary,
             ),
             onPressed: () {
               setState(() => _showPassword = !_showPassword);
             },
           ),
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
         Align(
-          alignment: Alignment.centerRight,
+          alignment: AlignmentDirectional.centerEnd,
           child: GestureDetector(
             onTap: () {},
-            child: const Text(
-              'Forgot password?',
-              style: TextStyle(
+            child: Text(
+              l.t('auth_signin_forgot'),
+              style: const TextStyle(
                 color: KashfColors.gold,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -67,21 +73,29 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
             ),
           ),
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
-        KashfPrimaryButton(label: 'Sign In', onPressed: _handleSignIn),
-        const SizedBox(height: AuthSpacing.gapDividerApple),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
+        KashfPrimaryButton(
+          label: l.t('auth_signin_submit'),
+          onPressed: _handleSignIn,
+        ),
+        SizedBox(height: AuthSpacing.gapDividerApple),
         const OrDivider(),
-        const SizedBox(height: AuthSpacing.gapDividerApple),
-        AppleButton(onTap: () {}, label: 'Continue with Apple'),
+        SizedBox(height: AuthSpacing.gapDividerApple),
+        AppleButton(
+          onTap: () => navigateToHome(context),
+          label: l.t('auth_welcome_body_apple'),
+        ),
       ],
     );
 
     return AuthScaffold(
-      title: 'Welcome back',
-      subtitle: 'Sign in with your email',
+      title: l.t('auth_signin_title'),
+      subtitle: l.t('auth_signin_subtitle'),
       body: body,
-      footerPrompt: "Don't have an account? ",
-      footerAction: 'Sign up',
+      footerPrompt: l.t('auth_signup_agree_fallback'),
+      footerAction: l.t('auth_signin_footer_action'),
+      logoWidth: 120,
+      compact: true,
       onFooterActionTap: () {
         Navigator.pushReplacement(context, kashfRoute(const SignUpScreen()));
       },
