@@ -143,26 +143,65 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final logo = KashfLogo(width: 56);
+    final avatar = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: KashfColors.gold.withValues(alpha: 0.18),
+        border: Border.all(color: KashfColors.gold, width: 1.4),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: Image.asset(
+        'assets/images/logoprofile.jpeg',
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) =>
+            Icon(Icons.person, color: KashfColors.gold, size: 22),
+      ),
+    );
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           l.t('reports_title'),
           style: TextStyle(
             color: KashfPalette.active.textPrimary,
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
         ),
-        SizedBox(height: 4),
+        SizedBox(height: 2),
         Text(
           l.t('reports_subtitle'),
           style: TextStyle(
             color: KashfPalette.active.textSecondary,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
       ],
+    );
+    // Logo always on the opposite side, like the home top bar.
+    return Padding(
+      padding: EdgeInsetsDirectional.only(bottom: 8),
+      child: Row(
+        children: l.isRtl
+            ? [
+                logo,
+                SizedBox(width: 10),
+                Expanded(child: titleBlock),
+                SizedBox(width: 8),
+                avatar,
+              ]
+            : [
+                avatar,
+                SizedBox(width: 10),
+                Expanded(child: titleBlock),
+                SizedBox(width: 8),
+                logo,
+              ],
+      ),
     );
   }
 }

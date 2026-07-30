@@ -90,11 +90,17 @@ class _TopBar extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: KashfPalette.active.surface,
+        color: KashfColors.gold.withValues(alpha: 0.18),
         border: Border.all(color: KashfColors.gold, width: 1.4),
       ),
+      clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: Icon(Icons.person, color: KashfColors.gold, size: 22),
+      child: Image.asset(
+        'assets/images/logoprofile.jpeg',
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) =>
+            Icon(Icons.person, color: KashfColors.gold, size: 22),
+      ),
     );
     final greeting = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
