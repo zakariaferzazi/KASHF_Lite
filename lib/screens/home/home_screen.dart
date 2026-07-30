@@ -75,7 +75,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ============================ Top Bar Section ============================
+// ============================ Top Bar ============================
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.l});
   final AppLocalizations l;
@@ -429,6 +429,7 @@ class _ChipAction extends StatelessWidget {
   const _ChipAction({
     required this.icon,
     required this.label,
+    this.primary = false,
   });
   final IconData icon;
   final String label;
@@ -480,7 +481,7 @@ class _ChipAction extends StatelessWidget {
 
 // ============================ Section Header ============================
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, this.trailing, this.onTrailing});
   final String title;
   final String? trailing;
   final VoidCallback? onTrailing;
