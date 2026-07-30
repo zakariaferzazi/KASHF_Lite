@@ -85,7 +85,10 @@ class _KashfAppState extends State<KashfApp> {
                 locale: widget.localeController.language.locale,
                 // Stub delegate so MaterialApp accepts our locale. We avoid
                 // pulling in flutter_localizations for the MVP.
-                localizationsDelegates: const [_StubLocalizationsDelegate()],
+                localizationsDelegates: const [
+                  _StubLocalizationsDelegate(),
+                  _StubCupertinoLocalizationsDelegate(),
+                ],
                 supportedLocales: const [Locale('en'), Locale('ar')],
                 localeResolutionCallback: (deviceLocale, supported) {
                   if (deviceLocale == null) return const Locale('en');
@@ -139,6 +142,22 @@ class _StubLocalizationsDelegate
 
   @override
   bool shouldReload(_StubLocalizationsDelegate old) => false;
+}
+
+/// A no-op delegate for Cupertino localizations.
+class _StubCupertinoLocalizationsDelegate
+    extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _StubCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) async =>
+      DefaultCupertinoLocalizations();
+
+  @override
+  bool shouldReload(_StubCupertinoLocalizationsDelegate old) => false;
 }
 
 /// Minimal MVP auth gate. The user lands on the welcome screen and

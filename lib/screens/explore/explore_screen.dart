@@ -149,48 +149,6 @@ class _TopBar extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: KashfPalette.active.surface,
-            border: Border.all(color: KashfPalette.active.cardBorder),
-          ),
-          alignment: Alignment.center,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                Icons.notifications_none,
-                color: KashfPalette.active.textPrimary,
-                size: 20,
-              ),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: KashfColors.gold,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(width: 8),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: KashfPalette.active.surface,
             border: Border.all(color: KashfColors.gold, width: 1.4),
           ),
           alignment: Alignment.center,

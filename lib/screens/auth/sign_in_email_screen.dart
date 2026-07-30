@@ -14,18 +14,16 @@ class SignInEmailScreen extends StatefulWidget {
 
 class _SignInEmailScreenState extends State<SignInEmailScreen> {
   bool _showPassword = false;
+  bool _isLoading = false;
 
   Future<void> _handleSignIn() async {
-    final l = AppLocalizations.of(context);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l.t('auth_signin_snackbar')),
-        backgroundColor: KashfColors.gold,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    // Demo mode: show loading for 1.5 seconds, then let user in
+    await Future.delayed(const Duration(milliseconds: 1500));
+
     if (!mounted) return;
     navigateToHome(context);
   }
@@ -74,9 +72,10 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
           ),
         ),
         SizedBox(height: AuthSpacing.gapBetweenItems),
-        KashfPrimaryButton(
+        _LoadingButton(
           label: l.t('auth_signin_submit'),
           onPressed: _handleSignIn,
+          isLoading: _isLoading,
         ),
         SizedBox(height: AuthSpacing.gapDividerApple),
         const OrDivider(),
@@ -99,6 +98,102 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
       onFooterActionTap: () {
         Navigator.pushReplacement(context, kashfRoute(const SignUpScreen()));
       },
+    );
+  }
+}
+
+class _LoadingButton extends StatefulWidget {
+  const _LoadingButton({
+    required this.label,
+    required this.onPressed,
+    required this.isLoading,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool isLoading;
+
+  @override
+  State<_LoadingButton> createState() => _LoadingButtonState();
+}
+
+class _LoadingButtonState extends State<_LoadingButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.isLoading
+          ? null
+          : (_) => setState(() => _isPressed = true),
+      onTapUp: widget.isLoading
+          ? null
+          : (_) {
+              setState(() => _isPressed = false);
+              widget.onPressed();
+            },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: double.infinity,
+        height: 54,
+        transform: Matrix4.identity()..scale(_isPressed ? 0.96 : 1.0),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: widget.isLoading
+                ? [
+                    const Color(0xFFF8C24A).withValues(alpha: 0.7),
+                    const Color(0xFFF5B92E).withValues(alpha: 0.7),
+                  ]
+                : [const Color(0xFFF8C24A), const Color(0xFFF5B92E)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: KashfColors.gold.withValues(alpha: 0.35),
+              blurRadius: widget.isLoading ? 8 : 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: widget.isLoading
+            ? const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation(Colors.black54),
+                ),
+              )
+            : Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+      ),
     );
   }
 }

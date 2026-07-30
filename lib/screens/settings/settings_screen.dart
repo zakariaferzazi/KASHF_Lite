@@ -452,8 +452,17 @@ class _ProfileCard extends StatelessWidget {
                   color: KashfColors.gold.withValues(alpha: 0.18),
                   border: Border.all(color: KashfColors.gold, width: 1.4),
                 ),
+                clipBehavior: Clip.antiAlias,
                 alignment: Alignment.center,
-                child: Icon(Icons.person, color: KashfColors.gold, size: 30),
+                child: Image.asset(
+                  'assets/images/logoprofile.jpeg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.person,
+                    color: KashfColors.gold,
+                    size: 30,
+                  ),
+                ),
               ),
               Positioned(
                 bottom: -2,

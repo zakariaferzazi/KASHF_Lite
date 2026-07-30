@@ -202,7 +202,7 @@ class MockData {
       ),
       QuickAction(
         label: isAr ? 'إضافة مراقبة' : 'Add monitor',
-        icon: Icons.notifications_active_outlined,
+        icon: Icons.visibility_outlined,
       ),
       QuickAction(
         label: isAr ? 'رؤى الذكاء' : 'AI insights',

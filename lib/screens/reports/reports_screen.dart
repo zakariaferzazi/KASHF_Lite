@@ -24,52 +24,46 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ? all
         : all.where((r) => r.status == _filter).toList();
 
-    return Scaffold(
-      backgroundColor: KashfPalette.active.background,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: KashfColors.gold,
-        foregroundColor: Colors.black,
-        onPressed: () => _showGenerateSheet(context),
-        icon: Icon(Icons.auto_awesome),
-        label: Text(
-          l.t('reports_action_generate'),
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-              sliver: SliverToBoxAdapter(child: _Header(l: l)),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
-              sliver: SliverToBoxAdapter(
-                child: _FilterBar(
-                  current: _filter,
-                  onChange: (s) => setState(() => _filter = s),
-                ),
+    // Use the natural direction for the active language.
+    return Directionality(
+      textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: KashfPalette.active.background,
+        body: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
+                sliver: SliverToBoxAdapter(child: _Header(l: l)),
               ),
-            ),
-            if (visible.isEmpty)
               SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-                sliver: SliverToBoxAdapter(child: _EmptyReports(l: l)),
-              )
-            else
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 32),
-                sliver: SliverList.builder(
-                  itemCount: visible.length,
-                  itemBuilder: (context, i) => Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child: _ReportCard(report: visible[i]),
+                padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
+                sliver: SliverToBoxAdapter(
+                  child: _FilterBar(
+                    current: _filter,
+                    onChange: (s) => setState(() => _filter = s),
                   ),
                 ),
               ),
-          ],
+              if (visible.isEmpty)
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
+                  sliver: SliverToBoxAdapter(child: _EmptyReports(l: l)),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 32),
+                  sliver: SliverList.builder(
+                    itemCount: visible.length,
+                    itemBuilder: (context, i) => Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: _ReportCard(report: visible[i]),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -114,8 +108,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 for (final a in actions)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.auto_awesome,
-                        color: KashfColors.gold),
+                    leading: Icon(Icons.auto_awesome, color: KashfColors.gold),
                     title: Text(
                       l.t(a.l10nKey),
                       style: TextStyle(
@@ -240,7 +233,9 @@ class _FilterPill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? KashfColors.gold : KashfPalette.active.textPrimary,
+            color: selected
+                ? KashfColors.gold
+                : KashfPalette.active.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
@@ -277,8 +272,11 @@ class _ReportCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.description_outlined,
-                    color: KashfColors.gold, size: 18),
+                child: Icon(
+                  Icons.description_outlined,
+                  color: KashfColors.gold,
+                  size: 18,
+                ),
               ),
               SizedBox(width: 10),
               Expanded(
@@ -308,8 +306,10 @@ class _ReportCard extends StatelessWidget {
               ),
               PopupMenuButton<String>(
                 color: KashfPalette.active.surface,
-                icon: Icon(Icons.more_horiz,
-                    color: KashfPalette.active.textSecondary),
+                icon: Icon(
+                  Icons.more_horiz,
+                  color: KashfPalette.active.textSecondary,
+                ),
                 onSelected: (v) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -345,8 +345,11 @@ class _ReportCard extends StatelessWidget {
           SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.source_outlined,
-                  color: KashfPalette.active.textSecondary, size: 14),
+              Icon(
+                Icons.source_outlined,
+                color: KashfPalette.active.textSecondary,
+                size: 14,
+              ),
               SizedBox(width: 4),
               Text(
                 '${report.sourceCount}',
@@ -356,8 +359,11 @@ class _ReportCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 12),
-              Icon(Icons.schedule,
-                  color: KashfPalette.active.textSecondary, size: 14),
+              Icon(
+                Icons.schedule,
+                color: KashfPalette.active.textSecondary,
+                size: 14,
+              ),
               SizedBox(width: 4),
               Text(
                 _formatDate(context, report.createdAt),
@@ -369,8 +375,7 @@ class _ReportCard extends StatelessWidget {
               Spacer(),
               if (report.status == ReportStatus.archived)
                 Container(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Color(0xFFFB923C).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -422,8 +427,11 @@ class _EmptyReports extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.assessment_outlined,
-              color: KashfPalette.active.textSecondary, size: 36),
+          Icon(
+            Icons.assessment_outlined,
+            color: KashfPalette.active.textSecondary,
+            size: 36,
+          ),
           SizedBox(height: 8),
           Text(
             l.t('reports_empty'),
