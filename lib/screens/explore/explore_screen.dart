@@ -75,7 +75,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         setState(() => _generation = _RunningState(v));
       },
       onComplete: completer.complete,
-      totalMs: 4500,
+      totalMs: 3200,
     ).start();
 
     await completer.future;
@@ -1466,6 +1466,7 @@ class _SecondaryButton extends StatelessWidget {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
@@ -1475,14 +1476,18 @@ class _SecondaryButton extends StatelessWidget {
               size: 16,
             ),
             SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: enabled
-                    ? KashfColors.gold
-                    : KashfPalette.active.textSecondary,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  color: enabled
+                      ? KashfColors.gold
+                      : KashfPalette.active.textSecondary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
@@ -1548,21 +1553,22 @@ class _MockOutputs {
     required String entity,
     required List<_OutputType> outputs,
   }) {
+    final name = entity.trim().isEmpty ? 'الجهة' : entity.trim();
     final list = <_OutputBucket>[];
     if (outputs.contains(_OutputType.investigation)) {
       list.add(
         _OutputBucket(
           type: _OutputType.investigation,
-          title: 'Investigation report',
-          subtitle: 'Verified sources and key findings',
-          metricValue: '12',
-          metricSub: 'Sources',
+          title: 'تقرير تحقيق لـ «$name»',
+          subtitle: 'مصادر موثّقة ونتائج رئيسية',
+          metricValue: '١٢',
+          metricSub: 'مصدر',
           color: _OutputType.investigation.color,
           items: [
-            _OutputItem('Verified sources', '8 / 12'),
-            _OutputItem('Key findings', '5 highlights'),
-            _OutputItem('Sentiment', '+42 % positive'),
-            _OutputItem('Risk score', 'Low · 18/100'),
+            _OutputItem('مصادر موثّقة', '٨ / ١٢'),
+            _OutputItem('نتائج رئيسية', '٥ أبرز'),
+            _OutputItem('نبرة الجمهور', '+٤٢٪ إيجابية'),
+            _OutputItem('مؤشر المخاطرة', 'منخفض · ١٨/١٠٠'),
           ],
         ),
       );
@@ -1571,16 +1577,16 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.social,
-          title: 'Social links & metrics',
-          subtitle: 'Curated posts and engagement metrics',
-          metricValue: '28.4K',
-          metricSub: 'Mentions',
+          title: 'روابط ومقاييس التفاعل',
+          subtitle: 'منشورات مختارة حول «$name»',
+          metricValue: '٢٨٫٤ ألف',
+          metricSub: 'ذكر',
           color: _OutputType.social.color,
           items: [
-            _OutputItem('Instagram creators', '172'),
-            _OutputItem('TikTok creators', '84'),
-            _OutputItem('Top engagement', '@abeer.s · 1.2M'),
-            _OutputItem('Hashtags', '#perfume · 4.1K'),
+            _OutputItem('نشطاء إنستغرام', '١٧٢'),
+            _OutputItem('نشطاء تيك توك', '٨٤'),
+            _OutputItem('أعلى تفاعل', '@abeer.s · ١٫٢م'),
+            _OutputItem('هاشتاقات', '#$name · ٤٫١ك'),
           ],
         ),
       );
@@ -1589,15 +1595,15 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.insights,
-          title: 'Market insights',
-          subtitle: 'Trends, growth, opportunities',
-          metricValue: '+24%',
-          metricSub: 'Growth (90d)',
+          title: 'رؤى السوق',
+          subtitle: 'اتجاهات، نمو، فرص',
+          metricValue: '+٢٤٪',
+          metricSub: 'نمو (٩٠ يوم)',
           color: _OutputType.insights.color,
           items: [
-            _OutputItem('Top trend', 'Woody notes in GCC'),
-            _OutputItem('Opportunity', 'Aseel fragrance line'),
-            _OutputItem('Forecast', '12% market share by Q4'),
+            _OutputItem('الاتجاه الأبرز', 'العطور الخشبية في الخليج'),
+            _OutputItem('فرصة مقترحة', 'إطلاق خط «$name» في الربع الثالث'),
+            _OutputItem('التوقع', '١٢٪ حصة سوقية بنهاية الربع الرابع'),
           ],
         ),
       );
@@ -1606,15 +1612,15 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.competitive,
-          title: 'Competitive analysis',
-          subtitle: 'Compare vs. top competitors',
-          metricValue: '#3',
-          metricSub: 'Rank in market',
+          title: 'تحليل المنافسين',
+          subtitle: 'أين يقف «$name» مقارنة بالسوق',
+          metricValue: '#٣',
+          metricSub: 'ترتيب السوق',
           color: _OutputType.competitive.color,
           items: [
-            _OutputItem('vs Dior Sauvage', '-12%'),
-            _OutputItem('vs Lattafa Asad', '+28%'),
-            _OutputItem('vs Chanel BLEU', '-5%'),
+            _OutputItem('مقارنة بـ Dior Sauvage', '-١٢٪'),
+            _OutputItem('مقارنة بـ Lattafa Asad', '+٢٨٪'),
+            _OutputItem('مقارنة بـ Chanel BLEU', '-٥٪'),
           ],
         ),
       );
@@ -1623,15 +1629,15 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.monitoring,
-          title: 'Monitoring updates',
-          subtitle: 'Track new developments over time',
-          metricValue: '7d',
-          metricSub: 'Recent activity',
+          title: 'تحديثات المتابعة',
+          subtitle: 'تتبع جديد التطورات حول «$name»',
+          metricValue: '٧ أيام',
+          metricSub: 'نشاط حديث',
           color: _OutputType.monitoring.color,
           items: [
-            _OutputItem('Spikes', '3 detected'),
-            _OutputItem('Watching', '5 channels'),
-            _OutputItem('Next sync', 'in 14 hours'),
+            _OutputItem('ارتفاعات', '٣ تم رصدها'),
+            _OutputItem('قنوات مراقبة', '٥ قنوات'),
+            _OutputItem('المزامنة القادمة', 'خلال ١٤ ساعة'),
           ],
         ),
       );
@@ -1640,15 +1646,15 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.content,
-          title: 'Content ideas',
-          subtitle: 'Strategic ideas for your audience',
-          metricValue: '9',
-          metricSub: 'Concepts',
+          title: 'أفكار محتوى',
+          subtitle: 'أفكار استراتيجية لجمهور «$name»',
+          metricValue: '٩',
+          metricSub: 'فكرة',
           color: _OutputType.content.color,
           items: [
-            _OutputItem('Reel script', '"From dusk to perfume"'),
-            _OutputItem('Podcast', 'The GCC fragrance race'),
-            _OutputItem('Micro-pitch', 'For Q3 influencer launch'),
+            _OutputItem('سكريبت ريلز', '"من الغسق إلى $name"'),
+            _OutputItem('بودكاست', 'سباق العطور في الخليج'),
+            _OutputItem('ميكرو بيتش', 'لانطلاق حملة Q3'),
           ],
         ),
       );
@@ -1659,7 +1665,7 @@ class _MockOutputs {
 
 enum _OutputFilter { all, summary, sources }
 
-class _OutputPanel extends StatelessWidget {
+class _OutputPanel extends StatefulWidget {
   const _OutputPanel({
     required this.state,
     required this.filter,
@@ -1674,21 +1680,377 @@ class _OutputPanel extends StatelessWidget {
   final AppLocalizations l;
 
   @override
+  State<_OutputPanel> createState() => _OutputPanelState();
+}
+
+class _OutputPanelState extends State<_OutputPanel> {
+  bool _modalShown = false;
+
+  @override
+  void didUpdateWidget(covariant _OutputPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasComplete = oldWidget.state is _CompleteState;
+    final isComplete = widget.state is _CompleteState;
+    if (isComplete && !wasComplete && !_modalShown) {
+      _modalShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showResultsSheet();
+      });
+    }
+    if (!isComplete && wasComplete) {
+      _modalShown = false;
+    }
+  }
+
+  Future<void> _showResultsSheet() async {
+    final s = widget.state as _CompleteState;
+    final l = widget.l;
+    final dir = l.isRtl ? TextDirection.rtl : TextDirection.ltr;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (ctx) {
+        return Directionality(
+          textDirection: dir,
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.92,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, controller) => Container(
+              decoration: BoxDecoration(
+                color: KashfPalette.active.background,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(
+                  color: KashfColors.gold.withValues(alpha: 0.35),
+                  width: 1,
+                ),
+              ),
+              child: _ResultsScaffold(
+                outputs: s.outputs,
+                controller: controller,
+                onClose: () => Navigator.of(ctx).pop(),
+                l: l,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (mounted) _modalShown = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final s = state;
+    final s = widget.state;
     if (s is _RunningState) {
-      return _LoadingPanel(progress: s.progress, l: l);
+      return _LoadingPanel(progress: s.progress, l: widget.l);
     }
     if (s is _CompleteState) {
-      return _ResultsPanel(
-        outputs: s.outputs,
-        filter: filter,
-        onFilterChanged: onFilterChanged,
-        onRegenerate: onRegenerate,
-        l: l,
-      );
+      // Show a small "View results" banner inline; the modal is already open.
+      return _ResultsBanner(l: widget.l, count: s.outputs.length);
     }
-    return _EmptyState(l: l);
+    return _EmptyState(l: widget.l);
+  }
+}
+
+class _ResultsBanner extends StatelessWidget {
+  const _ResultsBanner({required this.l, required this.count});
+  final AppLocalizations l;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+        ),
+        border: Border.all(
+          color: KashfColors.gold.withValues(alpha: 0.35),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: KashfColors.gold.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(Icons.auto_awesome, color: KashfColors.gold, size: 20),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.isRtl ? 'الكشوفات جاهزة' : 'Insights ready',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  l.isRtl
+                      ? 'تم تجهيز $count نتيجة كشف · اعرضها أدناه'
+                      : '$count insight items ready · view below',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.expand_more, color: KashfColors.gold, size: 26),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultsScaffold extends StatelessWidget {
+  const _ResultsScaffold({
+    required this.outputs,
+    required this.controller,
+    required this.onClose,
+    required this.l,
+  });
+  final List<_OutputBucket> outputs;
+  final ScrollController controller;
+  final VoidCallback onClose;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    _OutputFilter filter = _OutputFilter.all;
+    return StatefulBuilder(
+      builder: (ctx, setState) {
+        final filtered = switch (filter) {
+          _OutputFilter.all => outputs,
+          _OutputFilter.summary =>
+            outputs.where((o) => o.items.length <= 4).toList(),
+          _OutputFilter.sources =>
+            outputs
+                .where(
+                  (o) =>
+                      o.type == _OutputType.investigation ||
+                      o.type == _OutputType.competitive ||
+                      o.type == _OutputType.monitoring,
+                )
+                .toList(),
+        };
+        return Column(
+          children: [
+            // Sticky header
+            Container(
+              padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
+              decoration: BoxDecoration(
+                color: KashfPalette.active.background,
+                border: Border(
+                  bottom: BorderSide(color: KashfPalette.active.cardBorder),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Drag handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: KashfPalette.active.cardBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: KashfColors.gold.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome,
+                              color: KashfColors.gold,
+                              size: 12,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              l.isRtl
+                                  ? 'AI · ${outputs.length} نتائج كشف'
+                                  : 'AI · ${outputs.length} insights',
+                              style: TextStyle(
+                                color: KashfColors.gold,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Spacer(),
+                      GestureDetector(
+                        onTap: onClose,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: KashfPalette.active.fieldFill,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: KashfPalette.active.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Action bar: filters + exports
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _FilterPillInline(
+                    label: l.t('mi_filter_all'),
+                    selected: filter == _OutputFilter.all,
+                    onTap: () => setState(() => filter = _OutputFilter.all),
+                  ),
+                  _FilterPillInline(
+                    label: l.t('mi_filter_summary'),
+                    selected: filter == _OutputFilter.summary,
+                    onTap: () => setState(() => filter = _OutputFilter.summary),
+                  ),
+                  _FilterPillInline(
+                    label: l.t('mi_filter_sources'),
+                    selected: filter == _OutputFilter.sources,
+                    onTap: () => setState(() => filter = _OutputFilter.sources),
+                  ),
+                  // Spacer-equivalent gap, then exports on the right.
+                  SizedBox(width: 4),
+                  _ExportIconButton(
+                    icon: Icons.picture_as_pdf_outlined,
+                    onPressed: () {},
+                  ),
+                  _ExportIconButton(
+                    icon: Icons.table_view_outlined,
+                    onPressed: () {},
+                  ),
+                  _ExportIconButton(icon: Icons.link, onPressed: () {}),
+                ],
+              ),
+            ),
+            // List of cards
+            Expanded(
+              child: ListView.builder(
+                controller: controller,
+                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 32),
+                itemCount: filtered.length,
+                itemBuilder: (_, i) => Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: _OutputBucketCard(bucket: filtered[i]),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FilterPillInline extends StatelessWidget {
+  const _FilterPillInline({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? KashfColors.gold.withValues(alpha: 0.18)
+              : KashfPalette.active.fieldFill,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? KashfColors.gold : KashfPalette.active.cardBorder,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? KashfColors.gold
+                : KashfPalette.active.textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExportIconButton extends StatelessWidget {
+  const _ExportIconButton({required this.icon, required this.onPressed});
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: KashfPalette.active.fieldFill,
+          shape: BoxShape.circle,
+          border: Border.all(color: KashfPalette.active.cardBorder),
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, color: KashfColors.gold, size: 16),
+      ),
+    );
   }
 }
 
@@ -1743,256 +2105,243 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _LoadingPanel extends StatelessWidget {
+class _LoadingPanel extends StatefulWidget {
   const _LoadingPanel({required this.progress, required this.l});
   final double progress;
   final AppLocalizations l;
 
   @override
+  State<_LoadingPanel> createState() => _LoadingPanelState();
+}
+
+class _LoadingPanelState extends State<_LoadingPanel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: KashfPalette.active.cardBorder),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+        ),
+        border: Border.all(
+          color: KashfColors.gold.withValues(alpha: 0.35),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: KashfColors.gold,
+          // Top header row: AI badge + scanning status.
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 14, 14, 8),
+            child: Row(
+              children: [
+                AnimatedBuilder(
+                  animation: _pulse,
+                  builder: (_, _) => Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: KashfColors.gold.withValues(
+                        alpha: 0.16 + _pulse.value * 0.18,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.6,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              KashfColors.gold.withValues(
+                                alpha: 0.6 + _pulse.value * 0.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          widget.l.isRtl ? 'مباشر · ذكاء اصطناعي' : 'AI · LIVE',
+                          style: TextStyle(
+                            color: KashfColors.gold,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              SizedBox(width: 10),
-              Text(
-                l.t('mi_loading_title'),
-                style: TextStyle(
-                  color: KashfPalette.active.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                Spacer(),
+                AnimatedBuilder(
+                  animation: _pulse,
+                  builder: (_, _) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(3, (i) {
+                      final delay = i * 0.25;
+                      final v = ((_pulse.value + delay) % 1.0);
+                      final opacity = (1.0 - v).clamp(0.2, 1.0);
+                      return Padding(
+                        padding: EdgeInsetsDirectional.only(start: 3),
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: KashfColors.gold.withValues(alpha: opacity),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 4),
-          Text(
-            l.t('mi_loading_subtitle'),
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 11,
+              ],
             ),
           ),
-          SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: KashfPalette.active.cardBorder,
-              valueColor: const AlwaysStoppedAnimation<Color>(KashfColors.gold),
+          // Title + spinner row.
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 4, 14, 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: KashfColors.gold,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.l.t('mi_loading_title'),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        widget.l.t('mi_loading_subtitle'),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 6),
-          Text(
-            '${(progress * 100).toStringAsFixed(0)} %',
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+          // Animated progress bar.
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 8, 14, 8),
+            child: Stack(
+              children: [
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 8,
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 200),
+                      tween: Tween(begin: 0, end: widget.progress),
+                      builder: (_, v, __) => LinearProgressIndicator(
+                        value: v,
+                        minHeight: 8,
+                        backgroundColor: Colors.transparent,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          KashfColors.gold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Progress and stage info.
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 0, 14, 14),
+            child: Row(
+              children: [
+                AnimatedBuilder(
+                  animation: _pulse,
+                  builder: (_, _) => Text(
+                    '${(widget.progress * 100).toStringAsFixed(0)} %',
+                    style: TextStyle(
+                      color: KashfColors.gold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Spacer(),
+                Text(
+                  _stageFor(widget.progress),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _ResultsPanel extends StatelessWidget {
-  const _ResultsPanel({
-    required this.outputs,
-    required this.filter,
-    required this.onFilterChanged,
-    required this.onRegenerate,
-    required this.l,
-  });
-  final List<_OutputBucket> outputs;
-  final _OutputFilter filter;
-  final ValueChanged<_OutputFilter> onFilterChanged;
-  final VoidCallback onRegenerate;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = switch (filter) {
-      _OutputFilter.all => outputs,
-      _OutputFilter.summary =>
-        outputs.where((o) => o.items.length <= 4).toList(),
-      _OutputFilter.sources =>
-        outputs
-            .where(
-              (o) =>
-                  o.type == _OutputType.investigation ||
-                  o.type == _OutputType.competitive ||
-                  o.type == _OutputType.monitoring,
-            )
-            .toList(),
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Outputs',
-              style: TextStyle(
-                color: KashfPalette.active.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const Spacer(),
-            _ExportButton(
-              icon: Icons.picture_as_pdf_outlined,
-              label: l.t('mi_export_pdf'),
-              onPressed: () {},
-            ),
-            const SizedBox(width: 6),
-            _ExportButton(
-              icon: Icons.table_view_outlined,
-              label: l.t('mi_export_csv'),
-              onPressed: () {},
-            ),
-            const SizedBox(width: 6),
-            _ExportButton(
-              icon: Icons.link,
-              label: l.t('mi_export_link'),
-              onPressed: () {},
-            ),
-          ],
-        ),
-        SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          children: [
-            _FilterPill(
-              label: l.t('mi_filter_all'),
-              selected: filter == _OutputFilter.all,
-              onTap: () => onFilterChanged(_OutputFilter.all),
-            ),
-            _FilterPill(
-              label: l.t('mi_filter_summary'),
-              selected: filter == _OutputFilter.summary,
-              onTap: () => onFilterChanged(_OutputFilter.summary),
-            ),
-            _FilterPill(
-              label: l.t('mi_filter_sources'),
-              selected: filter == _OutputFilter.sources,
-              onTap: () => onFilterChanged(_OutputFilter.sources),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-        for (final o in filtered) ...[
-          _OutputBucketCard(bucket: o),
-          SizedBox(height: 10),
-        ],
-        OutlinedButton.icon(
-          onPressed: onRegenerate,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: KashfColors.gold),
-            minimumSize: const Size.fromHeight(48),
-          ),
-          icon: Icon(Icons.refresh, color: KashfColors.gold, size: 16),
-          label: Text(
-            l.t('mi_generate_button'),
-            style: TextStyle(
-              color: KashfColors.gold,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ExportButton extends StatelessWidget {
-  const _ExportButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: KashfPalette.active.cardBorder),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-        minimumSize: Size.zero,
-      ),
-      icon: Icon(icon, color: KashfColors.gold, size: 14),
-      label: Text(
-        label,
-        style: TextStyle(
-          color: KashfColors.gold,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? KashfColors.gold.withValues(alpha: 0.18)
-              : KashfPalette.active.fieldFill,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? KashfColors.gold : KashfPalette.active.cardBorder,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? KashfColors.gold
-                : KashfPalette.active.textPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
+  String _stageFor(double p) {
+    final l = widget.l;
+    final isRtl = l.isRtl;
+    if (isRtl) {
+      if (p < 0.25) return 'جمع البيانات…';
+      if (p < 0.5) return 'تحليل المصادر…';
+      if (p < 0.75) return 'مطابقة الاتجاهات…';
+      if (p < 1.0) return 'إنهاء الرؤى…';
+      return 'تم';
+    }
+    if (p < 0.25) return 'Gathering data…';
+    if (p < 0.5) return 'Analyzing sources…';
+    if (p < 0.75) return 'Cross-referencing trends…';
+    if (p < 1.0) return 'Finalizing insights…';
+    return 'Done';
   }
 }
 
@@ -2006,108 +2355,138 @@ class _OutputBucketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: KashfPalette.active.cardBorder),
+        border: Border.all(
+          color: bucket.color.withValues(alpha: 0.35),
+          width: 1,
+        ),
       ),
-      padding: EdgeInsetsDirectional.fromSTEB(14, 14, 14, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: bucket.color.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(bucket.type.icon, color: bucket.color, size: 18),
+          // Top colored bar (matches the AI accent).
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [bucket.color.withValues(alpha: 0.2), bucket.color],
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(15),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 14, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      bucket.title,
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: bucket.color.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        bucket.type.icon,
+                        color: bucket.color,
+                        size: 18,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      bucket.subtitle,
-                      style: TextStyle(
-                        color: KashfPalette.active.textSecondary,
-                        fontSize: 11,
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bucket.title,
+                            style: TextStyle(
+                              color: KashfPalette.active.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            bucket.subtitle,
+                            style: TextStyle(
+                              color: KashfPalette.active.textSecondary,
+                              fontSize: 11,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
+                    ),
+                    SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          bucket.metricValue,
+                          style: TextStyle(
+                            color: bucket.color,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          bucket.metricSub,
+                          style: TextStyle(
+                            color: KashfPalette.active.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    bucket.metricValue,
-                    style: TextStyle(
-                      color: bucket.color,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                SizedBox(height: 12),
+                for (final item in bucket.items)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: EdgeInsetsDirectional.only(end: 8),
+                          decoration: BoxDecoration(
+                            color: bucket.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            style: TextStyle(
+                              color: KashfPalette.active.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          item.value,
+                          style: TextStyle(
+                            color: KashfPalette.active.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    bucket.metricSub,
-                    style: TextStyle(
-                      color: KashfPalette.active.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          for (final item in bucket.items)
-            Padding(
-              padding: EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    margin: EdgeInsetsDirectional.only(end: 8),
-                    decoration: BoxDecoration(
-                      color: bucket.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      style: TextStyle(
-                        color: KashfPalette.active.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    item.value,
-                    style: TextStyle(
-                      color: KashfPalette.active.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
