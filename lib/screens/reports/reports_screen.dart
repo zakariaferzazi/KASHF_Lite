@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../models/mock_data.dart';
-import '../../models/report.dart';
+import '../../models/analysis_history.dart';
+import '../../state/history_store.dart';
 import '../../theme.dart';
 
-/// Generates and manages AI reports and analyses.
+/// Reports tab — shows the history of analyses the user ran on the Explore
+/// screen, so they can revisit past investigations without re-running them.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -14,17 +15,28 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  ReportStatus? _filter; // null = all
+  @override
+  void initState() {
+    super.initState();
+    // Re-render when the shared history list changes (e.g. user saves a new
+    // analysis from the Explore screen while the Reports tab is mounted).
+    HistoryStore.instance.entries.addListener(_onHistoryChanged);
+  }
+
+  @override
+  void dispose() {
+    HistoryStore.instance.entries.removeListener(_onHistoryChanged);
+    super.dispose();
+  }
+
+  void _onHistoryChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final all = MockData.reports(context);
-    final visible = _filter == null
-        ? all
-        : all.where((r) => r.status == _filter).toList();
-
-    // Use the natural direction for the active language.
+    final entries = HistoryStore.instance.entries.value;
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -38,101 +50,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 sliver: SliverToBoxAdapter(child: _Header(l: l)),
               ),
               SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
-                sliver: SliverToBoxAdapter(
-                  child: _FilterBar(
-                    current: _filter,
-                    onChange: (s) => setState(() => _filter = s),
-                  ),
-                ),
+                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+                sliver: SliverToBoxAdapter(child: _HistoryHint(l: l)),
               ),
-              if (visible.isEmpty)
+              if (entries.isEmpty)
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-                  sliver: SliverToBoxAdapter(child: _EmptyReports(l: l)),
+                  sliver: SliverToBoxAdapter(child: _EmptyHistory(l: l)),
                 )
               else
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 32),
-                  sliver: SliverList.builder(
-                    itemCount: visible.length,
-                    itemBuilder: (context, i) => Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: _ReportCard(report: visible[i]),
-                    ),
+                  sliver: SliverList.separated(
+                    itemCount: entries.length,
+                    separatorBuilder: (_, _) => SizedBox(height: 10),
+                    itemBuilder: (context, i) =>
+                        _HistoryCard(entry: entries[i]),
                   ),
                 ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  void _showGenerateSheet(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final actions = [
-      ReportType.executiveSummary,
-      ReportType.marketInsight,
-      ReportType.competitive,
-      ReportType.swot,
-      ReportType.contentIdeas,
-      ReportType.reelScript,
-      ReportType.podcastScript,
-      ReportType.monitoring,
-      ReportType.recommendation,
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: KashfPalette.active.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.t('reports_action_generate'),
-                  style: TextStyle(
-                    color: KashfPalette.active.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 12),
-                for (final a in actions)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.auto_awesome, color: KashfColors.gold),
-                    title: Text(
-                      l.t(a.l10nKey),
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(sheetCtx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l.t('settings_coming_soon')),
-                          backgroundColor: KashfColors.gold,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -182,7 +121,6 @@ class _Header extends StatelessWidget {
         ),
       ],
     );
-    // Logo always on the opposite side, like the home top bar.
     return Padding(
       padding: EdgeInsetsDirectional.only(bottom: 8),
       child: Row(
@@ -206,87 +144,95 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({required this.current, required this.onChange});
-  final ReportStatus? current;
-  final ValueChanged<ReportStatus?> onChange;
+class _HistoryHint extends StatelessWidget {
+  const _HistoryHint({required this.l});
+  final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final items = <_FilterItem>[
-      _FilterItem(null, l.t('reports_filter_all')),
-      _FilterItem(ReportStatus.recent, l.t('reports_filter_recent')),
-      _FilterItem(ReportStatus.archived, l.t('reports_filter_archived')),
-    ];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    final isEmpty = HistoryStore.instance.entries.value.isEmpty;
+    return Container(
+      padding: EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: KashfColors.gold.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KashfColors.gold.withValues(alpha: 0.30)),
+      ),
       child: Row(
         children: [
-          for (final item in items) ...[
-            _FilterPill(
-              label: item.label,
-              selected: current == item.value,
-              onTap: () => onChange(item.value),
+          Icon(Icons.history, color: KashfColors.gold, size: 16),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isEmpty
+                  ? (l.isRtl
+                      ? 'لم تحفظ أي تحليل بعد. شغّل تحليلًا في صفحة الاستكشاف ثم اضغط «حفظ في المساحة».'
+                      : 'No saved analyses yet. Run an analysis on the Explore screen, then tap "Save to workspace".')
+                  : (l.isRtl
+                      ? 'هذه نتائج كشوفاتك السابقة. اضغط على أي عنصر لإعادة فتح نتائجه.'
+                      : 'Your past analyses. Tap any entry to revisit its results.'),
+              style: TextStyle(
+                color: KashfPalette.active.textPrimary,
+                fontSize: 12,
+                height: 1.4,
+              ),
             ),
-            SizedBox(width: 8),
-          ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _FilterItem {
-  const _FilterItem(this.value, this.label);
-  final ReportStatus? value;
-  final String label;
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory({required this.l});
+  final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? KashfColors.gold.withValues(alpha: 0.18)
-              : KashfPalette.active.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? KashfColors.gold : KashfPalette.active.cardBorder,
-            width: selected ? 1.2 : 1,
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KashfPalette.active.cardBorder),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.history_toggle_off,
+            color: KashfPalette.active.textSecondary,
+            size: 36,
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? KashfColors.gold
-                : KashfPalette.active.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+          SizedBox(height: 8),
+          Text(
+            l.isRtl ? 'لا توجد كشوفات محفوظة' : 'No saved analyses',
+            style: TextStyle(
+              color: KashfPalette.active.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
+          SizedBox(height: 4),
+          Text(
+            l.isRtl
+                ? 'احفظ نتائج أي تحليل من صفحة الاستكشاف لتظهر هنا.'
+                : 'Save any analysis from the Explore screen to see it here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: KashfPalette.active.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ReportCard extends StatelessWidget {
-  const _ReportCard({required this.report});
-  final Report report;
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({required this.entry});
+  final AnalysisHistoryEntry entry;
 
   @override
   Widget build(BuildContext context) {
@@ -304,18 +250,15 @@ class _ReportCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: KashfColors.gold.withValues(alpha: 0.12),
+                  color: KashfColors.gold.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.description_outlined,
-                  color: KashfColors.gold,
-                  size: 18,
-                ),
+                child: Icon(Icons.auto_awesome,
+                    color: KashfColors.gold, size: 18),
               ),
               SizedBox(width: 10),
               Expanded(
@@ -323,81 +266,68 @@ class _ReportCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      report.title,
+                      entry.entity.isEmpty
+                          ? (l.isRtl ? 'بدون اسم' : 'Untitled')
+                          : entry.entity,
                       style: TextStyle(
                         color: KashfPalette.active.textPrimary,
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 2),
                     Text(
-                      l.t(report.type.l10nKey),
+                      entry.summary,
                       style: TextStyle(
                         color: KashfPalette.active.textSecondary,
                         fontSize: 11,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                color: KashfPalette.active.surface,
-                icon: Icon(
-                  Icons.more_horiz,
-                  color: KashfPalette.active.textSecondary,
-                ),
-                onSelected: (v) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l.t('settings_coming_soon')),
-                      backgroundColor: KashfColors.gold,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'export',
-                    child: Text(l.t('reports_export_pdf')),
-                  ),
-                  PopupMenuItem(
-                    value: 'share',
-                    child: Text(l.t('reports_share')),
-                  ),
-                ],
+              Icon(
+                Icons.chevron_left,
+                color: KashfPalette.active.textSecondary,
+                size: 22,
               ),
             ],
           ),
-          SizedBox(height: 8),
-          Text(
-            report.preview,
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 12,
+          if (entry.categoryLabels.isNotEmpty) ...[
+            SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final label in entry.categoryLabels)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KashfColors.gold.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: KashfColors.gold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
           SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                Icons.source_outlined,
-                color: KashfPalette.active.textSecondary,
-                size: 14,
-              ),
-              SizedBox(width: 4),
-              Text(
-                '${report.sourceCount}',
-                style: TextStyle(
-                  color: KashfPalette.active.textSecondary,
-                  fontSize: 11,
-                ),
-              ),
-              SizedBox(width: 12),
               Icon(
                 Icons.schedule,
                 color: KashfPalette.active.textSecondary,
@@ -405,89 +335,29 @@ class _ReportCard extends StatelessWidget {
               ),
               SizedBox(width: 4),
               Text(
-                _formatDate(context, report.createdAt),
+                entry.displayDate(l),
                 style: TextStyle(
                   color: KashfPalette.active.textSecondary,
                   fontSize: 11,
                 ),
               ),
-              Spacer(),
-              if (report.status == ReportStatus.archived)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFB923C).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    l.t('reports_filter_archived'),
-                    style: TextStyle(
-                      color: Color(0xFFFB923C),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+              SizedBox(width: 12),
+              Icon(
+                Icons.layers_outlined,
+                color: KashfPalette.active.textSecondary,
+                size: 14,
+              ),
+              SizedBox(width: 4),
+              Text(
+                l.isRtl
+                    ? '${entry.outputsCount} نتائج كشف'
+                    : '${entry.outputsCount} insights',
+                style: TextStyle(
+                  color: KashfPalette.active.textSecondary,
+                  fontSize: 11,
                 ),
+              ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(BuildContext context, DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    if (diff.inMinutes < 60) {
-      final m = diff.inMinutes;
-      return isAr ? 'قبل $m د' : '${m}m ago';
-    }
-    if (diff.inHours < 24) {
-      final h = diff.inHours;
-      return isAr ? 'قبل $h س' : '${h}h ago';
-    }
-    final d = diff.inDays;
-    return isAr ? 'قبل $d ي' : '${d}d ago';
-  }
-}
-
-class _EmptyReports extends StatelessWidget {
-  const _EmptyReports({required this.l});
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.assessment_outlined,
-            color: KashfPalette.active.textSecondary,
-            size: 36,
-          ),
-          SizedBox(height: 8),
-          Text(
-            l.t('reports_empty'),
-            style: TextStyle(
-              color: KashfPalette.active.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            l.t('reports_empty_hint'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 12,
-            ),
           ),
         ],
       ),

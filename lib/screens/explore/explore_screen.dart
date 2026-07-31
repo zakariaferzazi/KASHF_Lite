@@ -4,7 +4,28 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../models/analysis_history.dart';
+import '../../state/history_store.dart';
 import '../../theme.dart';
+
+/// Converts Latin digits 0–9 into their Arabic-Indic counterparts.
+/// Used for inline counts inside Arabic strings so we don't rely on the
+/// system to format numbers for us.
+String toArabicNumerals(int n) {
+  const map = {
+    '0': '٠',
+    '1': '١',
+    '2': '٢',
+    '3': '٣',
+    '4': '٤',
+    '5': '٥',
+    '6': '٦',
+    '7': '٧',
+    '8': '٨',
+    '9': '٩',
+  };
+  return n.toString().split('').map((c) => map[c] ?? c).join();
+}
 
 /// AI-powered Market Intelligence Workspace.
 ///
@@ -29,7 +50,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   // --- Generation state ---
   _GenerationState _generation = const _IdleState();
-  _OutputFilter _outputFilter = _OutputFilter.all;
+  // Shared between the loading popup dialog and the underlying state.
+  final ValueNotifier<double> _progressNotifier = ValueNotifier<double>(0.0);
 
   // --- Workspace history (in-memory for demo) ---
   final List<_HistoryEntry> _history = <_HistoryEntry>[];
@@ -38,6 +60,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _linkCtrl.dispose();
+    _progressNotifier.dispose();
     super.dispose();
   }
 
@@ -69,9 +92,48 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     setState(() => _generation = const _RunningState(0.0));
     final completer = Completer<void>();
+
+    // Show the loading state as a centered popup so it is always visible
+    // instead of being pushed below the page content.
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: const Color(0xFF1F1810),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: KashfColors.gold.withValues(alpha: 0.35),
+              width: 1,
+            ),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: SizedBox(
+            width: 320,
+            height: 200,
+            child: Directionality(
+              textDirection:
+                  l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _progressNotifier,
+                builder: (_, value, __) =>
+                    _LoadingPanel(progress: value, l: l),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
     _ProgressTicker(
       onTick: (v) {
         if (!mounted) return;
+        _progressNotifier.value = v;
         setState(() => _generation = _RunningState(v));
       },
       onComplete: completer.complete,
@@ -84,8 +146,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final outputs = _MockOutputs.build(
       entity: _nameCtrl.text.trim(),
       outputs: _selectedOutputs.toList(),
+      l: l,
     );
     setState(() => _generation = _CompleteState(outputs));
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    await dialogFuture;
+    _progressNotifier.value = 0.0;
   }
 
   void _showError(String msg) {
@@ -101,7 +167,25 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void _saveToHistory() {
     final state = _generation;
     if (state is _CompleteState && state.outputs.isNotEmpty) {
+      final l = AppLocalizations.of(context);
+      final categoryLabels = _selectedCategories
+          .map((c) => c.label(context))
+          .toList(growable: false);
+      final firstOutputTitle =
+          state.outputs.isNotEmpty ? state.outputs.first.title : '';
+      HistoryStore.instance.add(
+        AnalysisHistoryEntry(
+          id: math.Random().nextInt(1 << 31).toString(),
+          entity: _nameCtrl.text.trim(),
+          categoryLabels: categoryLabels,
+          createdAt: DateTime.now(),
+          summary: firstOutputTitle,
+          outputsCount: state.outputs.length,
+        ),
+      );
       setState(() {
+        // Keep the local mirror in sync so the inline history list also
+        // updates immediately.
         _history.insert(
           0,
           _HistoryEntry(
@@ -115,7 +199,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).t('mi_save_button')),
+          content: Text(l.t('mi_save_button')),
           backgroundColor: KashfColors.gold,
           behavior: SnackBarBehavior.floating,
         ),
@@ -308,8 +392,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 sliver: SliverToBoxAdapter(
                   child: _OutputPanel(
                     state: _generation,
-                    filter: _outputFilter,
-                    onFilterChanged: (f) => setState(() => _outputFilter = f),
                     onRegenerate: _runAnalysis,
                     l: l,
                   ),
@@ -541,6 +623,8 @@ class _StepCard extends StatelessWidget {
 // Step 1 — category multi-select
 // ============================================================================
 
+// Local enum kept for the alias above. The public model in
+// analysis_history.dart owns the canonical values.
 enum _EntityCategory { company, brand, product, influencer, market }
 
 extension on _EntityCategory {
@@ -1532,6 +1616,8 @@ class _OutputBucket {
     required this.metricSub,
     required this.items,
     required this.color,
+    this.summary,
+    this.socialLinks = const <_SocialLink>[],
   });
   final _OutputType type;
   final String title;
@@ -1540,6 +1626,25 @@ class _OutputBucket {
   final String metricSub;
   final List<_OutputItem> items;
   final Color color;
+  /// Optional paragraph shown inside the card body (investigation).
+  final String? summary;
+  /// Optional list of platform buttons (social).
+  final List<_SocialLink> socialLinks;
+}
+
+class _SocialLink {
+  const _SocialLink({
+    required this.label,
+    required this.handle,
+    required this.icon,
+    required this.color,
+    required this.url,
+  });
+  final String label;
+  final String handle;
+  final IconData icon;
+  final Color color;
+  final String url;
 }
 
 class _OutputItem {
@@ -1552,41 +1657,108 @@ class _MockOutputs {
   static List<_OutputBucket> build({
     required String entity,
     required List<_OutputType> outputs,
+    required AppLocalizations l,
   }) {
-    final name = entity.trim().isEmpty ? 'الجهة' : entity.trim();
+    final rawName = entity.trim();
+    final name =
+        rawName.isEmpty ? (l.isRtl ? 'الجهة' : 'the entity') : rawName;
     final list = <_OutputBucket>[];
     if (outputs.contains(_OutputType.investigation)) {
       list.add(
         _OutputBucket(
           type: _OutputType.investigation,
-          title: 'تقرير تحقيق لـ «$name»',
-          subtitle: 'مصادر موثّقة ونتائج رئيسية',
-          metricValue: '١٢',
-          metricSub: 'مصدر',
+          title: l.tp('mi_res_inv_title', {'name': name}),
+          subtitle: l.t('mi_res_inv_sub'),
+          metricValue: l.isRtl ? '٢٠١٤' : '2014',
+          metricSub: l.t('mi_res_inv_founded'),
           color: _OutputType.investigation.color,
+          summary: l.t('mi_res_inv_summary'),
           items: [
-            _OutputItem('مصادر موثّقة', '٨ / ١٢'),
-            _OutputItem('نتائج رئيسية', '٥ أبرز'),
-            _OutputItem('نبرة الجمهور', '+٤٢٪ إيجابية'),
-            _OutputItem('مؤشر المخاطرة', 'منخفض · ١٨/١٠٠'),
+            _OutputItem(
+              l.t('mi_res_inv_hq'),
+              l.t('mi_res_inv_hq_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_inv_industry'),
+              l.t('mi_res_inv_industry_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_inv_audience'),
+              l.t('mi_res_inv_audience_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_inv_item3'),
+              l.t('mi_res_inv_item3_v'),
+            ),
           ],
         ),
       );
     }
     if (outputs.contains(_OutputType.social)) {
+      final ig = _SocialLink(
+        label: l.t('mi_res_soc_platform_ig'),
+        handle: l.t('mi_res_soc_handle_ig'),
+        icon: Icons.camera_alt_outlined,
+        color: const Color(0xFFE1306C),
+        url: 'https://instagram.com/kashf.lab',
+      );
+      final fb = _SocialLink(
+        label: l.t('mi_res_soc_platform_fb'),
+        handle: l.t('mi_res_soc_handle_fb'),
+        icon: Icons.facebook,
+        color: const Color(0xFF1877F2),
+        url: 'https://facebook.com/kashf.lab',
+      );
+      final x = _SocialLink(
+        label: l.t('mi_res_soc_platform_x'),
+        handle: l.t('mi_res_soc_handle_x'),
+        icon: Icons.alternate_email,
+        color: const Color(0xFF1D9BF0),
+        url: 'https://x.com/kashf_lab',
+      );
+      final tt = _SocialLink(
+        label: l.t('mi_res_soc_platform_tt'),
+        handle: l.t('mi_res_soc_handle_tt'),
+        icon: Icons.music_note_outlined,
+        color: const Color(0xFF25F4EE),
+        url: 'https://tiktok.com/@kashf.lab',
+      );
+      final yt = _SocialLink(
+        label: l.t('mi_res_soc_platform_yt'),
+        handle: l.t('mi_res_soc_handle_yt'),
+        icon: Icons.play_circle_outline,
+        color: const Color(0xFFFF0000),
+        url: 'https://youtube.com/@kashflab',
+      );
+      final sc = _SocialLink(
+        label: l.t('mi_res_soc_platform_sc'),
+        handle: l.t('mi_res_soc_handle_sc'),
+        icon: Icons.photo_camera_back_outlined,
+        color: const Color(0xFFFFFC00),
+        url: 'https://snapchat.com/add/kashf',
+      );
       list.add(
         _OutputBucket(
           type: _OutputType.social,
-          title: 'روابط ومقاييس التفاعل',
-          subtitle: 'منشورات مختارة حول «$name»',
-          metricValue: '٢٨٫٤ ألف',
-          metricSub: 'ذكر',
+          title: l.tp('mi_res_soc_title', {'name': name}),
+          subtitle: l.tp('mi_res_soc_sub', {'name': name}),
+          metricValue: l.isRtl ? '٤٦٥ ألف متابع' : '465K',
+          metricSub: l.t('mi_res_soc_followers'),
           color: _OutputType.social.color,
+          socialLinks: [ig, fb, x, tt, yt, sc],
           items: [
-            _OutputItem('نشطاء إنستغرام', '١٧٢'),
-            _OutputItem('نشطاء تيك توك', '٨٤'),
-            _OutputItem('أعلى تفاعل', '@abeer.s · ١٫٢م'),
-            _OutputItem('هاشتاقات', '#$name · ٤٫١ك'),
+            _OutputItem(
+              ig.label,
+              l.t('mi_res_soc_followers_ig'),
+            ),
+            _OutputItem(
+              fb.label,
+              l.t('mi_res_soc_followers_fb'),
+            ),
+            _OutputItem(
+              x.label,
+              l.t('mi_res_soc_followers_x'),
+            ),
           ],
         ),
       );
@@ -1595,15 +1767,24 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.insights,
-          title: 'رؤى السوق',
-          subtitle: 'اتجاهات، نمو، فرص',
-          metricValue: '+٢٤٪',
-          metricSub: 'نمو (٩٠ يوم)',
+          title: l.t('mi_res_ins_title'),
+          subtitle: l.t('mi_res_ins_sub'),
+          metricValue: l.t('mi_res_ins_metric'),
+          metricSub: l.t('mi_res_ins_metric_sub'),
           color: _OutputType.insights.color,
           items: [
-            _OutputItem('الاتجاه الأبرز', 'العطور الخشبية في الخليج'),
-            _OutputItem('فرصة مقترحة', 'إطلاق خط «$name» في الربع الثالث'),
-            _OutputItem('التوقع', '١٢٪ حصة سوقية بنهاية الربع الرابع'),
+            _OutputItem(
+              l.t('mi_res_ins_item1'),
+              l.t('mi_res_ins_item1_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_ins_item2'),
+              l.tp('mi_res_ins_item2_v', {'name': name}),
+            ),
+            _OutputItem(
+              l.t('mi_res_ins_item3'),
+              l.t('mi_res_ins_item3_v'),
+            ),
           ],
         ),
       );
@@ -1612,15 +1793,24 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.competitive,
-          title: 'تحليل المنافسين',
-          subtitle: 'أين يقف «$name» مقارنة بالسوق',
-          metricValue: '#٣',
-          metricSub: 'ترتيب السوق',
+          title: l.t('mi_res_cmp_title'),
+          subtitle: l.tp('mi_res_cmp_sub', {'name': name}),
+          metricValue: l.t('mi_res_cmp_metric'),
+          metricSub: l.t('mi_res_cmp_metric_sub'),
           color: _OutputType.competitive.color,
           items: [
-            _OutputItem('مقارنة بـ Dior Sauvage', '-١٢٪'),
-            _OutputItem('مقارنة بـ Lattafa Asad', '+٢٨٪'),
-            _OutputItem('مقارنة بـ Chanel BLEU', '-٥٪'),
+            _OutputItem(
+              l.t('mi_res_cmp_item1'),
+              l.t('mi_res_cmp_item1_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_cmp_item2'),
+              l.t('mi_res_cmp_item2_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_cmp_item3'),
+              l.t('mi_res_cmp_item3_v'),
+            ),
           ],
         ),
       );
@@ -1629,15 +1819,24 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.monitoring,
-          title: 'تحديثات المتابعة',
-          subtitle: 'تتبع جديد التطورات حول «$name»',
-          metricValue: '٧ أيام',
-          metricSub: 'نشاط حديث',
+          title: l.t('mi_res_mon_title'),
+          subtitle: l.tp('mi_res_mon_sub', {'name': name}),
+          metricValue: l.t('mi_res_mon_metric'),
+          metricSub: l.t('mi_res_mon_metric_sub'),
           color: _OutputType.monitoring.color,
           items: [
-            _OutputItem('ارتفاعات', '٣ تم رصدها'),
-            _OutputItem('قنوات مراقبة', '٥ قنوات'),
-            _OutputItem('المزامنة القادمة', 'خلال ١٤ ساعة'),
+            _OutputItem(
+              l.t('mi_res_mon_item1'),
+              l.t('mi_res_mon_item1_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_mon_item2'),
+              l.t('mi_res_mon_item2_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_mon_item3'),
+              l.t('mi_res_mon_item3_v'),
+            ),
           ],
         ),
       );
@@ -1646,15 +1845,24 @@ class _MockOutputs {
       list.add(
         _OutputBucket(
           type: _OutputType.content,
-          title: 'أفكار محتوى',
-          subtitle: 'أفكار استراتيجية لجمهور «$name»',
-          metricValue: '٩',
-          metricSub: 'فكرة',
+          title: l.t('mi_res_cnt_title'),
+          subtitle: l.tp('mi_res_cnt_sub', {'name': name}),
+          metricValue: l.t('mi_res_cnt_metric'),
+          metricSub: l.t('mi_res_cnt_metric_sub'),
           color: _OutputType.content.color,
           items: [
-            _OutputItem('سكريبت ريلز', '"من الغسق إلى $name"'),
-            _OutputItem('بودكاست', 'سباق العطور في الخليج'),
-            _OutputItem('ميكرو بيتش', 'لانطلاق حملة Q3'),
+            _OutputItem(
+              l.t('mi_res_cnt_item1'),
+              l.tp('mi_res_cnt_item1_v', {'name': name}),
+            ),
+            _OutputItem(
+              l.t('mi_res_cnt_item2'),
+              l.t('mi_res_cnt_item2_v'),
+            ),
+            _OutputItem(
+              l.t('mi_res_cnt_item3'),
+              l.t('mi_res_cnt_item3_v'),
+            ),
           ],
         ),
       );
@@ -1663,19 +1871,13 @@ class _MockOutputs {
   }
 }
 
-enum _OutputFilter { all, summary, sources }
-
 class _OutputPanel extends StatefulWidget {
   const _OutputPanel({
     required this.state,
-    required this.filter,
-    required this.onFilterChanged,
     required this.onRegenerate,
     required this.l,
   });
   final _GenerationState state;
-  final _OutputFilter filter;
-  final ValueChanged<_OutputFilter> onFilterChanged;
   final VoidCallback onRegenerate;
   final AppLocalizations l;
 
@@ -1748,7 +1950,9 @@ class _OutputPanelState extends State<_OutputPanel> {
   Widget build(BuildContext context) {
     final s = widget.state;
     if (s is _RunningState) {
-      return _LoadingPanel(progress: s.progress, l: widget.l);
+      // The centered popup already shows the loading state. Keep this slot
+      // empty so the user only sees one loading UI at a time.
+      return const SizedBox.shrink();
     }
     if (s is _CompleteState) {
       // Show a small "View results" banner inline; the modal is already open.
@@ -1797,7 +2001,7 @@ class _ResultsBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l.isRtl ? 'الكشوفات جاهزة' : 'Insights ready',
+                  l.t('mi_results_ready_title'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -1806,9 +2010,11 @@ class _ResultsBanner extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  l.isRtl
-                      ? 'تم تجهيز $count نتيجة كشف · اعرضها أدناه'
-                      : '$count insight items ready · view below',
+                  count == 1
+                      ? l.t('mi_results_ready_count_one')
+                      : l.tp('mi_results_ready_count_other', {
+                          'count': l.isRtl ? '$count' : '$count',
+                        }),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,
@@ -1838,23 +2044,8 @@ class _ResultsScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    _OutputFilter filter = _OutputFilter.all;
     return StatefulBuilder(
       builder: (ctx, setState) {
-        final filtered = switch (filter) {
-          _OutputFilter.all => outputs,
-          _OutputFilter.summary =>
-            outputs.where((o) => o.items.length <= 4).toList(),
-          _OutputFilter.sources =>
-            outputs
-                .where(
-                  (o) =>
-                      o.type == _OutputType.investigation ||
-                      o.type == _OutputType.competitive ||
-                      o.type == _OutputType.monitoring,
-                )
-                .toList(),
-        };
         return Column(
           children: [
             // Sticky header
@@ -1899,9 +2090,13 @@ class _ResultsScaffold extends StatelessWidget {
                             ),
                             SizedBox(width: 4),
                             Text(
-                              l.isRtl
-                                  ? 'AI · ${outputs.length} نتائج كشف'
-                                  : 'AI · ${outputs.length} insights',
+                              outputs.length == 1
+                                  ? l.t('mi_results_badge_one')
+                                  : l.tp('mi_results_badge_other', {
+                                      'count': l.isRtl
+                                          ? toArabicNumerals(outputs.length)
+                                          : '${outputs.length}',
+                                    }),
                               style: TextStyle(
                                 color: KashfColors.gold,
                                 fontSize: 10,
@@ -1935,121 +2130,21 @@ class _ResultsScaffold extends StatelessWidget {
                 ],
               ),
             ),
-            // Action bar: filters + exports
-            Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _FilterPillInline(
-                    label: l.t('mi_filter_all'),
-                    selected: filter == _OutputFilter.all,
-                    onTap: () => setState(() => filter = _OutputFilter.all),
-                  ),
-                  _FilterPillInline(
-                    label: l.t('mi_filter_summary'),
-                    selected: filter == _OutputFilter.summary,
-                    onTap: () => setState(() => filter = _OutputFilter.summary),
-                  ),
-                  _FilterPillInline(
-                    label: l.t('mi_filter_sources'),
-                    selected: filter == _OutputFilter.sources,
-                    onTap: () => setState(() => filter = _OutputFilter.sources),
-                  ),
-                  // Spacer-equivalent gap, then exports on the right.
-                  SizedBox(width: 4),
-                  _ExportIconButton(
-                    icon: Icons.picture_as_pdf_outlined,
-                    onPressed: () {},
-                  ),
-                  _ExportIconButton(
-                    icon: Icons.table_view_outlined,
-                    onPressed: () {},
-                  ),
-                  _ExportIconButton(icon: Icons.link, onPressed: () {}),
-                ],
-              ),
-            ),
             // List of cards
             Expanded(
               child: ListView.builder(
                 controller: controller,
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 32),
-                itemCount: filtered.length,
+                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 32),
+                itemCount: outputs.length,
                 itemBuilder: (_, i) => Padding(
                   padding: EdgeInsets.only(bottom: 14),
-                  child: _OutputBucketCard(bucket: filtered[i]),
+                  child: _OutputBucketCard(bucket: outputs[i]),
                 ),
               ),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-class _FilterPillInline extends StatelessWidget {
-  const _FilterPillInline({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? KashfColors.gold.withValues(alpha: 0.18)
-              : KashfPalette.active.fieldFill,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? KashfColors.gold : KashfPalette.active.cardBorder,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? KashfColors.gold
-                : KashfPalette.active.textPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExportIconButton extends StatelessWidget {
-  const _ExportIconButton({required this.icon, required this.onPressed});
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: KashfPalette.active.fieldFill,
-          shape: BoxShape.circle,
-          border: Border.all(color: KashfPalette.active.cardBorder),
-        ),
-        alignment: Alignment.center,
-        child: Icon(icon, color: KashfColors.gold, size: 16),
-      ),
     );
   }
 }
@@ -2354,136 +2449,311 @@ class _OutputBucketCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: bucket.color.withValues(alpha: 0.35),
+          color: bucket.color.withValues(alpha: 0.30),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: bucket.color.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top colored bar (matches the AI accent).
+          // Header: gradient strip with icon + type + close chip area.
           Container(
-            height: 4,
+            padding: EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [bucket.color.withValues(alpha: 0.2), bucket.color],
+                begin: AlignmentDirectional.centerStart,
+                end: AlignmentDirectional.centerEnd,
+                colors: [
+                  bucket.color.withValues(alpha: 0.18),
+                  bucket.color.withValues(alpha: 0.06),
+                ],
               ),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(15),
+                top: Radius.circular(17),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: bucket.color.withValues(alpha: 0.25),
+                  width: 1,
+                ),
               ),
             ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: bucket.color.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: bucket.color.withValues(alpha: 0.45),
+                      width: 1,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    bucket.type.icon,
+                    color: bucket.color,
+                    size: 20,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bucket.title,
+                        style: TextStyle(
+                          color: KashfPalette.active.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        bucket.subtitle,
+                        style: TextStyle(
+                          color: KashfPalette.active.textSecondary,
+                          fontSize: 11,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: KashfPalette.active.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: bucket.color.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        bucket.metricValue,
+                        style: TextStyle(
+                          color: bucket.color,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        bucket.metricSub,
+                        style: TextStyle(
+                          color: KashfPalette.active.textSecondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          // Body: optional summary paragraph + social grid + items list.
           Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(14, 14, 14, 14),
+            padding: EdgeInsetsDirectional.fromSTEB(14, 12, 14, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: bucket.color.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        bucket.type.icon,
-                        color: bucket.color,
-                        size: 18,
+                if (bucket.summary != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: bucket.color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: bucket.color.withValues(alpha: 0.20),
                       ),
                     ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            bucket.title,
-                            style: TextStyle(
-                              color: KashfPalette.active.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            bucket.subtitle,
-                            style: TextStyle(
-                              color: KashfPalette.active.textSecondary,
-                              fontSize: 11,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                    child: Text(
+                      bucket.summary!,
+                      style: TextStyle(
+                        color: KashfPalette.active.textPrimary,
+                        fontSize: 12,
+                        height: 1.55,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          bucket.metricValue,
-                          style: TextStyle(
-                            color: bucket.color,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          bucket.metricSub,
-                          style: TextStyle(
-                            color: KashfPalette.active.textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                  ),
+                  SizedBox(height: 12),
+                ],
+                if (bucket.socialLinks.isNotEmpty) ...[
+                  _SocialLinksGrid(links: bucket.socialLinks),
+                  SizedBox(height: 10),
+                ],
+                for (int i = 0; i < bucket.items.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: KashfPalette.active.cardBorder
+                          .withValues(alpha: 0.5),
                     ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                for (final item in bucket.items)
                   Padding(
-                    padding: EdgeInsets.only(bottom: 6),
+                    padding: EdgeInsets.symmetric(vertical: 10),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
-                          margin: EdgeInsetsDirectional.only(end: 8),
+                          width: 8,
+                          height: 8,
+                          margin: EdgeInsetsDirectional.only(end: 10),
                           decoration: BoxDecoration(
                             color: bucket.color,
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: bucket.color.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
                         ),
                         Expanded(
                           child: Text(
-                            item.label,
+                            bucket.items[i].label,
                             style: TextStyle(
                               color: KashfPalette.active.textSecondary,
-                              fontSize: 11,
+                              fontSize: 12,
+                              height: 1.35,
                             ),
                           ),
                         ),
-                        Text(
-                          item.value,
-                          style: TextStyle(
-                            color: KashfPalette.active.textPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                        SizedBox(width: 10),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bucket.color.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            bucket.items[i].value,
+                            style: TextStyle(
+                              color: bucket.color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialLinksGrid extends StatelessWidget {
+  const _SocialLinksGrid({required this.links});
+  final List<_SocialLink> links;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 2 columns on phone widths, 3 columns on wider sheets.
+        final crossAxisCount = constraints.maxWidth >= 520 ? 3 : 2;
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.6,
+          children: [
+            for (final link in links) _SocialLinkTile(link: link),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SocialLinkTile extends StatelessWidget {
+  const _SocialLinkTile({required this.link});
+  final _SocialLink link;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: link.color.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: link.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: Icon(link.icon, size: 16, color: link.color),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  link.label,
+                  style: TextStyle(
+                    color: KashfPalette.active.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 1),
+                Text(
+                  link.handle,
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -2642,11 +2912,12 @@ class _ProgressTicker {
     required this.onTick,
     required this.onComplete,
     this.totalMs = 4500,
+    this.tickMs = 16,
   });
   final ValueChanged<double> onTick;
   final VoidCallback onComplete;
   final int totalMs;
-  late final int tickMs;
+  final int tickMs;
   Timer? _timer;
 
   void start() {

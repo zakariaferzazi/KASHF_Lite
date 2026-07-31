@@ -492,7 +492,7 @@ class _ProfileCard extends StatelessWidget {
                   : CrossAxisAlignment.start,
               children: [
                 Text(
-                  l.t('settings_profile'),
+                  l.t('home_user_name'),
                   style: TextStyle(
                     color: KashfPalette.active.textPrimary,
                     fontSize: 16,
