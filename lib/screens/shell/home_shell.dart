@@ -98,11 +98,13 @@ class _HomeShellState extends State<HomeShell> {
                   ],
                 ),
               ),
-              // Centered gold "+" floating action button.
+              // Centered gold "+" floating action button — opens the
+              // Explore screen so users can jump straight to the AI
+              // Market Intelligence workspace.
               Positioned(
                 top: -14,
                 child: GestureDetector(
-                  onTap: () => _openCreate(context),
+                  onTap: () => setState(() => _index = 1),
                   child: Container(
                     width: 60,
                     height: 60,
