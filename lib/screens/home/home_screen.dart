@@ -481,7 +481,11 @@ class _ChipAction extends StatelessWidget {
 
 // ============================ Section Header ============================
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.trailing, this.onTrailing});
+  const _SectionHeader({
+    required this.title,
+    this.trailing,
+    this.onTrailing,
+  });
   final String title;
   final String? trailing;
   final VoidCallback? onTrailing;

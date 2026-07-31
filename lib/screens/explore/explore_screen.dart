@@ -1037,7 +1037,7 @@ class _EvidenceUploader extends StatelessWidget {
 }
 
 class DottedDropzone extends StatelessWidget {
-  const DottedDropzone({required this.child});
+  const DottedDropzone({super.key, required this.child});
   final Widget child;
 
   @override
@@ -2263,12 +2263,11 @@ class _ProgressTicker {
     required this.onTick,
     required this.onComplete,
     this.totalMs = 4500,
-    this.tickMs = 80,
   });
   final ValueChanged<double> onTick;
   final VoidCallback onComplete;
   final int totalMs;
-  final int tickMs;
+  late final int tickMs;
   Timer? _timer;
 
   void start() {
