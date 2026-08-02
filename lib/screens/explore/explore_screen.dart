@@ -2912,7 +2912,7 @@ class _ProgressTicker {
     required this.onTick,
     required this.onComplete,
     this.totalMs = 4500,
-    this.tickMs = 16,
+    this.tickMs = 60,
   });
   final ValueChanged<double> onTick;
   final VoidCallback onComplete;
