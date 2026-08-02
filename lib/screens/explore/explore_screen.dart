@@ -121,7 +121,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   l.isRtl ? TextDirection.rtl : TextDirection.ltr,
               child: ValueListenableBuilder<double>(
                 valueListenable: _progressNotifier,
-                builder: (_, value, __) =>
+                builder: (_, value, child) =>
                     _LoadingPanel(progress: value, l: l),
               ),
             ),
@@ -2375,7 +2375,7 @@ class _LoadingPanelState extends State<_LoadingPanel>
                     child: TweenAnimationBuilder<double>(
                       duration: const Duration(milliseconds: 200),
                       tween: Tween(begin: 0, end: widget.progress),
-                      builder: (_, v, __) => LinearProgressIndicator(
+                      builder: (_, v, child) => LinearProgressIndicator(
                         value: v,
                         minHeight: 8,
                         backgroundColor: Colors.transparent,
@@ -2912,8 +2912,7 @@ class _ProgressTicker {
     required this.onTick,
     required this.onComplete,
     this.totalMs = 4500,
-    this.tickMs = 60,
-  });
+  }) : tickMs = 60;
   final ValueChanged<double> onTick;
   final VoidCallback onComplete;
   final int totalMs;
@@ -2931,5 +2930,10 @@ class _ProgressTicker {
         onComplete();
       }
     });
+  }
+
+  void cancel() {
+    _timer?.cancel();
+    _timer = null;
   }
 }

@@ -64,7 +64,10 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
                 sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(title: l.t('home_recent_activity')),
+                  child: _SectionHeader(
+                    title: l.t('home_recent_activity'),
+                    trailing: l.t('home_view_all'),
+                  ),
                 ),
               ),
               SliverPadding(
@@ -304,16 +307,43 @@ class _FeaturedInvestigation extends StatelessWidget {
   Widget build(BuildContext context) {
     // Purple is the primary accent for this card.
     const purple = Color(0xFF8B5CF6);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header: star icon + "قضية اليوم" label
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 8),
+          child: Row(
+            children: [
+              
+              
+              Text(
+                l.t('home_featured_today'),
+                style: TextStyle(
+                  color: purple,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.star_outline,
+                color: purple,
+                size: 20,
+              ),
+            ],
+          ),
         ),
-        border: Border.all(color: purple.withValues(alpha: 0.40), width: 1),
-      ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+            ),
+            border: Border.all(color: purple.withValues(alpha: 0.40), width: 1),
+          ),
       child: Padding(
         padding: EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
         child: IntrinsicHeight(
@@ -482,6 +512,8 @@ class _FeaturedInvestigation extends StatelessWidget {
           ),
         ),
       ),
+        ),
+      ],
     );
   }
 }
@@ -1025,6 +1057,42 @@ class _QuickActionsGrid extends StatelessWidget {
         showDot: true,
         dotColor: const Color(0xFFEF4444),
       ),
+      _QuickAction(
+        title: l.t('home_quick_title_iphone'),
+        progress: 0.92,
+        progressColor: const Color(0xFF22C55E),
+        status: l.t('home_monitored'),
+        statusColor: const Color(0xFF22C55E),
+        imagePath: 'assets/images/parfum.jpeg',
+        showDot: true,
+        dotColor: const Color(0xFF22C55E),
+      ),
+      _QuickAction(
+        title: l.t('home_quick_title_adidas'),
+        progress: 0.88,
+        progressColor: const Color(0xFF3B82F6),
+        status: l.t('home_monitored'),
+        statusColor: const Color(0xFF3B82F6),
+        imagePath: 'assets/images/borge.jpeg',
+      ),
+      _QuickAction(
+        title: l.t('home_quick_title_tiktok'),
+        progress: 0.65,
+        progressColor: const Color(0xFFF59E0B),
+        status: l.t('home_quick_analyzing'),
+        statusColor: const Color(0xFFF59E0B),
+        imagePath: 'assets/images/winner.jpeg',
+      ),
+      _QuickAction(
+        title: l.t('home_quick_title_lattafa'),
+        progress: 0.45,
+        progressColor: const Color(0xFFEF4444),
+        status: l.t('home_quick_new_updates'),
+        statusColor: const Color(0xFFEF4444),
+        imagePath: 'assets/images/lattafa.jpeg',
+        showDot: true,
+        dotColor: const Color(0xFFEF4444),
+      ),
     ];
     return SizedBox(
       height: 170,
@@ -1196,41 +1264,55 @@ class _RecentUpdatesList extends StatelessWidget {
     final items = <_UpdateItem>[
       _UpdateItem(
         title: l.t('home_update_perfume'),
-        subtitle: l.t('home_update_perfume_h'),
+        price: l.t('home_update_perfume_h'),
+        views: l.t('home_update_perfume_views'),
+        status: l.t('home_update_perfume_status'),
+        time: l.t('home_update_perfume_time'),
         score: l.t('home_update_perfume_score'),
-        scoreColor: Color(0xFF22C55E),
+        scoreColor: const Color(0xFF22C55E),
+        dotColor: const Color(0xFF22C55E),
         imagePath: 'assets/images/parfum.jpeg',
       ),
       _UpdateItem(
         title: l.t('home_update_campaign'),
-        subtitle: l.t('home_update_campaign_h'),
+        price: l.t('home_update_campaign_h'),
+        views: l.t('home_update_campaign_views'),
+        status: l.t('home_update_campaign_status'),
+        time: l.t('home_update_campaign_time'),
         score: l.t('home_update_campaign_score'),
-        scoreColor: KashfColors.gold,
+        scoreColor: const Color(0xFF3B82F6),
+        dotColor: const Color(0xFF3B82F6),
         imagePath: 'assets/images/borge.jpeg',
       ),
       _UpdateItem(
         title: l.t('home_update_market'),
-        subtitle: l.t('home_update_market_h'),
+        price: l.t('home_update_market_h'),
+        views: l.t('home_update_market_views'),
+        status: l.t('home_update_market_status'),
+        time: l.t('home_update_market_time'),
         score: l.t('home_update_market_score'),
-        scoreColor: Color(0xFFEF4444),
+        scoreColor: const Color(0xFFF59E0B),
+        dotColor: const Color(0xFFF59E0B),
         imagePath: 'assets/images/sauvage.jpeg',
       ),
       _UpdateItem(
         title: l.t('home_update_yasmine'),
-        subtitle: l.t('home_update_yasmine_h'),
+        price: l.t('home_update_yasmine_h'),
+        views: l.t('home_update_yasmine_views'),
+        status: l.t('home_update_yasmine_status'),
+        time: l.t('home_update_yasmine_time'),
         score: l.t('home_update_yasmine_score'),
-        scoreColor: KashfColors.gold,
-        imagePath: 'assets/images/winner.jpeg',
+        scoreColor: const Color(0xFFEF4444),
+        dotColor: const Color(0xFFEF4444),
+        imagePath: 'assets/images/lattafa.jpeg',
       ),
     ];
-    return SizedBox(
-      height: 165,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        separatorBuilder: (_, _) => SizedBox(width: 8),
-        itemBuilder: (_, i) => _UpdateCard(item: items[i]),
-      ),
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _UpdateCard(item: items[i]),
     );
   }
 }
@@ -1238,15 +1320,23 @@ class _RecentUpdatesList extends StatelessWidget {
 class _UpdateItem {
   const _UpdateItem({
     required this.title,
-    required this.subtitle,
+    required this.price,
+    required this.views,
+    required this.status,
+    required this.time,
     required this.score,
     required this.scoreColor,
+    required this.dotColor,
     required this.imagePath,
   });
   final String title;
-  final String subtitle;
+  final String price;
+  final String views;
+  final String status;
+  final String time;
   final String score;
   final Color scoreColor;
+  final Color dotColor;
   final String imagePath;
 }
 
@@ -1257,22 +1347,120 @@ class _UpdateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: KashfPalette.active.cardBorder),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Far left: 3-dot menu
+            const Icon(
+              Icons.more_vert,
+              color: Color(0xFF6B7280),
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            // Right column: percentage (top), time (bottom)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${item.score}%',
+                  style: TextStyle(
+                    color: item.scoreColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.time,
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            // Middle of the row: status text + colored dot
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.status,
+                  style: TextStyle(
+                    color: item.scoreColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: item.dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            // Title column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      color: KashfPalette.active.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        item.price,
+                        style: TextStyle(
+                          color: KashfPalette.active.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        item.views,
+                        style: TextStyle(
+                          color: KashfPalette.active.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(width: 12),
+            // Far right (in LTR) / Far left (in RTL): thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
               child: Container(
-                width: double.infinity,
+                width: 64,
+                height: 64,
                 color: const Color(0xFF2D2418),
                 child: Image.asset(
                   item.imagePath,
@@ -1289,64 +1477,8 @@ class _UpdateCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(8, 6, 8, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.title,
-                  textAlign: TextAlign.left,
-                  style: TextStyle(
-                    color: KashfPalette.active.textPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 3),
-                Text(
-                  item.subtitle,
-                  textAlign: TextAlign.left,
-                  style: TextStyle(
-                    color: KashfPalette.active.textSecondary,
-                    fontSize: 9,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 5),
-                Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: item.scoreColor.withValues(alpha: 0.6),
-                          width: 1.6,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        item.score,
-                        style: TextStyle(
-                          color: item.scoreColor,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
