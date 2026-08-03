@@ -453,7 +453,7 @@ class _TopBar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
       child: Image.asset(
-        'assets/images/logoprofile.jpeg',
+        'assets/images/logoprofile.jpg',
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) =>
             Icon(Icons.person, color: KashfColors.gold, size: 20),

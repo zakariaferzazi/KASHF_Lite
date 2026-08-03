@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../theme.dart';
+import '../market/market_screen.dart';
+import '../files/files_screen.dart';
+import '../files/latest_investigations_screen.dart';
 
 /// KASHF Lite dashboard. The entry point after sign-in. Layout mirrors
 /// the marketing reference: greeting + user avatar, search bar with
@@ -44,7 +47,13 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
                 sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(title: l.t('home_market_pulse')),
+                  child: _SectionHeader(
+                    title: l.t('home_market_pulse'),
+                    trailing: l.t('home_view_all'),
+                    onTrailingTap: () => Navigator.of(context).push(
+                      kashfRoute(const MarketScreen()),
+                    ),
+                  ),
                 ),
               ),
               SliverPadding(
@@ -54,7 +63,13 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
                 sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(title: l.t('home_quick_actions')),
+                  child: _SectionHeader(
+                    title: l.t('home_quick_actions'),
+                    trailing: l.t('home_view_all'),
+                    onTrailingTap: () => Navigator.of(context).push(
+                      kashfRoute(const FilesScreen()),
+                    ),
+                  ),
                 ),
               ),
               SliverPadding(
@@ -67,6 +82,9 @@ class HomeScreen extends StatelessWidget {
                   child: _SectionHeader(
                     title: l.t('home_recent_activity'),
                     trailing: l.t('home_view_all'),
+                    onTrailingTap: () => Navigator.of(context).push(
+                      kashfRoute(const LatestInvestigationsScreen()),
+                    ),
                   ),
                 ),
               ),
@@ -111,7 +129,7 @@ class _TopBar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
       child: Image.asset(
-        'assets/images/logoprofile.jpeg',
+        'assets/images/logoprofile.jpg',
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) =>
             Icon(Icons.person, color: KashfColors.gold, size: 18),
@@ -310,13 +328,12 @@ class _FeaturedInvestigation extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header: star icon + "قضية اليوم" label
+        // Header: star icon + "Ù‚Ø¶ÙŠØ© Ø§Ù„ÙŠÙˆÙ…" label
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 8),
           child: Row(
             children: [
-              
-              
+          
               Text(
                 l.t('home_featured_today'),
                 style: TextStyle(
@@ -356,7 +373,7 @@ class _FeaturedInvestigation extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title — white, bold.
+                    // Title â€” white, bold.
                     Text(
                       l.t('home_featured_title'),
                       textAlign: TextAlign.start,
@@ -370,7 +387,7 @@ class _FeaturedInvestigation extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 6),
-                    // Subtitle — lighter gray, plain text (no icon).
+                    // Subtitle â€” lighter gray, plain text (no icon).
                     Text(
                       l.t('home_featured_subtitle'),
                       style: TextStyle(
@@ -534,7 +551,7 @@ class _FeaturedStat extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Small number — purple accent.
+        // Small number â€” purple accent.
         Text(
           value,
           style: TextStyle(
@@ -545,7 +562,7 @@ class _FeaturedStat extends StatelessWidget {
           ),
         ),
         SizedBox(height: 1),
-        // Unit label — purple accent. FittedBox guarantees it shrinks
+        // Unit label â€” purple accent. FittedBox guarantees it shrinks
         // instead of overflowing when the string is long.
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -566,70 +583,16 @@ class _FeaturedStat extends StatelessWidget {
   }
 }
 
-class _ChipAction extends StatelessWidget {
-  const _ChipAction({
-    required this.icon,
-    required this.label,
-    this.primary = false,
-  });
-  final IconData icon;
-  final String label;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: primary
-            ? KashfColors.gold.withValues(alpha: 0.18)
-            : KashfPalette.active.fieldFill,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: primary ? KashfColors.gold : KashfPalette.active.fieldBorder,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: primary
-                ? KashfColors.gold
-                : KashfPalette.active.textSecondary,
-            size: 12,
-          ),
-          SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: primary
-                    ? KashfColors.gold
-                    : KashfPalette.active.textPrimary,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ============================ Section Header ============================
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
     this.trailing,
-    this.onTrailing,
+    this.onTrailingTap,
   });
   final String title;
   final String? trailing;
-  final VoidCallback? onTrailing;
+  final VoidCallback? onTrailingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -647,7 +610,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         if (trailing != null)
           GestureDetector(
-            onTap: onTrailing,
+            onTap: onTrailingTap,
             child: Text(
               trailing!,
               style: TextStyle(
@@ -880,7 +843,7 @@ class _PulseMetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top: small label (الأكثر صعودًا, etc.).
+          // Top: small label (Ø§Ù„Ø£ÙƒØ«Ø± ØµØ¹ÙˆØ¯Ù‹Ø§, etc.).
           Text(
             data.label,
             textAlign: TextAlign.center,
@@ -909,7 +872,7 @@ class _PulseMetricCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 3),
-          // Subtitle (العطور, 328K منشور, etc.).
+          // Subtitle (Ø§Ù„Ø¹Ø·ÙˆØ±, 328K Ù…Ù†Ø´ÙˆØ±, etc.).
           Text(
             data.sub,
             textAlign: TextAlign.center,
@@ -988,7 +951,7 @@ class _SparklinePainter extends CustomPainter {
 /// Pre-baked wave shapes that look like the screenshot. All values are
 /// normalized to 0..1 (vertical range used by the painter). Each card
 /// uses a different irregular pattern with varying amplitudes so the
-/// trend lines look natural — small and zig-zaggy.
+/// trend lines look natural â€” small and zig-zaggy.
 const List<double> _kSparkUp = [
   0.52, 0.38, 0.61, 0.46, 0.55, 0.40, 0.66, 0.50, 0.58, 0.80,
   0.72, 0.55, 0.2, 0.99, 0.68, 0.53, 0.74,
