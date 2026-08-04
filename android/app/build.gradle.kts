@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
@@ -7,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.kashf_lite"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "30.0.15729638"
+     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
         applicationId = "com.example.kashf_lite"
@@ -24,8 +25,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildTypes {
@@ -36,7 +37,9 @@ android {
 }
 
 kotlin {
-    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 flutter {

@@ -922,14 +922,11 @@ class AppLocalizations {
       'inv_action_compare_sub':
           'Compare two entities side by side or in detail',
       'inv_action_monitor': 'Monitor',
-      'inv_action_monitor_sub':
-          'Track an entity, brand, or product or another',
+      'inv_action_monitor_sub': 'Track an entity, brand, or product or another',
       'inv_action_listen': 'Listen',
-      'inv_action_listen_sub':
-          'Listen, analyze and document audio or video',
+      'inv_action_listen_sub': 'Listen, analyze and document audio or video',
       'inv_action_match': 'Identity match',
-      'inv_action_match_sub':
-          'Search in the engines or face database',
+      'inv_action_match_sub': 'Search in the engines or face database',
       'inv_action_campaign': 'Campaign analysis',
       'inv_action_campaign_sub':
           'Analyze a current or past campaign or competitor',
@@ -940,6 +937,7 @@ class AppLocalizations {
       'app_title_lite_badge': 'Lite',
       'so_user_name': 'مراجعة نور',
       'so_user_name_en': 'Noor Audit',
+      'so_page_title': 'نظرة عامة على النظام',
       'so_kpis_title': 'مؤشرات سريعة',
       'so_kpis_title_en': 'Quick indicators',
       'so_kpi1_value': '92%',
@@ -998,10 +996,22 @@ class AppLocalizations {
       'so_action2': 'تصدير البيانات',
       'so_action3': 'تنبيهات',
       'so_action4': 'حذف جميع البيانات',
+      // نظرة عامة على التوقعات والنشاط
+      'so_analytics_title': 'نظرة عامة على التوقعات',
+      'so_analytics_subtitle': 'آخر 30 يوم',
+      'so_analytics_total_label': 'متوسط التوقعات',
+      'so_analytics_period': 'منخفضة الموثوقية',
+      'so_analytics_high': 'عالية',
+      'so_analytics_med': 'متوسطة',
+      'so_analytics_low': 'منخفضة',
+      'so_activity_title': 'نشاط المصادر',
+      'so_activity_subtitle': 'آخر 7 أيام',
+      'so_activity_value': '78',
+      'so_activity_sub': 'مصدر نشط',
+      'so_activity_day_short': 'س',
       // Settings → System Overview entry
       'settings_system_overview': 'System Overview',
-      'settings_system_overview_sub':
-          'KPI dashboard, studio and quick actions',
+      'settings_system_overview_sub': 'KPI dashboard, studio and quick actions',
       'settings_system_overview_ar': 'نظرة عامة على النظام',
       'settings_system_overview_sub_ar':
           'لوحة مؤشرات، استوديو المحتوى وإجراءات سريعة',
@@ -1758,8 +1768,7 @@ class AppLocalizations {
       'inv_section_smart': 'البحث الذكي',
       'inv_section_smart_sub':
           'ابحث عن أي شيء يثير اهتمامك لبدء التحقيق تلقائيًا',
-      'inv_search_hint':
-          'ابحث عن شركة أو منتج أو مؤثر أو أي سؤال…',
+      'inv_search_hint': 'ابحث عن شركة أو منتج أو مؤثر أو أي سؤال…',
       'inv_quick_label': 'أسئلة سريعة',
       'inv_q1': 'هل Nike له نشاط في الكويت؟',
       'inv_q2': 'ما هو آخر إعلان لـ Dior؟',
@@ -1767,8 +1776,7 @@ class AppLocalizations {
       'inv_q4': 'من هم أبرز المؤثرين العرب في السعودية؟',
       'inv_cta_start': 'ابدأ التحقيق',
       'inv_section_upload': 'أو ابدأ برفع الأدلة',
-      'inv_section_upload_sub':
-          'أضف ملفات بأنواعها ومصادرها لدعم التحقيق',
+      'inv_section_upload_sub': 'أضف ملفات بأنواعها ومصادرها لدعم التحقيق',
       'inv_type_file': 'ملف',
       'inv_type_file_sub': 'DOC, XLS, CSV',
       'inv_type_ad': 'إعلان',
@@ -1783,8 +1791,7 @@ class AppLocalizations {
       'inv_type_link_sub': 'URL',
       'inv_drop_hint': 'اسحب الملفات هنا أو انقر للرفع',
       'inv_section_actions': 'الإجراءات السريعة',
-      'inv_section_actions_sub':
-          'اختر إجراءً سريعًا للبدء في تحقيقك',
+      'inv_section_actions_sub': 'اختر إجراءً سريعًا للبدء في تحقيقك',
       'inv_action_compare': 'مقارنة',
       'inv_action_compare_sub': 'قارن بين كيانين أو بالتفصيل',
       'inv_action_monitor': 'مراقبة',
@@ -1796,12 +1803,12 @@ class AppLocalizations {
       'inv_action_campaign': 'تحليل حملة',
       'inv_action_campaign_sub': 'حلل حملة جارية أو سابقة أو منافسًا',
       'inv_action_influencer': 'تحليل مؤثر',
-      'inv_action_influencer_sub':
-          'حلل حسابات المؤثرين أو محتواهم',
+      'inv_action_influencer_sub': 'حلل حسابات المؤثرين أو محتواهم',
       // ---------- شاشة نظرة عامة على النظام ----------
       'app_title_lite_badge': 'Lite',
       'so_user_name': 'مراجعة نور',
       'so_user_name_en': 'Noor Audit',
+      'so_page_title': 'نظرة عامة على النظام',
       'so_kpis_title': 'مؤشرات سريعة',
       'so_kpis_title_en': 'Quick indicators',
       'so_kpi1_value': '92%',
@@ -1860,6 +1867,19 @@ class AppLocalizations {
       'so_action2': 'تصدير البيانات',
       'so_action3': 'تنبيهات',
       'so_action4': 'حذف جميع البيانات',
+      // نظرة عامة على التوقعات والنشاط
+      'so_analytics_title': 'نظرة عامة على التوقعات',
+      'so_analytics_subtitle': 'آخر 30 يوم',
+      'so_analytics_total_label': 'متوسط التوقعات',
+      'so_analytics_period': 'منخفضة الموثوقية',
+      'so_analytics_high': 'عالية',
+      'so_analytics_med': 'متوسطة',
+      'so_analytics_low': 'منخفضة',
+      'so_activity_title': 'نشاط المصادر',
+      'so_activity_subtitle': 'آخر 7 أيام',
+      'so_activity_value': '78',
+      'so_activity_sub': 'مصدر نشط',
+      'so_activity_day_short': 'س',
       // Settings → System Overview entry
       'settings_system_overview': 'نظرة عامة على النظام',
       'settings_system_overview_sub':
