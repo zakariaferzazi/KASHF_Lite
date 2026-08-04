@@ -8,9 +8,9 @@ import '../files/latest_investigations_screen.dart';
 import 'today_case_screen.dart';
 
 /// KASHF Lite dashboard. The entry point after sign-in. Layout mirrors
-/// the marketing reference: greeting + user avatar, search bar with
-/// shortcuts, featured investigation card, weekly market pulse, 6
-/// quick actions in a 2-column grid, and recent updates carousel.
+/// the marketing reference: greeting + user avatar, featured investigation
+/// card, weekly market pulse, 6 quick actions in a 2-column grid, and
+/// recent updates carousel.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -34,12 +34,6 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
                 sliver: SliverToBoxAdapter(child: _Greeting(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(
-                  child: _SearchBar(hint: l.t('home_search_hint')),
-                ),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
@@ -204,7 +198,7 @@ class _NotificationBell extends StatelessWidget {
 }
 
 // ============================ Greeting ============================
-// Compact greeting line shown between the top bar and the search bar:
+// Compact greeting line shown between the top bar and the featured card:
 // "Good morning, Noor" + a softer "Welcome to KASHF Lite" subtitle.
 class _Greeting extends StatelessWidget {
   const _Greeting({required this.l});
@@ -248,62 +242,6 @@ class _Greeting extends StatelessWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================ Search Bar ============================
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.hint});
-  final String hint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 32,
-      padding: EdgeInsetsDirectional.fromSTEB(6, 0, 10, 0),
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Row(
-        children: [
-          // Children listed in LTR order so Directionality mirrors them.
-          // LTR: [search] hint [filter]
-          // RTL: [filter] hint [search]
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {},
-              icon: Icon(
-                Icons.tune,
-                color: KashfPalette.active.textSecondary,
-                size: 16,
-              ),
-            ),
-          ),
-          SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              hint,
-              style: TextStyle(
-                color: KashfPalette.active.textSecondary,
-                fontSize: 12,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Icon(
-            Icons.search,
-            color: KashfPalette.active.textSecondary,
-            size: 16,
           ),
         ],
       ),
@@ -370,7 +308,7 @@ class _FeaturedInvestigation extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title â€” white, bold.
+                          // Title â€" white, bold.
                           Text(
                             l.t('home_featured_title'),
                             textAlign: TextAlign.start,
@@ -384,7 +322,7 @@ class _FeaturedInvestigation extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 6),
-                          // Subtitle â€” lighter gray, plain text (no icon).
+                          // Subtitle â€" lighter gray, plain text (no icon).
                           Text(
                             l.t('home_featured_subtitle'),
                             style: TextStyle(
@@ -550,7 +488,7 @@ class _FeaturedStat extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Small number â€” purple accent.
+        // Small number â€" purple accent.
         Text(
           value,
           style: TextStyle(
@@ -561,7 +499,7 @@ class _FeaturedStat extends StatelessWidget {
           ),
         ),
         SizedBox(height: 1),
-        // Unit label â€” purple accent. FittedBox guarantees it shrinks
+        // Unit label â€" purple accent. FittedBox guarantees it shrinks
         // instead of overflowing when the string is long.
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -940,7 +878,7 @@ class _SparklinePainter extends CustomPainter {
 /// Pre-baked wave shapes that look like the screenshot. All values are
 /// normalized to 0..1 (vertical range used by the painter). Each card
 /// uses a different irregular pattern with varying amplitudes so the
-/// trend lines look natural â€” small and zig-zaggy.
+/// trend lines look natural â€" small and zig-zaggy.
 const List<double> _kSparkUp = [
   0.52,
   0.38,

@@ -4,6 +4,7 @@ import '../../l10n/app_strings.dart';
 import '../../theme.dart';
 import '../explore/explore_screen.dart';
 import '../home/home_screen.dart';
+import '../investigation/investigation_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -29,16 +30,6 @@ class _HomeShellState extends State<HomeShell> {
     ReportsScreen(),
     SettingsScreen(),
   ];
-
-  void _openCreate(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).t('home_fab_new')),
-        backgroundColor: KashfColors.gold,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,12 +90,15 @@ class _HomeShellState extends State<HomeShell> {
                 ),
               ),
               // Centered gold "+" floating action button — opens the
-              // Explore screen so users can jump straight to the AI
-              // Market Intelligence workspace.
+              // "New Investigation" workspace so users can start a new
+              // AI-powered investigation with smart search, evidence
+              // upload, and quick actions.
               Positioned(
                 top: -14,
                 child: GestureDetector(
-                  onTap: () => setState(() => _index = 1),
+                  onTap: () => Navigator.of(context).push(
+                    kashfRoute(const InvestigationScreen()),
+                  ),
                   child: Container(
                     width: 60,
                     height: 60,

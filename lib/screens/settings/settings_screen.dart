@@ -6,6 +6,8 @@ import '../../l10n/locale_controller.dart';
 import '../../l10n/locale_scope.dart';
 import '../../l10n/theme_controller.dart';
 import '../../l10n/theme_scope.dart';
+import '../../theme.dart';
+import '../system_overview/system_overview_screen.dart';
 
 /// Settings screen replicated exactly from the reference image.
 /// All colors, spacing, typography, and icons match the design spec.
@@ -320,6 +322,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
+          _buildTile(
+            icon: Icons.dashboard_customize_outlined,
+            iconColor: Color(0xFFD4A33A),
+            title: l.t('settings_system_overview'),
+            subtitle: l.t('settings_system_overview_sub'),
+            onTap: () => Navigator.of(context).push(
+              kashfRoute(const SystemOverviewScreen()),
+            ),
+          ),
+          _buildDivider(),
           _buildTile(
             icon: Icons.dark_mode_outlined,
             iconColor: Color(0xFFD4A33A),

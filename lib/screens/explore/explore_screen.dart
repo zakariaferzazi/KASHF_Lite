@@ -34,10 +34,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 6, 20, 14),
-                sliver: SliverToBoxAdapter(child: _SearchField(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 18),
                 sliver: SliverToBoxAdapter(
                   child: _CategoryChipsRow(
                     selected: _selectedCategory,
@@ -169,50 +165,6 @@ class _TopBar extends StatelessWidget {
                 size: 20,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Search field
-// ============================================================================
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.l});
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF15161C),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF262833)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Center(
-              child: Text(
-                l.t('explore_new_search_hint'),
-                style: TextStyle(
-                  color: const Color(0xFF8A8F9C),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 10),
-            child: Icon(Icons.search, color: const Color(0xFF8A8F9C), size: 20),
           ),
         ],
       ),
