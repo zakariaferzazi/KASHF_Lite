@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../models/analysis_history.dart';
-import '../../state/history_store.dart';
 import '../../theme.dart';
 
-/// Reports tab — shows the history of analyses the user ran on the Explore
-/// screen, so they can revisit past investigations without re-running them.
+/// Reports tab — redesigned to match the marketing reference: a header
+/// with title + subtitle, a search field, filter chips, KPI cards, a
+/// "Recent reports" section header with a sort label, and a list of
+/// report cards.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -15,28 +15,109 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Re-render when the shared history list changes (e.g. user saves a new
-    // analysis from the Explore screen while the Reports tab is mounted).
-    HistoryStore.instance.entries.addListener(_onHistoryChanged);
-  }
+  int _filterIndex = 0;
+  final TextEditingController _searchCtrl = TextEditingController();
 
   @override
   void dispose() {
-    HistoryStore.instance.entries.removeListener(_onHistoryChanged);
+    _searchCtrl.dispose();
     super.dispose();
   }
 
-  void _onHistoryChanged() {
-    if (mounted) setState(() {});
-  }
+  static const List<_FilterDef> _filters = [
+    _FilterDef(_FilterKind.all, 'reports_filter_all'),
+    _FilterDef(_FilterKind.favorites, 'reports_filter_favorites'),
+    _FilterDef(_FilterKind.shared, 'reports_filter_shared'),
+    _FilterDef(_FilterKind.archived, 'reports_filter_archived'),
+  ];
+
+  static const List<_KpiDef> _kpis = [
+    _KpiDef(
+      value: '24',
+      labelKey: 'reports_kpi_completed',
+      icon: Icons.check_circle_outline,
+      iconBg: Color(0xFF22C55E),
+      iconFg: Colors.white,
+    ),
+    _KpiDef(
+      value: '8',
+      labelKey: 'reports_kpi_in_progress',
+      icon: Icons.access_time,
+      iconBg: Color(0xFF3B82F6),
+      iconFg: Colors.white,
+    ),
+    _KpiDef(
+      value: '56',
+      labelKey: 'reports_kpi_total',
+      icon: Icons.description_outlined,
+      iconBg: Color(0xFFF59E0B),
+      iconFg: Colors.white,
+    ),
+    _KpiDef(
+      value: '12',
+      labelKey: 'reports_kpi_review',
+      icon: Icons.refresh,
+      iconBg: Color(0xFF8B5CF6),
+      iconFg: Colors.white,
+    ),
+  ];
+
+  static const List<_ReportItem> _items = [
+    _ReportItem(
+      titleKey: 'reports_item1_title',
+      sectorKey: 'reports_sector_perfume',
+      timeKey: 'reports_item1_time',
+      statusKey: 'reports_status_completed',
+      statusColor: _StatusColor.completed,
+      bookmarked: false,
+      image: 'assets/images/sauvage.jpeg',
+      fallbackIcon: Icons.image_outlined,
+    ),
+    _ReportItem(
+      titleKey: 'reports_item2_title',
+      sectorKey: 'reports_sector_perfume',
+      timeKey: 'reports_item2_time',
+      statusKey: 'reports_status_completed',
+      statusColor: _StatusColor.completed,
+      bookmarked: false,
+      image: 'assets/images/parfum.jpeg',
+      fallbackIcon: Icons.image_outlined,
+    ),
+    _ReportItem(
+      titleKey: 'reports_item3_title',
+      sectorKey: 'reports_sector_perfume',
+      timeKey: 'reports_item3_time',
+      statusKey: 'reports_status_review',
+      statusColor: _StatusColor.review,
+      bookmarked: true,
+      image: 'assets/images/winner.jpeg',
+      fallbackIcon: Icons.image_outlined,
+    ),
+    _ReportItem(
+      titleKey: 'reports_item4_title',
+      sectorKey: 'reports_sector_social',
+      timeKey: 'reports_item4_time',
+      statusKey: 'reports_status_completed',
+      statusColor: _StatusColor.completed,
+      bookmarked: false,
+      image: 'assets/images/lattafa.jpeg',
+      fallbackIcon: Icons.image_outlined,
+    ),
+    _ReportItem(
+      titleKey: 'reports_item5_title',
+      sectorKey: 'reports_sector_social',
+      timeKey: 'reports_item5_time',
+      statusKey: 'reports_status_review',
+      statusColor: _StatusColor.review,
+      bookmarked: true,
+      image: 'assets/images/borge.jpeg',
+      fallbackIcon: Icons.image_outlined,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final entries = HistoryStore.instance.entries.value;
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -46,28 +127,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-                sliver: SliverToBoxAdapter(child: _Header(l: l)),
+                padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _Header(l: l, onFilter: () {}),
+                ),
               ),
               SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-                sliver: SliverToBoxAdapter(child: _HistoryHint(l: l)),
-              ),
-              if (entries.isEmpty)
-                SliverPadding(
-                  padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-                  sliver: SliverToBoxAdapter(child: _EmptyHistory(l: l)),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 32),
-                  sliver: SliverList.separated(
-                    itemCount: entries.length,
-                    separatorBuilder: (_, _) => SizedBox(height: 10),
-                    itemBuilder: (context, i) =>
-                        _HistoryCard(entry: entries[i]),
+                padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _SearchField(
+                    controller: _searchCtrl,
+                    hint: l.t('reports_search_hint'),
                   ),
                 ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _FilterChipsRow(
+                    filters: _filters,
+                    selectedIndex: _filterIndex,
+                    onSelect: (i) => setState(() => _filterIndex = i),
+                    l: l,
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 18, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _KpiRow(kpis: _kpis, l: l),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 22, 20, 6),
+                sliver: SliverToBoxAdapter(
+                  child: _RecentHeader(l: l, onSort: () {}),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+                sliver: SliverList.separated(
+                  itemCount: _items.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, i) =>
+                      _ReportCard(item: _items[i], l: l),
+                ),
+              ),
             ],
           ),
         ),
@@ -76,152 +181,128 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 }
 
+// =====================================================================
+// Header
+// =====================================================================
+
 class _Header extends StatelessWidget {
-  const _Header({required this.l});
+  const _Header({required this.l, required this.onFilter});
   final AppLocalizations l;
+  final VoidCallback onFilter;
 
   @override
   Widget build(BuildContext context) {
-    final logo = KashfLogo(width: 56);
-    final avatar = Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: KashfColors.gold.withValues(alpha: 0.18),
-        border: Border.all(color: KashfColors.gold, width: 1.4),
-      ),
-      clipBehavior: Clip.antiAlias,
-      alignment: Alignment.center,
-      child: Image.asset(
-        'assets/images/logoprofile.jpg',
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) =>
-            Icon(Icons.person, color: KashfColors.gold, size: 22),
-      ),
-    );
-    final titleBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final textPrimary = KashfPalette.active.textPrimary;
+    final textSecondary = KashfPalette.active.textSecondary;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      textDirection: TextDirection.ltr,
       children: [
-        Text(
-          l.t('reports_title'),
-          style: TextStyle(
-            color: KashfPalette.active.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          l.t('reports_subtitle'),
-          style: TextStyle(
-            color: KashfPalette.active.textSecondary,
-            fontSize: 12,
+        _FilterIconButton(onTap: onFilter),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.t('reports_title'),
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l.t('reports_subtitle'),
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
-    return Padding(
-      padding: EdgeInsetsDirectional.only(bottom: 8),
-      child: Row(
-        children: l.isRtl
-            ? [
-                logo,
-                SizedBox(width: 10),
-                Expanded(child: titleBlock),
-                SizedBox(width: 8),
-                avatar,
-              ]
-            : [
-                avatar,
-                SizedBox(width: 10),
-                Expanded(child: titleBlock),
-                SizedBox(width: 8),
-                logo,
-              ],
-      ),
-    );
   }
 }
 
-class _HistoryHint extends StatelessWidget {
-  const _HistoryHint({required this.l});
-  final AppLocalizations l;
+class _FilterIconButton extends StatelessWidget {
+  const _FilterIconButton({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isEmpty = HistoryStore.instance.entries.value.isEmpty;
-    return Container(
-      padding: EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: KashfColors.gold.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: KashfColors.gold.withValues(alpha: 0.30)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.history, color: KashfColors.gold, size: 16),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isEmpty
-                  ? (l.isRtl
-                      ? 'لم تحفظ أي تحليل بعد. شغّل تحليلًا في صفحة الاستكشاف ثم اضغط «حفظ في المساحة».'
-                      : 'No saved analyses yet. Run an analysis on the Explore screen, then tap "Save to workspace".')
-                  : (l.isRtl
-                      ? 'هذه نتائج كشوفاتك السابقة. اضغط على أي عنصر لإعادة فتح نتائجه.'
-                      : 'Your past analyses. Tap any entry to revisit its results.'),
-              style: TextStyle(
-                color: KashfPalette.active.textPrimary,
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: KashfPalette.active.background,
+            border: Border.all(color: KashfColors.gold, width: 1.2),
           ),
-        ],
+          alignment: Alignment.center,
+          child: Icon(Icons.tune, size: 20, color: KashfColors.gold),
+        ),
       ),
     );
   }
 }
 
-class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({required this.l});
-  final AppLocalizations l;
+// =====================================================================
+// Search
+// =====================================================================
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.hint});
+  final TextEditingController controller;
+  final String hint;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20),
+      height: 48,
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: KashfPalette.active.cardBorder),
       ),
-      child: Column(
+      padding: EdgeInsetsDirectional.fromSTEB(14, 0, 14, 0),
+      child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           Icon(
-            Icons.history_toggle_off,
+            Icons.search,
+            size: 20,
             color: KashfPalette.active.textSecondary,
-            size: 36,
           ),
-          SizedBox(height: 8),
-          Text(
-            l.isRtl ? 'لا توجد كشوفات محفوظة' : 'No saved analyses',
-            style: TextStyle(
-              color: KashfPalette.active.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            l.isRtl
-                ? 'احفظ نتائج أي تحليل من صفحة الاستكشاف لتظهر هنا.'
-                : 'Save any analysis from the Explore screen to see it here.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 12,
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: KashfPalette.active.textPrimary,
+                fontSize: 13,
+              ),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: TextStyle(
+                  color: KashfPalette.active.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -230,136 +311,473 @@ class _EmptyHistory extends StatelessWidget {
   }
 }
 
-class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({required this.entry});
-  final AnalysisHistoryEntry entry;
+// =====================================================================
+// Filter chips
+// =====================================================================
+
+enum _FilterKind { all, favorites, shared, archived }
+
+class _FilterDef {
+  const _FilterDef(this.kind, this.labelKey);
+  final _FilterKind kind;
+  final String labelKey;
+}
+
+class _FilterChipsRow extends StatelessWidget {
+  const _FilterChipsRow({
+    required this.filters,
+    required this.selectedIndex,
+    required this.onSelect,
+    required this.l,
+  });
+
+  final List<_FilterDef> filters;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+  final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      reverse: l.isRtl,
+      child: Row(
+        children: [
+          for (int i = 0; i < filters.length; i++) ...[
+            _FilterChip(
+              label: l.t(filters[i].labelKey),
+              selected: i == selectedIndex,
+              onTap: () => onSelect(i),
+              l: l,
+              icon: _iconFor(filters[i].kind),
+            ),
+            if (i != filters.length - 1) const SizedBox(width: 10),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData? _iconFor(_FilterKind k) {
+    switch (k) {
+      case _FilterKind.all:
+        return Icons.dashboard_customize_outlined;
+      case _FilterKind.favorites:
+        return Icons.star_border;
+      case _FilterKind.shared:
+        return Icons.group_outlined;
+      case _FilterKind.archived:
+        return Icons.calendar_month_outlined;
+    }
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.l,
+    required this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final AppLocalizations l;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? KashfColors.gold : KashfPalette.active.textPrimary;
+    final borderColor = selected
+        ? KashfColors.gold
+        : KashfPalette.active.cardBorder;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          padding: EdgeInsetsDirectional.fromSTEB(14, 0, 14, 0),
+          decoration: BoxDecoration(
+            color: selected
+                ? KashfColors.gold.withValues(alpha: 0.10)
+                : KashfPalette.active.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.2),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: fg),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// KPI row
+// =====================================================================
+
+class _KpiDef {
+  const _KpiDef({
+    required this.value,
+    required this.labelKey,
+    required this.icon,
+    required this.iconBg,
+    required this.iconFg,
+  });
+  final String value;
+  final String labelKey;
+  final IconData icon;
+  final Color iconBg;
+  final Color iconFg;
+}
+
+class _KpiRow extends StatelessWidget {
+  const _KpiRow({required this.kpis, required this.l});
+  final List<_KpiDef> kpis;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (int i = 0; i < kpis.length; i++) ...[
+          Expanded(
+            child: _KpiCard(kpi: kpis[i], l: l),
+          ),
+          if (i != kpis.length - 1) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({required this.kpi, required this.l});
+  final _KpiDef kpi;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final textSecondary = KashfPalette.active.textSecondary;
+
     return Container(
-      padding: EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: KashfPalette.active.cardBorder),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: KashfColors.gold.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(Icons.auto_awesome,
-                    color: KashfColors.gold, size: 18),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: kpi.iconBg.withValues(alpha: 0.20),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(kpi.icon, size: 18, color: kpi.iconBg),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            kpi.value,
+            style: TextStyle(
+              color: KashfPalette.active.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l.t(kpi.labelKey),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: textSecondary, fontSize: 10, height: 1.2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// Recent header
+// =====================================================================
+
+class _RecentHeader extends StatelessWidget {
+  const _RecentHeader({required this.l, required this.onSort});
+  final AppLocalizations l;
+  final VoidCallback onSort;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            l.t('reports_section_recent'),
+            style: TextStyle(
+              color: KashfPalette.active.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onSort,
+            child: Container(
+              height: 34,
+              padding: EdgeInsetsDirectional.fromSTEB(12, 0, 10, 0),
+              decoration: BoxDecoration(
+                color: KashfPalette.active.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: KashfPalette.active.cardBorder),
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.entity.isEmpty
-                          ? (l.isRtl ? 'بدون اسم' : 'Untitled')
-                          : entry.entity,
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l.t('reports_sort_label'),
+                    style: TextStyle(
+                      color: KashfPalette.active.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      entry.summary,
-                      style: TextStyle(
-                        color: KashfPalette.active.textSecondary,
-                        fontSize: 11,
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.swap_vert,
+                    size: 16,
+                    color: KashfPalette.active.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =====================================================================
+// Report card
+// =====================================================================
+
+enum _StatusColor { completed, review, progress }
+
+class _ReportItem {
+  const _ReportItem({
+    required this.titleKey,
+    required this.sectorKey,
+    required this.timeKey,
+    required this.statusKey,
+    required this.statusColor,
+    required this.bookmarked,
+    required this.image,
+    required this.fallbackIcon,
+  });
+  final String titleKey;
+  final String sectorKey;
+  final String timeKey;
+  final String statusKey;
+  final _StatusColor statusColor;
+  final bool bookmarked;
+  final String image;
+  final IconData fallbackIcon;
+}
+
+class _ReportCard extends StatelessWidget {
+  const _ReportCard({required this.item, required this.l});
+  final _ReportItem item;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = KashfPalette.active.textPrimary;
+    final textSecondary = KashfPalette.active.textSecondary;
+
+    final (statusBg, statusFg) = _statusColors(item.statusColor);
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KashfPalette.active.cardBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.ltr,
+        children: [
+          // Vertical icon column on the left
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                item.bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                size: 18,
+                color: item.bookmarked ? KashfColors.gold : textSecondary,
+              ),
+              const SizedBox(height: 10),
+              Icon(Icons.more_vert, size: 14, color: textSecondary),
+            ],
+          ),
+          const SizedBox(width: 12),
+          // Content (title + meta)
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.t(item.titleKey),
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: KashfColors.gold,
+                        shape: BoxShape.circle,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        l.t(item.sectorKey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Icon(
-                Icons.chevron_left,
-                color: KashfPalette.active.textSecondary,
-                size: 22,
-              ),
-            ],
-          ),
-          if (entry.categoryLabels.isNotEmpty) ...[
-            SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final label in entry.categoryLabels)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: KashfColors.gold.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: KashfColors.gold,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l.t(item.timeKey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: textSecondary, fontSize: 10),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    _StatusPill(
+                      label: l.t(item.statusKey),
+                      bg: statusBg,
+                      fg: statusFg,
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
-          SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.schedule,
-                color: KashfPalette.active.textSecondary,
-                size: 14,
-              ),
-              SizedBox(width: 4),
-              Text(
-                entry.displayDate(l),
-                style: TextStyle(
+          ),
+          const SizedBox(width: 10),
+          // Thumbnail on the right
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: 64,
+              height: 64,
+              color: const Color(0xFF1A1C28),
+              alignment: Alignment.center,
+              child: Image.asset(
+                item.image,
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Icon(
+                  item.fallbackIcon,
+                  size: 26,
                   color: KashfPalette.active.textSecondary,
-                  fontSize: 11,
                 ),
               ),
-              SizedBox(width: 12),
-              Icon(
-                Icons.layers_outlined,
-                color: KashfPalette.active.textSecondary,
-                size: 14,
-              ),
-              SizedBox(width: 4),
-              Text(
-                l.isRtl
-                    ? '${entry.outputsCount} نتائج كشف'
-                    : '${entry.outputsCount} insights',
-                style: TextStyle(
-                  color: KashfPalette.active.textSecondary,
-                  fontSize: 11,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  (Color bg, Color fg) _statusColors(_StatusColor c) {
+    switch (c) {
+      case _StatusColor.completed:
+        return (const Color(0xFF22C55E), Colors.white);
+      case _StatusColor.review:
+        return (const Color(0xFFF59E0B), Colors.white);
+      case _StatusColor.progress:
+        return (const Color(0xFF3B82F6), Colors.white);
+    }
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.bg, required this.fg});
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w700),
       ),
     );
   }

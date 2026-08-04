@@ -5,6 +5,7 @@ import '../../theme.dart';
 import '../market/market_screen.dart';
 import '../files/files_screen.dart';
 import '../files/latest_investigations_screen.dart';
+import 'today_case_screen.dart';
 
 /// KASHF Lite dashboard. The entry point after sign-in. Layout mirrors
 /// the marketing reference: greeting + user avatar, search bar with
@@ -50,9 +51,9 @@ class HomeScreen extends StatelessWidget {
                   child: _SectionHeader(
                     title: l.t('home_market_pulse'),
                     trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(context).push(
-                      kashfRoute(const MarketScreen()),
-                    ),
+                    onTrailingTap: () => Navigator.of(
+                      context,
+                    ).push(kashfRoute(const MarketScreen())),
                   ),
                 ),
               ),
@@ -66,9 +67,9 @@ class HomeScreen extends StatelessWidget {
                   child: _SectionHeader(
                     title: l.t('home_quick_actions'),
                     trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(context).push(
-                      kashfRoute(const FilesScreen()),
-                    ),
+                    onTrailingTap: () => Navigator.of(
+                      context,
+                    ).push(kashfRoute(const FilesScreen())),
                   ),
                 ),
               ),
@@ -82,9 +83,9 @@ class HomeScreen extends StatelessWidget {
                   child: _SectionHeader(
                     title: l.t('home_recent_activity'),
                     trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(context).push(
-                      kashfRoute(const LatestInvestigationsScreen()),
-                    ),
+                    onTrailingTap: () => Navigator.of(
+                      context,
+                    ).push(kashfRoute(const LatestInvestigationsScreen())),
                   ),
                 ),
               ),
@@ -141,13 +142,7 @@ class _TopBar extends StatelessWidget {
     //   LTR: [avatar] [bell] ... [logo]
     //   RTL: [logo]  ... [bell] [avatar]
     return Row(
-      children: [
-        avatar,
-        SizedBox(width: 8),
-        bell,
-        Spacer(),
-        logoMark,
-      ],
+      children: [avatar, SizedBox(width: 8), bell, Spacer(), logoMark],
     );
   }
 }
@@ -325,212 +320,216 @@ class _FeaturedInvestigation extends StatelessWidget {
   Widget build(BuildContext context) {
     // Purple is the primary accent for this card.
     const purple = Color(0xFF8B5CF6);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header: star icon + "Ù‚Ø¶ÙŠØ© Ø§Ù„ÙŠÙˆÙ…" label
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 8),
-          child: Row(
-            children: [
-          
-              Text(
-                l.t('home_featured_today'),
-                style: TextStyle(
-                  color: purple,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+    return GestureDetector(
+      onTap: () =>
+          Navigator.of(context).push(kashfRoute(const TodayCaseScreen())),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: star icon + "قضية اليوم" label
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 8),
+            child: Row(
+              children: [
+                Text(
+                  l.t('home_featured_today'),
+                  style: TextStyle(
+                    color: purple,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.star_outline,
-                color: purple,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+                const SizedBox(width: 6),
+                const Icon(Icons.star_outline, color: purple, size: 20),
+              ],
             ),
-            border: Border.all(color: purple.withValues(alpha: 0.40), width: 1),
           ),
-      child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1) Text column (RIGHT side in RTL = START).
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+              ),
+              border: Border.all(
+                color: purple.withValues(alpha: 0.40),
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Title â€” white, bold.
-                    Text(
-                      l.t('home_featured_title'),
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 6),
-                    // Subtitle â€” lighter gray, plain text (no icon).
-                    Text(
-                      l.t('home_featured_subtitle'),
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary
-                            .withValues(alpha: 0.7),
-                        fontSize: 11,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Spacer(),
-                    // Bottom row: stats (start side) + CTA pill (end side).
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Stats inline with thin vertical dividers.
-                        Expanded(
-                          child: Row(
+                    // 1) Text column (RIGHT side in RTL = START).
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title â€” white, bold.
+                          Text(
+                            l.t('home_featured_title'),
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              color: KashfPalette.active.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 6),
+                          // Subtitle â€” lighter gray, plain text (no icon).
+                          Text(
+                            l.t('home_featured_subtitle'),
+                            style: TextStyle(
+                              color: KashfPalette.active.textPrimary.withValues(
+                                alpha: 0.7,
+                              ),
+                              fontSize: 11,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Spacer(),
+                          // Bottom row: stats (start side) + CTA pill (end side).
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              _FeaturedStat(
-                                value: '12',
-                                unit: l.t('home_featured_metric1_ar'),
-                                color: purple,
-                              ),
-                              SizedBox(width: 6),
-                              Container(
-                                width: 1,
-                                height: 22,
-                                color: purple.withValues(alpha: 0.30),
-                              ),
-                              SizedBox(width: 6),
-                              _FeaturedStat(
-                                value: '8',
-                                unit: l.t('home_featured_metric2_ar'),
-                                color: purple,
-                              ),
-                              SizedBox(width: 6),
-                              Container(
-                                width: 1,
-                                height: 22,
-                                color: purple.withValues(alpha: 0.30),
-                              ),
-                              SizedBox(width: 6),
-                              _FeaturedStat(
-                                value: '24',
-                                unit: l.t('home_featured_metric3_ar'),
-                                color: purple,
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        // Outlined purple pill CTA on the END side.
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: purple, width: 1),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l.t('home_featured_open'),
-                                style: TextStyle(
-                                  color: purple,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                              // Stats inline with thin vertical dividers.
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    _FeaturedStat(
+                                      value: '12',
+                                      unit: l.t('home_featured_metric1_ar'),
+                                      color: purple,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Container(
+                                      width: 1,
+                                      height: 22,
+                                      color: purple.withValues(alpha: 0.30),
+                                    ),
+                                    SizedBox(width: 6),
+                                    _FeaturedStat(
+                                      value: '8',
+                                      unit: l.t('home_featured_metric2_ar'),
+                                      color: purple,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Container(
+                                      width: 1,
+                                      height: 22,
+                                      color: purple.withValues(alpha: 0.30),
+                                    ),
+                                    SizedBox(width: 6),
+                                    _FeaturedStat(
+                                      value: '24',
+                                      unit: l.t('home_featured_metric3_ar'),
+                                      color: purple,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              SizedBox(width: 3),
-                              Icon(
-                                Icons.chevron_right,
-                                color: purple,
-                                size: 14,
+                              SizedBox(width: 8),
+                              // Outlined purple pill CTA on the END side.
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: purple, width: 1),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      l.t('home_featured_open'),
+                                      style: TextStyle(
+                                        color: purple,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    SizedBox(width: 3),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      color: purple,
+                                      size: 14,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    // 2) Image tile (ends up on the RIGHT side in RTL). Expands
+                    // to the full height of the card so it doesn't look like a
+                    // small thumbnail.
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: const Color(0xFF1A0F08),
+                          border: Border.all(
+                            color: purple.withValues(alpha: 0.45),
+                            width: 1,
+                          ),
                         ),
-                      ],
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.asset(
+                              'assets/images/lattafa.jpeg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                color: const Color(0xFF2A1A0F),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.local_florist,
+                                  color: purple,
+                                  size: 36,
+                                ),
+                              ),
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: AlignmentDirectional.topEnd,
+                                  end: AlignmentDirectional.bottomStart,
+                                  colors: [
+                                    Colors.transparent,
+                                    purple.withValues(alpha: 0.18),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: 12),
-              // 2) Image tile (ends up on the RIGHT side in RTL). Expands
-              // to the full height of the card so it doesn't look like a
-              // small thumbnail.
-              Expanded(
-                flex: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: const Color(0xFF1A0F08),
-                    border: Border.all(
-                      color: purple.withValues(alpha: 0.45),
-                      width: 1,
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        'assets/images/lattafa.jpeg',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: const Color(0xFF2A1A0F),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.local_florist,
-                            color: purple,
-                            size: 36,
-                          ),
-                        ),
-                      ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: AlignmentDirectional.topEnd,
-                            end: AlignmentDirectional.bottomStart,
-                            colors: [
-                              Colors.transparent,
-                              purple.withValues(alpha: 0.18),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
-        ),
-      ],
     );
   }
 }
@@ -716,11 +715,7 @@ class _MarketPulsePanel extends StatelessWidget {
                   color: green.withValues(alpha: 0.18),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.access_time,
-                  color: green,
-                  size: 16,
-                ),
+                child: Icon(Icons.access_time, color: green, size: 16),
               ),
               SizedBox(width: 8),
               Expanded(
@@ -792,10 +787,7 @@ class _MarketPulsePanel extends StatelessWidget {
                 alignment: Alignment.center,
                 child: CustomPaint(
                   size: Size(36, 22),
-                  painter: _SparklinePainter(
-                    color: green,
-                    points: _kSparkUp,
-                  ),
+                  painter: _SparklinePainter(color: green, points: _kSparkUp),
                 ),
               ),
             ],
@@ -834,10 +826,7 @@ class _PulseMetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: data.bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: data.color.withValues(alpha: 0.22),
-          width: 1,
-        ),
+        border: Border.all(color: data.color.withValues(alpha: 0.22), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -953,24 +942,84 @@ class _SparklinePainter extends CustomPainter {
 /// uses a different irregular pattern with varying amplitudes so the
 /// trend lines look natural â€” small and zig-zaggy.
 const List<double> _kSparkUp = [
-  0.52, 0.38, 0.61, 0.46, 0.55, 0.40, 0.66, 0.50, 0.58, 0.80,
-  0.72, 0.55, 0.2, 0.99, 0.68, 0.53, 0.74,
+  0.52,
+  0.38,
+  0.61,
+  0.46,
+  0.55,
+  0.40,
+  0.66,
+  0.50,
+  0.58,
+  0.80,
+  0.72,
+  0.55,
+  0.2,
+  0.99,
+  0.68,
+  0.53,
+  0.74,
 ];
 
 const List<double> _kSparkDown = [
-  0.48, 0.102, 0.40, 0.55, 0.44, 0.60, 0.36, 0.52, 0.99, 0.58,
-  0.32, 0.50, 0.42, 0.56, 0.38, 0.52, 0.30,
+  0.48,
+  0.102,
+  0.40,
+  0.55,
+  0.44,
+  0.60,
+  0.36,
+  0.52,
+  0.99,
+  0.58,
+  0.32,
+  0.50,
+  0.42,
+  0.56,
+  0.38,
+  0.52,
+  0.30,
 ];
 
 // Extra distinct patterns for variety.
 const List<double> _kSparkWave1 = [
-  0.45, 0.60, 0.50, 0.38, 0.55, 0.99, 0.42, 0.58, 0.46, 0.64,
-  0.50, 0.36, 0.58, 0.48, 0.62, 0.01, 0.56,
+  0.45,
+  0.60,
+  0.50,
+  0.38,
+  0.55,
+  0.99,
+  0.42,
+  0.58,
+  0.46,
+  0.64,
+  0.50,
+  0.36,
+  0.58,
+  0.48,
+  0.62,
+  0.01,
+  0.56,
 ];
 
 const List<double> _kSparkWave2 = [
-  0.55, 0.8, 0.30, 0.80, 0.50, 0.64, 0.40, 0.99, 0.01, 0.62,
-  0.44, 0.58, 0.50, 0.38, 0.54, 0.46, 0.80,
+  0.55,
+  0.8,
+  0.30,
+  0.80,
+  0.50,
+  0.64,
+  0.40,
+  0.99,
+  0.01,
+  0.62,
+  0.44,
+  0.58,
+  0.50,
+  0.38,
+  0.54,
+  0.46,
+  0.80,
 ];
 
 // ============================ Quick Actions ============================
@@ -1321,11 +1370,7 @@ class _UpdateCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Far left: 3-dot menu
-            const Icon(
-              Icons.more_vert,
-              color: Color(0xFF6B7280),
-              size: 18,
-            ),
+            const Icon(Icons.more_vert, color: Color(0xFF6B7280), size: 18),
             const SizedBox(width: 10),
             // Right column: percentage (top), time (bottom)
             Column(
@@ -1446,4 +1491,3 @@ class _UpdateCard extends StatelessWidget {
     );
   }
 }
-
