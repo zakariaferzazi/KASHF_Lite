@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart';
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_strings.dart';
 import '../../l10n/locale_controller.dart';
 import '../../l10n/locale_scope.dart';
 import '../../l10n/theme_controller.dart';
 import '../../l10n/theme_scope.dart';
+import '../../services/auth_service.dart';
 import '../../theme.dart';
 import '../system_overview/system_overview_screen.dart';
 
@@ -19,6 +21,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isSigningOut = false;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -437,11 +441,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
         iconColor: Color(0xFFE53935),
         title: l.t('settings_signout'),
         subtitle: l.t('settings_signout_sub'),
-        onTap: () => _showComingSoon(context),
+        onTap: _handleSignOut,
         showDivider: false,
         titleColor: Color(0xFFE53935),
       ),
     );
+  }
+
+  Future<void> _handleSignOut() async {
+    final l = AppLocalizations.of(context);
+    if (_isSigningOut) return;
+
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Color(0xFF15151C),
+        title: Text(
+          l.t('settings_signout_confirm_title'),
+          style: const TextStyle(color: Color(0xFFFFFFFF)),
+        ),
+        content: Text(
+          l.t('settings_signout_confirm_message'),
+          style: const TextStyle(color: Color(0xFF8B8B8B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              l.t('settings_signout_confirm_cancel'),
+              style: const TextStyle(color: Color(0xFF8B8B8B)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              l.t('settings_signout_confirm_action'),
+              style: const TextStyle(color: Color(0xFFE53935)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (shouldSignOut != true) return;
+    if (!mounted) return;
+
+    setState(() => _isSigningOut = true);
+    try {
+      await AuthService().signOut();
+      if (!mounted) return;
+      // Show the success popup on the root overlay (it survives the
+      // navigation swap) so the user gets the same visual feedback as
+      // sign-in / sign-up.
+      // ignore: discarded_futures
+      SuccessPopup.show(
+        context,
+        title: l.t('settings_signout_success'),
+        message: l.t('settings_signout_success_message'),
+      );
+      // Safety net: explicitly push WelcomeScreen so the redirect is
+      // guaranteed even if the auth gate's stream listener is slow.
+      // We pushAndRemoveUntil so any pushed routes (like the sign-in
+      // screen the user just came from) are also cleared.
+      if (!mounted) return;
+      navigateToWelcome(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.t('settings_signout_failed')),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSigningOut = false);
+    }
   }
 
   // ===================== Tile Widget =====================

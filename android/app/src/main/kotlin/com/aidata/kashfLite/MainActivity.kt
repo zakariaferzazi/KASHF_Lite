@@ -1,4 +1,4 @@
-package com.example.kashf_lite
+package com.aidata.kashfLite
 
 import io.flutter.embedding.android.FlutterActivity
 

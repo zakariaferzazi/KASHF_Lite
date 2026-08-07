@@ -57,21 +57,12 @@ class _HomeShellState extends State<HomeShell> {
                 child: Row(
                   children: [
                     _Dest(
-                      icon: Icons.settings_outlined,
-                      selectedIcon: Icons.settings,
-                      label: l.t('nav_settings_lbl'),
-                      selected: _index == 3,
-                      onTap: () => setState(() => _index = 3),
+                      icon: Icons.home_outlined,
+                      selectedIcon: Icons.home,
+                      label: l.t('nav_home_lbl'),
+                      selected: _index == 0,
+                      onTap: () => setState(() => _index = 0),
                     ),
-                    _Dest(
-                      icon: Icons.bar_chart_outlined,
-                      selectedIcon: Icons.bar_chart,
-                      label: l.t('nav_reports_lbl'),
-                      selected: _index == 2,
-                      onTap: () => setState(() => _index = 2),
-                    ),
-                    // Spacer for the centered FAB.
-                    const SizedBox(width: 72),
                     _Dest(
                       icon: Icons.explore_outlined,
                       selectedIcon: Icons.explore,
@@ -79,12 +70,21 @@ class _HomeShellState extends State<HomeShell> {
                       selected: _index == 1,
                       onTap: () => setState(() => _index = 1),
                     ),
+                    // Spacer for the centered FAB.
+                    const SizedBox(width: 72),
                     _Dest(
-                      icon: Icons.home_outlined,
-                      selectedIcon: Icons.home,
-                      label: l.t('nav_home_lbl'),
-                      selected: _index == 0,
-                      onTap: () => setState(() => _index = 0),
+                      icon: Icons.bar_chart_outlined,
+                      selectedIcon: Icons.bar_chart,
+                      label: l.t('nav_reports_lbl'),
+                      selected: _index == 2,
+                      onTap: () => setState(() => _index = 2),
+                    ),
+                    _Dest(
+                      icon: Icons.settings_outlined,
+                      selectedIcon: Icons.settings,
+                      label: l.t('nav_settings_lbl'),
+                      selected: _index == 3,
+                      onTap: () => setState(() => _index = 3),
                     ),
                   ],
                 ),
