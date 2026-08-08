@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
 import '../../theme.dart';
 
-/// The Explore workspace. Layout mirrors the marketing reference:
-/// top bar with greeting + filter button, search bar, category chips,
-/// 6 entity-tile cards with stats, recent updates list, and a
-/// "Suggested for you" / "Now trending" section.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -15,111 +11,487 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  final TextEditingController _searchCtrl = TextEditingController();
-  int _tab = 0;
+  /// Index inside [ExploreCategory.values] (0 == All → pill highlighted).
+  int _selectedCategory = 0;
+
+  /// Index of the currently visible dot inside the trending carousel.
+  int _trendingPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Directionality(
+      textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF050608),
+        body: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 8),
+                sliver: SliverToBoxAdapter(child: _TopBar(l: l)),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 6, 20, 14),
+                sliver: SliverToBoxAdapter(
+                  child: _CategoryChipsRow(
+                    selected: _selectedCategory,
+                    onChanged: (i) => setState(() => _selectedCategory = i),
+                    l: l,
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
+                sliver: SliverToBoxAdapter(
+                  child: _TrendingSectionHeader(
+                    title: l.t('explore_trending_title'),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
+                sliver: SliverToBoxAdapter(
+                  child: _TrendingCarousel(
+                    onPageChanged: (i) => setState(() => _trendingPage = i),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
+                sliver: SliverToBoxAdapter(
+                  child: _DotsIndicator(count: 4, index: _trendingPage),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
+                sliver: SliverToBoxAdapter(
+                  child: _DiscoverSectionHeader(
+                    title: l.t('explore_discover_title'),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+                sliver: SliverToBoxAdapter(child: _DiscoverGrid(l: l)),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
+                sliver: SliverToBoxAdapter(
+                  child: _RecentSectionHeader(
+                    title: l.t('explore_recent_title'),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(12, 0, 12, 32),
+                sliver: SliverToBoxAdapter(
+                  child: _RecentInvestigationsList(
+                    items: [
+                      _RecentInvestigationItem(
+                        brandAsset: 'assets/images/parfum.jpeg',
+                        title: l.t('explore_recent1_title'),
+                        subtitle: l.t('explore_recent1_sub'),
+                        time: l.t('explore_recent1_time'),
+                        statusLabel: l.t('explore_recent_complete'),
+                        statusStyle: _StatusStyle.completed,
+                      ),
+                      _RecentInvestigationItem(
+                        brandAsset: 'assets/images/sauvage.jpeg',
+                        title: l.t('explore_recent2_title'),
+                        subtitle: l.t('explore_recent2_sub'),
+                        time: l.t('explore_recent2_time'),
+                        statusLabel: l.t('explore_recent_add'),
+                        statusStyle: _StatusStyle.quickAnswer,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Top bar
+// ============================================================================
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.l});
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    // Mirror-friendly row: Directionality flips start/end in RTL.
+    // LTR visual:  [filter] ──spacer── [title]
+    // RTL visual:  [title] ──spacer── [filter]
+    return SizedBox(
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              l.t('nav_explore'),
+              style: TextStyle(
+                color: KashfPalette.active.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.transparent,
+                border: Border.all(color: KashfColors.gold, width: 1.4),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.filter_alt_outlined,
+                color: KashfColors.gold,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Category filter chips
+// ============================================================================
+
+class _CategoryChipsRow extends StatelessWidget {
+  const _CategoryChipsRow({
+    required this.selected,
+    required this.onChanged,
+    required this.l,
+  });
+  final int selected;
+  final ValueChanged<int> onChanged;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    // Hand-picked visual order so "All" pill lands on the trailing side
+    // (right in LTR, left in RTL) once ListView + Directionality flips it.
+    const ordered = <ExploreCategory>[
+      ExploreCategory.influencers,
+      ExploreCategory.brands,
+      ExploreCategory.beauty,
+      ExploreCategory.products,
+      ExploreCategory.markets,
+      ExploreCategory.all,
+    ];
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        reverse: l.isRtl,
+        padding: EdgeInsets.zero,
+        itemCount: ordered.length,
+        separatorBuilder: (_, _) => SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final c = ordered[i];
+          final picked = c.valueIndex == selected;
+          return _CategoryChip(
+            icon: c.icon,
+            label: c.label(l),
+            selected: picked,
+            onTap: () => onChanged(c.valueIndex),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? KashfColors.gold : const Color(0xFF2A2D38),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? KashfColors.gold : Colors.white,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? KashfColors.gold : Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// ============================================================================
+// Trending topics carousel
+// ============================================================================
+
+class _TrendingCarousel extends StatefulWidget {
+  const _TrendingCarousel({required this.onPageChanged});
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  State<_TrendingCarousel> createState() => _TrendingCarouselState();
+}
+
+class _TrendingCarouselState extends State<_TrendingCarousel> {
+  static const _items = <_TrendingItem>[
+    _TrendingItem(
+      asset: 'assets/images/winner.jpeg',
+      titleEn: 'Commodity analysis',
+      titleAr: 'تحليل السلع',
+      subtitleEn: 'Gold and oil',
+      subtitleAr: 'الذهب والنفط',
+    ),
+    _TrendingItem(
+      asset: 'assets/images/sauvage.jpeg',
+      titleEn: 'Market news',
+      titleAr: 'أخبار السوق',
+      subtitleEn: 'Top economic headlines',
+      subtitleAr: 'أبرز العناوين الاقتصادية',
+    ),
+    _TrendingItem(
+      asset: 'assets/images/mic.jpeg',
+      titleEn: 'Investor portfolio',
+      titleAr: 'محفظة المستثمر',
+      subtitleEn: 'Risk and reward management',
+      subtitleAr: 'إدارة المخاطر والعوائد',
+    ),
+    _TrendingItem(
+      asset: 'assets/images/borge.jpeg',
+      titleEn: 'Highest influencer',
+      titleAr: 'أعلى المؤثرين',
+      subtitleEn: 'Top of the year',
+      subtitleAr: 'لعام كامل',
+    ),
+  ];
+
+  late final ScrollController _scroll;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll = ScrollController()..addListener(_recomputeActive);
+  }
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
+    _scroll
+      ..removeListener(_recomputeActive)
+      ..dispose();
     super.dispose();
+  }
+
+  void _recomputeActive() {
+    if (!_scroll.hasClients) return;
+    const outerH = 20.0;
+    const inner = 12.0;
+    const visibleCount = 3;
+    final width = MediaQuery.of(context).size.width;
+    final cardW =
+        (width - (outerH * 2) - (inner * (visibleCount - 1))) / visibleCount;
+    final stride = cardW + inner;
+    final x = _scroll.position.pixels;
+    // Find the card whose center is closest to the viewport center.
+    final center = x + width / 2;
+    final raw = ((center - outerH - cardW / 2) / stride).round();
+    final idx = raw.clamp(0, _items.length - 1);
+    widget.onPageChanged(idx);
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final tabs = <_Tab>[
-      _Tab(Icons.grid_view_rounded, l.t('explore_tab_all')),
-      _Tab(Icons.business_outlined, l.t('explore_tab_companies')),
-      _Tab(Icons.label_outline, l.t('explore_tab_brands')),
-      _Tab(Icons.inventory_2_outlined, l.t('explore_tab_products')),
-      _Tab(Icons.person_outline, l.t('explore_tab_influencers')),
-      _Tab(Icons.show_chart_outlined, l.t('explore_tab_markets')),
-    ];
-    return Scaffold(
-      backgroundColor: KashfPalette.active.background,
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-              sliver: SliverToBoxAdapter(child: _TopBar(l: l)),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 8),
-              sliver: SliverToBoxAdapter(child: _Header(l: l)),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 12),
-              sliver: SliverToBoxAdapter(
-                child: _SearchBar(
-                  controller: _searchCtrl,
-                  hint: l.t('explore_search_hint'),
+    final width = MediaQuery.of(context).size.width;
+    // Card width: fit 3 cards side-by-side minus outer side margins and
+    // inner spacing — 4th+ cards become reachable via scroll.
+    const outerH = 20.0;
+    const inner = 12.0;
+    const visibleCount = 3;
+    final cardWidth =
+        (width - (outerH * 2) - (inner * (visibleCount - 1))) / visibleCount;
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        controller: _scroll,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsetsDirectional.fromSTEB(outerH, 0, outerH, 0),
+        itemCount: _items.length,
+        separatorBuilder: (_, _) => const SizedBox(width: inner),
+        itemBuilder: (_, i) {
+          final it = _items[i];
+          final title = l.isRtl ? it.titleAr : it.titleEn;
+          final subtitle = l.isRtl ? it.subtitleAr : it.subtitleEn;
+          return _TrendingCard(
+            asset: it.asset,
+            title: title,
+            subtitle: subtitle,
+            width: cardWidth,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TrendingItem {
+  const _TrendingItem({
+    required this.asset,
+    required this.titleEn,
+    required this.titleAr,
+    required this.subtitleEn,
+    required this.subtitleAr,
+  });
+  final String asset;
+  final String titleEn;
+  final String titleAr;
+  final String subtitleEn;
+  final String subtitleAr;
+}
+
+class _TrendingCard extends StatelessWidget {
+  const _TrendingCard({
+    required this.asset,
+    required this.title,
+    required this.subtitle,
+    required this.width,
+  });
+  final String asset;
+  final String title;
+  final String subtitle;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: const Color(0xFF171A20),
+        borderRadius: BorderRadius.circular(15),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Image at top - fills card width with rounded TOP corners.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 130,
+              child: Image.asset(
+                asset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  color: const Color(0xFF0E0F14),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.image_outlined,
+                    size: 28,
+                    color: const Color(0xFF8A8F9C),
+                  ),
                 ),
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
-              sliver: SliverToBoxAdapter(
-                child: _TabsRow(
-                  tabs: tabs,
-                  current: _tab,
-                  onChange: (i) => setState(() => _tab = i),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
-              sliver: SliverGrid.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  mainAxisExtent: 200,
-                ),
-                itemCount: 6,
-                itemBuilder: (_, i) => _CategoryCard(index: i, l: l),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-              sliver: SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: l.t('explore_recent'),
-                  trailing: l.t('explore_view_all'),
-                  onTrailing: () {},
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
-              sliver: SliverList.builder(
-                itemCount: 3,
-                itemBuilder: (_, i) => Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: _RecentUpdateRow(index: i, l: l),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 8),
-              sliver: SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: l.t('explore_suggested'),
-                  trailing: l.t('explore_view_all'),
-                  onTrailing: () {},
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 32),
-              sliver: SliverToBoxAdapter(
+            // Bottom content area (dark card) with text + share icon.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              top: 130,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 6),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    for (var i = 0; i < 4; i++) ...[
-                      _SuggestedTile(index: i, l: l),
-                      if (i != 3) SizedBox(height: 10),
-                    ],
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF9AA0A6),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
+                    ),
+                    // Small chart icon (line graph + arrow) — no background
+                    // container; pinned to the LEFT visual edge via
+                    // [centerEnd] alignment under the outer RTL row.
+                    const SizedBox(height: 9),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: const Icon(
+                        Icons.trending_up,
+                        color: Color(0xFFD4A33A),
+                        size: 22,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -131,133 +503,33 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-// ===================== Top Bar =====================
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.l});
-  final AppLocalizations l;
+/// Section header specific to Trending — small gold trending icon on the
+/// left, followed by the title text. Pinned to the LEFT side of the
+/// screen via Directionality so the icon stays visually to the left of
+/// the title regardless of the app's locale direction.
+class _TrendingSectionHeader extends StatelessWidget {
+  const _TrendingSectionHeader({required this.title});
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        KashfLogo(width: 56),
-        Spacer(),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: KashfPalette.active.surface,
-            border: Border.all(color: KashfColors.gold, width: 1.4),
-          ),
-          alignment: Alignment.center,
-          child: Icon(Icons.person, color: KashfColors.gold, size: 20),
-        ),
-      ],
-    );
-  }
-}
-
-// ===================== Header (Title) =====================
-class _Header extends StatelessWidget {
-  const _Header({required this.l});
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: l.isRtl
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Text(
-          l.t('explore_title'),
-          style: TextStyle(
-            color: KashfPalette.active.textPrimary,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          l.t('explore_subtitle'),
-          style: TextStyle(
-            color: KashfPalette.active.textSecondary,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ===================== Search Bar =====================
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller, required this.hint});
-  final TextEditingController controller;
-  final String hint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: KashfPalette.active.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: KashfPalette.active.cardBorder),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, color: KashfColors.gold, size: 20),
-                SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    style: TextStyle(
-                      color: KashfPalette.active.textPrimary,
-                      fontSize: 14,
-                    ),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: hint,
-                      hintStyle: TextStyle(
-                        color: KashfPalette.active.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: 8),
-        Container(
-          height: 48,
-          padding: EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: KashfPalette.active.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: KashfPalette.active.cardBorder),
-          ),
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.tune, color: KashfColors.gold, size: 18),
-              SizedBox(height: 2),
+              Icon(Icons.trending_up, color: const Color(0xFFD4A33A), size: 20),
+              const SizedBox(width: 6),
+
               Text(
-                localizedText(context, 'explore_filter'),
-                style: TextStyle(
-                  color: KashfPalette.active.textPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -268,113 +540,30 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// Workaround: bottom-sheet builders lose the AppLocalizations widget, so
-// keep helper that resolves the localizations via the build context.
-String localizedText(BuildContext context, String key) =>
-    AppLocalizations.of(context).t(key);
+// ============================================================================
+// Page indicator (4 dots)
+// ============================================================================
 
-// ===================== Tabs Row =====================
-class _Tab {
-  const _Tab(this.icon, this.label);
-  final IconData icon;
-  final String label;
-}
-
-class _TabsRow extends StatelessWidget {
-  const _TabsRow({
-    required this.tabs,
-    required this.current,
-    required this.onChange,
-  });
-  final List<_Tab> tabs;
-  final int current;
-  final ValueChanged<int> onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final selected = i == current;
-          return GestureDetector(
-            onTap: () => onChange(i),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: selected
-                    ? KashfColors.gold.withValues(alpha: 0.18)
-                    : KashfPalette.active.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected
-                      ? KashfColors.gold
-                      : KashfPalette.active.cardBorder,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    tabs[i].icon,
-                    color: selected
-                        ? KashfColors.gold
-                        : KashfPalette.active.textSecondary,
-                    size: 14,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    tabs[i].label,
-                    style: TextStyle(
-                      color: selected
-                          ? KashfColors.gold
-                          : KashfPalette.active.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ===================== Section Header =====================
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.trailing, this.onTrailing});
-  final String title;
-  final String? trailing;
-  final VoidCallback? onTrailing;
+class _DotsIndicator extends StatelessWidget {
+  const _DotsIndicator({required this.count, required this.index});
+  final int count;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: KashfPalette.active.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        if (trailing != null)
-          GestureDetector(
-            onTap: onTrailing,
-            child: Text(
-              trailing!,
-              style: TextStyle(
-                color: KashfColors.gold,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+        for (var i = 0; i < count; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: i == index ? 20 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: i == index ? KashfColors.gold : const Color(0xFF2A2D38),
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
@@ -383,473 +572,188 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ===================== Category Card =====================
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.index, required this.l});
-  final int index;
+// ============================================================================
+// Discover-by-medium 2×2 grid
+// ============================================================================
+
+class _DiscoverSectionHeader extends StatelessWidget {
+  const _DiscoverSectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    // Sparkle icon followed by the title, both left-aligned on the
+    // leading edge of the screen. Wrapped in Directionality(LTR) so the
+    // icon always sits to the LEFT of the title regardless of locale.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_outlined,
+                color: const Color(0xFFD4A33A),
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DiscoverGrid extends StatelessWidget {
+  const _DiscoverGrid({required this.l});
   final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    // Order matches the reference image:
-    // 0=Influencers, 1=Companies, 2=Markets,
-    // 3=Products, 4=Hot tags, 5=Content.
-    final data = <_CategoryData>[
-      _CategoryData(
-        title: l.t('explore_category_users'),
-        subtitle: l.t('explore_category_users_sub'),
-        icon: Icons.people_outline,
-        bg: Color(0xFF6F3AFF),
-        stats: [
-          _Stat('2.1K', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('178', l.t('explore_stat_new'), Color(0xFF22C55E)),
-          _Stat('24', l.t('explore_stat_active'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '35'}),
-      ),
-      _CategoryData(
-        title: l.t('explore_category_companies'),
-        subtitle: l.t('explore_category_companies_sub'),
+    final items = <_DiscoverItem>[
+      _DiscoverItem(
         icon: Icons.business_outlined,
-        bg: Color(0xFF1F5DFF),
-        stats: [
-          _Stat('1.4K', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('86', l.t('explore_stat_new'), Color(0xFF22C55E)),
-          _Stat('31', l.t('explore_stat_active'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '1'}),
+        title: l.t('explore_discover_companies_title'),
+        subtitle: l.t('explore_discover_companies_sub'),
       ),
-      _CategoryData(
-        title: l.t('explore_category_markets'),
-        subtitle: l.t('explore_category_markets_sub'),
-        icon: Icons.bar_chart,
-        bg: Color(0xFF1FAE5C),
-        stats: [
-          _Stat('12', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('5', l.t('explore_stat_new'), Color(0xFF22C55E)),
-          _Stat('3', l.t('explore_stat_active'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '0.25'}),
+      _DiscoverItem(
+        icon: Icons.link_outlined,
+        title: l.t('explore_discover_products_title'),
+        subtitle: l.t('explore_discover_products_sub'),
       ),
-      _CategoryData(
-        title: l.t('explore_category_products'),
-        subtitle: l.t('explore_category_products_sub'),
-        icon: Icons.inventory_2_outlined,
-        bg: Color(0xFFFB923C),
-        stats: [
-          _Stat('3.2K', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('247', l.t('explore_stat_new'), Color(0xFF22C55E)),
-          _Stat('58', l.t('explore_stat_active'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '15'}),
+      _DiscoverItem(
+        icon: Icons.people_outline,
+        title: l.t('explore_discover_influencers_title'),
+        subtitle: l.t('explore_discover_influencers_sub'),
       ),
-      _CategoryData(
-        title: l.t('explore_category_tags'),
-        subtitle: l.t('explore_category_tags_sub'),
-        icon: Icons.sell_outlined,
-        bg: Color(0xFFEC4899),
-        stats: [
-          _Stat('892', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('39', l.t('explore_stat_new'), Color(0xFF22C55E)),
-          _Stat('16', l.t('explore_stat_active'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '40'}),
+      _DiscoverItem(
+        icon: Icons.description_outlined,
+        title: l.t('explore_discover_reports_title'),
+        subtitle: l.t('explore_discover_reports_sub'),
       ),
-      _CategoryData(
-        title: l.t('explore_category_content'),
-        subtitle: l.t('explore_category_content_sub'),
-        icon: Icons.mic_none,
-        bg: Color(0xFF0EA5E9),
-        stats: [
-          _Stat('1.8K', l.t('explore_stat_accounts'), KashfColors.gold),
-          _Stat('312', l.t('explore_views'), Color(0xFF22C55E)),
-          _Stat('97', l.t('explore_likes'), Color(0xFFEF4444)),
-        ],
-        ago: l.tp('explore_update_hours', {'n': '20'}),
-      ),
-    ][index];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top row: icon + mini chart line.
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(12, 12, 12, 0),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: data.bg.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(data.icon, color: data.bg, size: 18),
-                ),
-                SizedBox(width: 8),
-                Expanded(child: _MiniChart(color: data.bg)),
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              data.title,
-              style: TextStyle(
-                color: KashfPalette.active.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          SizedBox(height: 2),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              data.subtitle,
-              style: TextStyle(
-                color: KashfPalette.active.textSecondary,
-                fontSize: 10,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Spacer(),
-          // Stats row.
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 12),
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: KashfPalette.active.fieldFill,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                for (var i = 0; i < data.stats.length; i++) ...[
-                  Expanded(child: _StatColumn(stat: data.stats[i])),
-                  if (i != data.stats.length - 1)
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: KashfPalette.active.cardBorder,
-                    ),
-                ],
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(12, 0, 12, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    data.ago,
-                    style: TextStyle(
-                      color: KashfPalette.active.textSecondary,
-                      fontSize: 10,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                DirectionalChevron(
-                  color: KashfPalette.active.textSecondary,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryData {
-  const _CategoryData({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.bg,
-    required this.stats,
-    required this.ago,
-  });
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color bg;
-  final List<_Stat> stats;
-  final String ago;
-}
-
-class _Stat {
-  const _Stat(this.value, this.label, this.color);
-  final String value;
-  final String label;
-  final Color color;
-}
-
-class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.stat});
-  final _Stat stat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          stat.value,
-          style: TextStyle(
-            color: stat.color,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          stat.label,
-          style: TextStyle(
-            color: KashfPalette.active.textSecondary,
-            fontSize: 9,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniChart extends StatelessWidget {
-  const _MiniChart({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: CustomPaint(
-        size: const Size(double.infinity, 36),
-        painter: _ChartPainter(color),
-      ),
-    );
-  }
-}
-
-class _ChartPainter extends CustomPainter {
-  _ChartPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Sample points (0..1) chosen to mimic the marketing reference —
-    // a single dramatic peak, a dip, and a smaller recovery.
-    final points = [0.85, 0.55, 0.95, 0.32, 0.62, 0.20, 0.48, 0.30, 0.55];
-    final stepX = size.width / (points.length - 1);
-    final pts = <Offset>[
-      for (var i = 0; i < points.length; i++)
-        Offset(i * stepX, size.height * points[i]),
     ];
 
-    // Build a smooth path using cubic beziers between every pair of
-    // sample points. The control points sit on the horizontal axis
-    // halfway between neighbors with a small vertical pull — this
-    // gives the easy-flowing curve in the reference image.
-    final curve = Path();
-    curve.moveTo(pts.first.dx, pts.first.dy);
-    for (var i = 0; i < pts.length - 1; i++) {
-      final p0 = pts[i];
-      final p1 = pts[i + 1];
-      final midX = (p0.dx + p1.dx) / 2;
-      curve.cubicTo(midX, p0.dy, midX, p1.dy, p1.dx, p1.dy);
-    }
-
-    // 1) Subtle filled area under the curve to add depth.
-    final fillPath = Path.from(curve)
-      ..lineTo(pts.last.dx, size.height)
-      ..lineTo(pts.first.dx, size.height)
-      ..close();
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(fillPath, fillPaint);
-
-    // 2) Soft blurred under-glow line for "tiny stroke + halo" feel.
-    final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.45)
-      ..strokeWidth = 0.0
-      ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-    canvas.drawPath(curve, glowPaint);
-
-    // 3) Solid trend line on top.
-    final linePaint = Paint()
-      ..color = color
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(curve, linePaint);
-
-    // 4) Highlight the last sample point as a small dot.
-    final last = pts.last;
-    final dotPaint = Paint()..color = color;
-    canvas.drawCircle(last, 2.2, dotPaint);
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _DiscoverTile(item: items[0])),
+            const SizedBox(width: 14),
+            Expanded(child: _DiscoverTile(item: items[1])),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(child: _DiscoverTile(item: items[2])),
+            const SizedBox(width: 14),
+            Expanded(child: _DiscoverTile(item: items[3])),
+          ],
+        ),
+      ],
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant _ChartPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
 
-// ===================== Recent Update Row =====================
-class _RecentUpdateRow extends StatelessWidget {
-  const _RecentUpdateRow({required this.index, required this.l});
-  final int index;
-  final AppLocalizations l;
+class _DiscoverItem {
+  const _DiscoverItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+}
+
+class _DiscoverTile extends StatelessWidget {
+  const _DiscoverTile({required this.item});
+  final _DiscoverItem item;
+
+  // Color tokens pinned exactly to the reference spec.
+  static const _cardFill = Color(0xFF171A20);
+  static const _cardBorder = Color(0xFF26282E);
+  static const _iconCircleFill = Color(0xFF1F2128);
+  static const _iconGold = Color(0xFFD4A33A);
+  static const _chevronColor = Color(0xFF6B6F76);
+  static const _secondaryText = Color(0xFF9AA0A6);
 
   @override
   Widget build(BuildContext context) {
-    final items = <_RecentItem>[
-      _RecentItem(
-        icon: Icons.local_florist,
-        coverColors: const [Color(0xFF7B5A2B), Color(0xFF2D2418)],
-        title: l.t('explore_trend_perfume'),
-        ago: l.tp('explore_trend_perfume_h', {'n': '25'}),
-        status: l.t('explore_brand_active'),
-        statusColor: Color(0xFF22C55E),
-        stats: [
-          _EngStat('48', Icons.fingerprint),
-          _EngStat('12', Icons.bar_chart),
-          _EngStat('35', Icons.chat_bubble_outline),
-        ],
-      ),
-      _RecentItem(
-        icon: Icons.person_outline,
-        coverColors: const [Color(0xFF3A2E25), Color(0xFF1A1A1A)],
-        title: l.t('explore_trend_influencer'),
-        ago: l.tp('explore_trend_influencer_h', {'n': '8'}),
-        status: l.t('explore_brand_new'),
-        statusColor: KashfColors.gold,
-        stats: [
-          _EngStat('32', Icons.fingerprint),
-          _EngStat('8', Icons.bar_chart),
-          _EngStat('21', Icons.chat_bubble_outline),
-        ],
-      ),
-      _RecentItem(
-        icon: Icons.location_city_outlined,
-        coverColors: const [Color(0xFF2A2F36), Color(0xFF0E1014)],
-        title: l.t('explore_trend_competitor'),
-        ago: l.tp('explore_trend_competitor_h', {'n': '5'}),
-        status: l.t('explore_trend_competitor_status'),
-        statusColor: Color(0xFFEF4444),
-        stats: [
-          _EngStat('60', Icons.fingerprint),
-          _EngStat('15', Icons.bar_chart),
-          _EngStat('40', Icons.chat_bubble_outline),
-        ],
-      ),
-    ][index];
     return Container(
-      padding: EdgeInsets.all(10),
+      height: 88,
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 10, 12),
       decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KashfPalette.active.cardBorder),
+        color: _cardFill,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _cardBorder, width: 1),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        textDirection: TextDirection.ltr,
         children: [
+          // Circular dark icon container (24px icon inside ~38px circle).
           Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: items.coverColors,
-              ),
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              color: _iconCircleFill,
+              shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: Icon(
-              items.icon,
-              color: KashfColors.gold.withValues(alpha: 0.85),
-              size: 24,
-            ),
+            child: Icon(item.icon, color: _iconGold, size: 24),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
+          // Title + description stacked.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              textDirection: TextDirection.ltr,
               children: [
                 Text(
-                  items.title,
-                  style: TextStyle(
-                    color: KashfPalette.active.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
                 ),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: items.statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        items.status,
-                        style: TextStyle(
-                          color: items.statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6),
-                Row(
-                  children: [
-                    for (var i = 0; i < items.stats.length; i++) ...[
-                      _EngagementStat(stat: items.stats[i]),
-                      if (i != items.stats.length - 1) SizedBox(width: 10),
-                    ],
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  item.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _secondaryText,
+                    fontSize: 10,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: 6),
-          Icon(
-            Icons.more_horiz,
-            color: KashfPalette.active.textSecondary,
-            size: 18,
+          const SizedBox(width: 6),
+          // Right-side chevron pinned to the far right, vertically centered.
+          const Padding(
+            padding: EdgeInsetsDirectional.only(start: 2),
+            child: Icon(Icons.chevron_left, color: _chevronColor, size: 20),
           ),
         ],
       ),
@@ -857,47 +761,46 @@ class _RecentUpdateRow extends StatelessWidget {
   }
 }
 
-class _RecentItem {
-  const _RecentItem({
-    required this.icon,
-    required this.coverColors,
-    required this.title,
-    required this.ago,
-    required this.status,
-    required this.statusColor,
-    required this.stats,
-  });
-  final IconData icon;
-  final List<Color> coverColors;
+// ============================================================================
+// ============================================================================
+// Recent investigations (Dior + Tom Ford rows) — single container list.
+// ============================================================================
+
+/// Section header for "تحقيقات حديثة" — outlined history icon + title,
+/// right-aligned on the RTL leading edge.
+class _RecentSectionHeader extends StatelessWidget {
+  const _RecentSectionHeader({required this.title});
   final String title;
-  final String ago;
-  final String status;
-  final Color statusColor;
-  final List<_EngStat> stats;
-}
-
-class _EngStat {
-  const _EngStat(this.value, this.icon);
-  final String value;
-  final IconData icon;
-}
-
-class _EngagementStat extends StatelessWidget {
-  const _EngagementStat({required this.stat});
-  final _EngStat stat;
 
   @override
   Widget build(BuildContext context) {
+    // Pinned to the RIGHT edge of the screen via [start] alignment under
+    // the outer RTL Directionality (the row reads right→left, so [start]
+    // = visual right). The icon is wrapped in a forced LTR Row so it
+    // always sits to the LEFT of the title.
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Icon(stat.icon, color: KashfPalette.active.textSecondary, size: 12),
-        SizedBox(width: 4),
-        Text(
-          stat.value,
-          style: TextStyle(
-            color: KashfPalette.active.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.history_outlined,
+                color: const Color(0xFFD4A33A),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -905,117 +808,218 @@ class _EngagementStat extends StatelessWidget {
   }
 }
 
-// ===================== Suggested Tile =====================
-class _SuggestedTile extends StatelessWidget {
-  const _SuggestedTile({required this.index, required this.l});
-  final int index;
-  final AppLocalizations l;
+/// Visual style for a status badge on a recent investigation row.
+enum _StatusStyle { completed, quickAnswer }
+
+class _StatusPalette {
+  const _StatusPalette({
+    required this.bg,
+    required this.fg,
+    required this.icon,
+  });
+  final Color bg;
+  final Color fg;
+  final IconData icon;
+}
+
+class _RecentInvestigationItem {
+  const _RecentInvestigationItem({
+    required this.brandAsset,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.statusLabel,
+    required this.statusStyle,
+  });
+  final String brandAsset;
+  final String title;
+  final String subtitle;
+  final String time;
+  final String statusLabel;
+  final _StatusStyle statusStyle;
+}
+
+class _RecentInvestigationsList extends StatelessWidget {
+  const _RecentInvestigationsList({required this.items});
+  final List<_RecentInvestigationItem> items;
 
   @override
   Widget build(BuildContext context) {
-    final items = <_SuggestedItem>[
-      _SuggestedItem(
-        icon: Icons.brush_outlined,
-        coverColors: const [Color(0xFF2A2F36), Color(0xFF0E1014)],
-        title: l.t('explore_suggested_sauvage'),
-        subtitle: l.tp('explore_suggested_sauvage_h', {'p': '48'}),
-        statusColor: KashfColors.gold,
-      ),
-      _SuggestedItem(
-        icon: Icons.check,
-        coverColors: const [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
-        title: l.t('explore_suggested_nike'),
-        subtitle: l.t('explore_suggested_nike_h'),
-        statusColor: Color(0xFF22C55E),
-      ),
-      _SuggestedItem(
-        icon: Icons.local_fire_department,
-        coverColors: const [Color(0xFF7B5A2B), Color(0xFF2D2418)],
-        title: l.t('explore_suggested_lattafa'),
-        subtitle: l.tp('explore_suggested_lattafa_h', {'p': '32'}),
-        statusColor: Color(0xFF22C55E),
-      ),
-      _SuggestedItem(
-        icon: Icons.eco_outlined,
-        coverColors: const [Color(0xFF1FAE5C), Color(0xFF0E3A24)],
-        title: l.t('explore_suggested_herbal'),
-        subtitle: l.t('explore_suggested_herbal_h'),
-        statusColor: Color(0xFF22C55E),
-      ),
-    ][index];
     return Container(
-      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KashfPalette.active.cardBorder),
+        color: const Color(0xFF171A20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF26282E), width: 1),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: items.coverColors,
+          for (var i = 0; i < items.length; i++) ...[
+            _RecentInvestigationRow(item: items[i]),
+            if (i != items.length - 1)
+              const Padding(
+                padding: EdgeInsetsDirectional.only(start: 12, end: 12),
+                child: Divider(
+                  color: Color(0xFF26282E),
+                  height: 1,
+                  thickness: 1,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentInvestigationRow extends StatelessWidget {
+  const _RecentInvestigationRow({required this.item});
+  final _RecentInvestigationItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _paletteFor(item.statusStyle);
+
+    // Single horizontal row. Honours the screen's outer Directionality so
+    // Forced LTR direction so that the source order
+    //   [Time] [Badge] [Title] [Image] [Menu]
+    // renders visually left→right as
+    //   [Time] [Badge] [Title] [Image] [Menu]
+    // regardless of the screen's outer RTL Directionality.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 1. Time — far left.
+            SizedBox(
+              width: 64,
+              child: Text(
+                item.time,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF9AA0A6),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
               ),
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              items.icon,
-              color: KashfColors.gold.withValues(alpha: 0.85),
-              size: 18,
+            // 2. Status pill — immediately to the right of time.
+            const SizedBox(width: 10),
+            _StatusPill(label: item.statusLabel, palette: palette),
+            // 3. Title + subtitle (Expanded) — center-right.
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    item.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF9AA0A6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  items.title,
-                  style: TextStyle(
-                    color: KashfPalette.active.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+            // 4. Brand image — to the right of the title block.
+            const SizedBox(width: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: 48,
+                height: 48,
+                color: const Color(0xFF0E0F14),
+                alignment: Alignment.center,
+                child: Image.asset(
+                  item.brandAsset,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.branding_watermark_outlined,
+                    size: 22,
+                    color: Colors.white.withValues(alpha: 0.4),
                   ),
                 ),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: items.statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        items.subtitle,
-                        style: TextStyle(
-                          color: items.statusColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-          Icon(
-            Icons.star_border,
-            color: KashfPalette.active.textSecondary,
-            size: 18,
+            // 5. Three-dot menu — far right, 10–12 px from the image.
+            const SizedBox(width: 10),
+            const Icon(Icons.more_vert, color: Color(0xFF8A8A8A), size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static _StatusPalette _paletteFor(_StatusStyle s) {
+    switch (s) {
+      case _StatusStyle.completed:
+        return const _StatusPalette(
+          bg: Color(0xFF103C26),
+          fg: Color(0xFF3DDC84),
+          icon: Icons.check,
+        );
+      case _StatusStyle.quickAnswer:
+        return const _StatusPalette(
+          bg: Color(0xFF112B45),
+          fg: Color(0xFF4DA3FF),
+          icon: Icons.bolt_outlined,
+        );
+    }
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.palette});
+  final String label;
+  final _StatusPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(7, 4, 7, 4),
+      decoration: BoxDecoration(
+        color: palette.bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(palette.icon, size: 11, color: palette.fg),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: palette.fg,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              height: 1.0,
+            ),
           ),
         ],
       ),
@@ -1023,17 +1027,36 @@ class _SuggestedTile extends StatelessWidget {
   }
 }
 
-class _SuggestedItem {
-  const _SuggestedItem({
-    required this.icon,
-    required this.coverColors,
-    required this.title,
-    required this.subtitle,
-    required this.statusColor,
-  });
-  final IconData icon;
-  final List<Color> coverColors;
-  final String title;
-  final String subtitle;
-  final Color statusColor;
+// ============================================================================
+// Categories enum + helpers (kept at the bottom so the build() method
+// reads top-to-bottom like a story).
+// ============================================================================
+
+enum ExploreCategory {
+  markets,
+  products,
+  beauty,
+  brands,
+  influencers,
+  all;
+
+  int get valueIndex => values.indexOf(this);
+
+  IconData get icon => switch (this) {
+    ExploreCategory.markets => Icons.show_chart_outlined,
+    ExploreCategory.products => Icons.inventory_2_outlined,
+    ExploreCategory.beauty => Icons.spa_outlined,
+    ExploreCategory.brands => Icons.shopping_bag_outlined,
+    ExploreCategory.influencers => Icons.person_outline,
+    ExploreCategory.all => Icons.apps_rounded,
+  };
+
+  String label(AppLocalizations l) => switch (this) {
+    ExploreCategory.markets => l.t('explore_filter_markets'),
+    ExploreCategory.products => l.t('explore_filter_products'),
+    ExploreCategory.beauty => l.t('explore_filter_beauty'),
+    ExploreCategory.brands => l.t('explore_filter_brands'),
+    ExploreCategory.influencers => l.t('explore_filter_influencers'),
+    ExploreCategory.all => l.t('explore_filter_all'),
+  };
 }

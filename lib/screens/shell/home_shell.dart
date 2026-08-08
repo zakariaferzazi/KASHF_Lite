@@ -4,6 +4,7 @@ import '../../l10n/app_strings.dart';
 import '../../theme.dart';
 import '../explore/explore_screen.dart';
 import '../home/home_screen.dart';
+import '../investigation/investigation_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -29,16 +30,6 @@ class _HomeShellState extends State<HomeShell> {
     ReportsScreen(),
     SettingsScreen(),
   ];
-
-  void _openCreate(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).t('home_fab_new')),
-        backgroundColor: KashfColors.gold,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,21 +57,12 @@ class _HomeShellState extends State<HomeShell> {
                 child: Row(
                   children: [
                     _Dest(
-                      icon: Icons.settings_outlined,
-                      selectedIcon: Icons.settings,
-                      label: l.t('nav_settings_lbl'),
-                      selected: _index == 3,
-                      onTap: () => setState(() => _index = 3),
+                      icon: Icons.home_outlined,
+                      selectedIcon: Icons.home,
+                      label: l.t('nav_home_lbl'),
+                      selected: _index == 0,
+                      onTap: () => setState(() => _index = 0),
                     ),
-                    _Dest(
-                      icon: Icons.bar_chart_outlined,
-                      selectedIcon: Icons.bar_chart,
-                      label: l.t('nav_reports_lbl'),
-                      selected: _index == 2,
-                      onTap: () => setState(() => _index = 2),
-                    ),
-                    // Spacer for the centered FAB.
-                    const SizedBox(width: 72),
                     _Dest(
                       icon: Icons.explore_outlined,
                       selectedIcon: Icons.explore,
@@ -88,21 +70,35 @@ class _HomeShellState extends State<HomeShell> {
                       selected: _index == 1,
                       onTap: () => setState(() => _index = 1),
                     ),
+                    // Spacer for the centered FAB.
+                    const SizedBox(width: 72),
                     _Dest(
-                      icon: Icons.home_outlined,
-                      selectedIcon: Icons.home,
-                      label: l.t('nav_home_lbl'),
-                      selected: _index == 0,
-                      onTap: () => setState(() => _index = 0),
+                      icon: Icons.bar_chart_outlined,
+                      selectedIcon: Icons.bar_chart,
+                      label: l.t('nav_reports_lbl'),
+                      selected: _index == 2,
+                      onTap: () => setState(() => _index = 2),
+                    ),
+                    _Dest(
+                      icon: Icons.settings_outlined,
+                      selectedIcon: Icons.settings,
+                      label: l.t('nav_settings_lbl'),
+                      selected: _index == 3,
+                      onTap: () => setState(() => _index = 3),
                     ),
                   ],
                 ),
               ),
-              // Centered gold "+" floating action button.
+              // Centered gold "+" floating action button — opens the
+              // "New Investigation" workspace so users can start a new
+              // AI-powered investigation with smart search, evidence
+              // upload, and quick actions.
               Positioned(
                 top: -14,
                 child: GestureDetector(
-                  onTap: () => _openCreate(context),
+                  onTap: () => Navigator.of(context).push(
+                    kashfRoute(const InvestigationScreen()),
+                  ),
                   child: Container(
                     width: 60,
                     height: 60,

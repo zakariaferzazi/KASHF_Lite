@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, User;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'firebase_options.dart';
 import 'l10n/app_locale.dart';
 import 'l10n/app_strings.dart';
 import 'l10n/locale_controller.dart';
@@ -13,6 +16,9 @@ import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   final localeController = await LocaleController.load();
   runApp(KashfApp(localeController: localeController));
 }
@@ -71,36 +77,46 @@ class _KashfAppState extends State<KashfApp> {
           builder: (context, _) {
             _applyPalette(_themeController.mode);
             final l = AppLocalizations(widget.localeController.language);
-            // Wrap MaterialApp in Directionality so the entire app
-            // flips to RTL when Arabic is selected. MaterialApp's
-            // internal Directionality is then overridden by this one.
-            return Directionality(
-              textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
-              child: MaterialApp(
-                title: l.t('app_title'),
-                debugShowCheckedModeBanner: false,
-                themeMode: _themeController.mode.materialMode,
-                theme: _buildTheme(Brightness.light),
-                darkTheme: _buildTheme(Brightness.dark),
-                locale: widget.localeController.language.locale,
-                // Stub delegate so MaterialApp accepts our locale. We avoid
-                // pulling in flutter_localizations for the MVP.
-                localizationsDelegates: const [
-                  _StubLocalizationsDelegate(),
-                  _StubCupertinoLocalizationsDelegate(),
-                ],
-                supportedLocales: const [Locale('en'), Locale('ar')],
-                localeResolutionCallback: (deviceLocale, supported) {
-                  if (deviceLocale == null) return const Locale('en');
-                  for (final loc in supported) {
-                    if (loc.languageCode == deviceLocale.languageCode) {
-                      return loc;
-                    }
+            // Use MaterialApp.builder (instead of wrapping MaterialApp
+            // from outside) so the Directionality lives *inside* the
+            // Navigator. This is the officially supported way to force
+            // RTL across the entire app and ensures that screens which
+            // themselves override `Directionality` (e.g. via the
+            // Localizations widget) still inherit our RTL direction.
+            return MaterialApp(
+              title: l.t('app_title'),
+              debugShowCheckedModeBanner: false,
+              themeMode: _themeController.mode.materialMode,
+              theme: _buildTheme(Brightness.light),
+              darkTheme: _buildTheme(Brightness.dark),
+              locale: widget.localeController.language.locale,
+              // Stub delegate so MaterialApp accepts our locale. We avoid
+              // pulling in flutter_localizations for the MVP.
+              localizationsDelegates: const [
+                _StubLocalizationsDelegate(),
+                _StubCupertinoLocalizationsDelegate(),
+              ],
+              supportedLocales: const [Locale('en'), Locale('ar')],
+              localeResolutionCallback: (deviceLocale, supported) {
+                if (deviceLocale == null) return const Locale('en');
+                for (final loc in supported) {
+                  if (loc.languageCode == deviceLocale.languageCode) {
+                    return loc;
                   }
-                  return const Locale('en');
-                },
-                home: const _AuthGate(),
-              ),
+                }
+                return const Locale('en');
+              },
+              builder: (context, child) {
+                // Force a Directionality inside the Navigator so every
+                // screen (including the auth screens) inherits RTL when
+                // Arabic is selected.
+                return Directionality(
+                  textDirection:
+                      l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  child: child ?? const SizedBox.shrink(),
+                );
+              },
+              home: const _AuthGate(),
             );
           },
         ),
@@ -160,20 +176,57 @@ class _StubCupertinoLocalizationsDelegate
   bool shouldReload(_StubCupertinoLocalizationsDelegate old) => false;
 }
 
-/// Minimal MVP auth gate. The user lands on the welcome screen and
-/// can use the "Sign in" / "Sign up" buttons to advance to the shell.
+/// Minimal MVP auth gate. Listens to FirebaseAuth and routes the user
+/// to the home shell whenever a user is signed in, otherwise shows
+/// the welcome screen.
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
   @override
   Widget build(BuildContext context) {
-    return const WelcomeScreen();
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // While Firebase resolves the current session, show a neutral
+          // splash so we don't flash the welcome screen for an
+          // already-authenticated user.
+          return const Scaffold(
+            backgroundColor: KashfColors.background,
+            body: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(KashfColors.gold),
+              ),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return const HomeShell();
+        }
+        return const WelcomeScreen();
+      },
+    );
   }
 }
 
 /// Public helper so the auth screens can navigate to the home shell.
+/// Uses pushAndRemoveUntil so the auth stack is fully cleared and the
+/// user lands on HomeShell as the only remaining route.
 void navigateToHome(BuildContext context) {
-  Navigator.pushReplacement(context, kashfRoute(const HomeShell()));
+  Navigator.of(context).pushAndRemoveUntil(
+    kashfRoute(const HomeShell()),
+    (route) => false,
+  );
+}
+
+/// Public helper so the settings screen can navigate back to the
+/// welcome screen after sign-out. Mirrors [navigateToHome] but lands
+/// on the unauthenticated landing page.
+void navigateToWelcome(BuildContext context) {
+  Navigator.of(context).pushAndRemoveUntil(
+    kashfRoute(const WelcomeScreen()),
+    (route) => false,
+  );
 }
 
 /// Helper for AppLanguage's locale from a code.
