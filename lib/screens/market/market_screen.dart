@@ -1096,7 +1096,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ============================ Topics Row  ============================
+// ============================ Topics Row ============================
 class _TopicsRow extends StatelessWidget {
   const _TopicsRow({
     required this.l,
