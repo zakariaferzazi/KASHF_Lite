@@ -6,10 +6,15 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../theme.dart';
+import '../../services/ai/ai_text_utils.dart';
+import '../../services/ai/chart_axis.dart';
+import '../../services/ai/market_data_controller.dart';
+import '../../services/ai/market_models.dart';
+import '../../services/ai/logo_service.dart';
 
 /// "Market Pulse" screen — a strict, pixel-perfect clone of the
 /// reference screenshot. Layout (top → bottom):
-///   1. Top bar (back arrow + title + help + 3-dot menu)
+///   1. Top bar (back arrow + title + help + 3-dot menu + refresh)
 ///   2. Live status row (green dot + "last updated")
 ///   3. Tab bar (Overview | Campaigns | Brands | Products | Influencers)
 ///   4. 4 KPI cards (total posts, total tweets, dominance, activity)
@@ -18,6 +23,12 @@ import '../../theme.dart';
 ///   7. "Fastest growing brands" section (5 horizontal cards)
 ///   8. "Most important current events" section (3 news rows)
 ///   9. Action buttons row (compare / watchlist / start investigation)
+///
+/// As of the OpenRouter integration, the KPI cards, donut,
+/// trend line, topics, brands, and events are populated from
+/// [MarketDataController]. The user must tap the refresh icon
+/// in the top bar to fetch fresh data; the initial paint
+/// renders the demo data with no API call.
 ///
 /// The screen is fully RTL-aware and reacts to the active palette
 /// from [KashfPalette.active].
@@ -30,6 +41,33 @@ class MarketScreen extends StatefulWidget {
 
 class _MarketScreenState extends State<MarketScreen> {
   int _tabIndex = 0;
+  late final MarketDataController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MarketDataController();
+    _controller.addListener(_onStateChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final l = AppLocalizations.of(context);
+      _controller.bootstrap(
+        language: l.language.code,
+        region: 'Kuwait',
+      );
+    });
+  }
+
+  void _onStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onStateChanged);
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +82,13 @@ class _MarketScreenState extends State<MarketScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 96),
             children: [
-              _TopBar(l: l),
+              _TopBar(
+                l: l,
+                isRefreshing: _controller.isLoading,
+                onRefresh: () => _controller.refreshNow(
+                  language: l.language.code,
+                ),
+              ),
               const SizedBox(height: 6),
               _LastUpdated(l: l),
               const SizedBox(height: 6),
@@ -54,29 +98,48 @@ class _MarketScreenState extends State<MarketScreen> {
                 l: l,
               ),
               const SizedBox(height: 6),
-              _KpiRow(l: l),
+              _KpiRow(
+                l: l,
+                data: _controller.state.data,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: 8),
-              _ChartsRow(l: l),
+              _ChartsRow(
+                l: l,
+                data: _controller.state.data,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: 8),
               _SectionHeader(
                 title: l.t('mp_section_topics'),
               ),
               const SizedBox(height: 4),
-              _TopicsRow(l: l),
+              _TopicsRow(
+                l: l,
+                data: _controller.state.data,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: 8),
               _SectionHeader(
                 title: l.t('mp_section_brands'),
               ),
               const SizedBox(height: 4),
-              _BrandsRow(l: l),
+              _BrandsRow(
+                l: l,
+                data: _controller.state.data,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: 8),
               _SectionHeader(
                 title: l.t('mp_section_events'),
               ),
               const SizedBox(height: 4),
-              _EventsList(l: l),
+              _EventsList(
+                l: l,
+                data: _controller.state.data,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: 8),
-              _ActionButtons(l: l),
             ],
           ),
         ),
@@ -87,15 +150,21 @@ class _MarketScreenState extends State<MarketScreen> {
 
 // ============================ Top Bar ============================
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.l});
+  const _TopBar({
+    required this.l,
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
   final AppLocalizations l;
+  final bool isRefreshing;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     // Visual order (left → right) should be:
-    //   [back]  [title]  [help]  [more]
+    //   [back]  [title]  [refresh]  [help]  [more]
     // In an RTL Row, the first child renders on the right, so the data
-    // order is reversed: [more, help, title, back].
+    // order is reversed: [more, help, refresh, title, back].
     return Row(
       children: [
         _IconCircle(
@@ -108,6 +177,11 @@ class _TopBar extends StatelessWidget {
           icon: Icons.help_outline,
           onTap: () {},
           size: 16,
+        ),
+        const SizedBox(width: 6),
+        _RefreshIcon(
+          isLoading: isRefreshing,
+          onTap: isRefreshing ? null : onRefresh,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -130,6 +204,50 @@ class _TopBar extends StatelessWidget {
           size: 14,
         ),
       ],
+    );
+  }
+}
+
+/// Round gold-bordered refresh button matching the home screen
+/// refresh icon. Spins while a fetch is in flight and ignores
+/// taps so the user cannot double-fire.
+class _RefreshIcon extends StatelessWidget {
+  const _RefreshIcon({
+    required this.isLoading,
+    required this.onTap,
+  });
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: KashfPalette.active.surface,
+          border: Border.all(color: KashfColors.gold.withValues(alpha: 0.55)),
+        ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
+                ),
+              )
+            : const Icon(
+                Icons.refresh_rounded,
+                color: KashfColors.gold,
+                size: 16,
+              ),
+      ),
     );
   }
 }
@@ -270,47 +388,73 @@ class _TabBar extends StatelessWidget {
 
 // ============================ KPI Cards ============================
 class _KpiRow extends StatelessWidget {
-  const _KpiRow({required this.l});
+  const _KpiRow({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    // Green = positive delta, red = negative delta. The last card
-    // has no delta — it shows the activity level (medium bar).
-    // Order is reversed so when rendered in an RTL Row (which mirrors
-    // children left↔right), the visual left-to-right order matches the
-    // reference screenshot: posts → tweets → dominance → activity.
-    final cards = <_KpiData>[
-      _KpiData(
-        label: l.t('mp_kpi_activity'),
-        value: l.t('mp_kpi_high'),
-        sub: l.t('mp_kpi_currently'),
-        delta: '',
-        positive: true,
-        isActivity: true,
-      ),
-      _KpiData(
-        label: l.t('mp_kpi_dominance'),
-        value: '12%',
-        sub: l.t('mp_kpi_24h'),
-        delta: '-6%',
-        positive: false,
-      ),
-      _KpiData(
-        label: l.t('mp_kpi_tweets'),
-        value: '24.7M',
-        sub: l.t('mp_kpi_24h'),
-        delta: '+18%',
-        positive: true,
-      ),
-      _KpiData(
-        label: l.t('mp_kpi_posts'),
-        value: '128.4K',
-        sub: l.t('mp_kpi_24h'),
-        delta: '+24%',
-        positive: true,
-      ),
-    ];
+    // When AI data is available we use it directly; otherwise we
+    // render the original localized demo cards so the layout
+    // never changes. Order is reversed so when rendered in an
+    // RTL Row (which mirrors children left↔right), the visual
+    // left-to-right order matches the reference screenshot:
+    // posts → tweets → dominance → activity.
+    final List<_KpiData> cards;
+    if (data != null && data!.kpis.length >= 4) {
+      // Reverse the AI list (which is in the same order as the
+      // schema: posts, tweets, dominance, activity) so the RTL
+      // Row puts them in the visual order activity → dominance
+      // → tweets → posts.
+      final ordered = data!.kpis.take(4).toList().reversed.toList();
+      cards = ordered.map((k) {
+        return _KpiData(
+          label: k.label,
+          value: k.value,
+          sub: k.sub,
+          delta: k.delta,
+          positive: k.positive,
+          isActivity: k.id == 'activity',
+        );
+      }).toList();
+    } else {
+      cards = <_KpiData>[
+        _KpiData(
+          label: l.t('mp_kpi_activity'),
+          value: l.t('mp_kpi_high'),
+          sub: l.t('mp_kpi_currently'),
+          delta: '',
+          positive: true,
+          isActivity: true,
+        ),
+        _KpiData(
+          label: l.t('mp_kpi_dominance'),
+          value: '12%',
+          sub: l.t('mp_kpi_24h'),
+          delta: '-6%',
+          positive: false,
+        ),
+        _KpiData(
+          label: l.t('mp_kpi_tweets'),
+          value: '24.7M',
+          sub: l.t('mp_kpi_24h'),
+          delta: '+18%',
+          positive: true,
+        ),
+        _KpiData(
+          label: l.t('mp_kpi_posts'),
+          value: '128.4K',
+          sub: l.t('mp_kpi_24h'),
+          delta: '+24%',
+          positive: true,
+        ),
+      ];
+    }
 
     return Row(
       children: [
@@ -456,8 +600,14 @@ class _DashIndicator extends StatelessWidget {
 
 // ============================ Charts Row ============================
 class _ChartsRow extends StatelessWidget {
-  const _ChartsRow({required this.l});
+  const _ChartsRow({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -476,12 +626,20 @@ class _ChartsRow extends StatelessWidget {
           // reference.
           Expanded(
             flex: 4,
-            child: _DonutCard(l: l),
+            child: _DonutCard(
+              l: l,
+              data: data,
+              isLoading: isLoading,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             flex: 5,
-            child: _LineChartCard(l: l),
+            child: _LineChartCard(
+              l: l,
+              data: data,
+              isLoading: isLoading,
+            ),
           ),
         ],
       ),
@@ -490,11 +648,61 @@ class _ChartsRow extends StatelessWidget {
 }
 
 class _LineChartCard extends StatelessWidget {
-  const _LineChartCard({required this.l});
+  const _LineChartCard({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
+    // Resolve trend points. Falls back to the original demo shape
+    // (sharp rise to the right) when AI data is unavailable.
+    final List<MarketTrendPoint> trendPoints = (data != null &&
+            data!.trend.length >= 2)
+        ? data!.trend
+        : const [
+            MarketTrendPoint(label: 'D7', value: 4500),
+            MarketTrendPoint(label: 'D6', value: 5200),
+            MarketTrendPoint(label: 'D5', value: 6800),
+            MarketTrendPoint(label: 'D4', value: 8400),
+            MarketTrendPoint(label: 'D3', value: 11200),
+            MarketTrendPoint(label: 'D2', value: 15800),
+            MarketTrendPoint(label: 'D1', value: 22400),
+          ];
+
+    // Derive the effective yMax from the actual data so the line
+    // always fills the chart area. We start with the AI's yMax as
+    // a hint, then fall back to the data's max with 15% headroom.
+    // This makes the chart robust to under-sized AI estimates
+    // (e.g. AI returns yMax=25K but the data sits at 3K-8K, which
+    // would otherwise collapse the line near the bottom).
+    final dataMax = trendPoints
+        .map((p) => p.value)
+        .fold<double>(0, (a, b) => a > b ? a : b);
+    final aiMax = (data != null && data!.trendYMax > 0)
+        ? data!.trendYMax
+        : 0.0;
+    final effectiveYMax = ChartAxis.deriveYMax(
+      aiMax: aiMax,
+      dataMax: dataMax,
+    );
+    final yLabels = ChartAxis.yAxisLabels(effectiveYMax);
+
+    // X-axis labels: pick up to 4 evenly spaced labels from the
+    // trend points so the labels map to actual points.
+    final xLabelCount = trendPoints.length >= 4 ? 4 : trendPoints.length;
+    final xIndices = <int>[];
+    for (var i = 0; i < xLabelCount; i++) {
+      final idx = (i * (trendPoints.length - 1) / (xLabelCount - 1))
+          .clamp(0, trendPoints.length - 1)
+          .round();
+      xIndices.add(idx);
+    }
+
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 8),
       decoration: BoxDecoration(
@@ -549,37 +757,25 @@ class _LineChartCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          // Chart canvas. Y-axis labels on the start (visual right of canvas
-          // in RTL), line spans the remaining width.
           SizedBox(
             height: 110,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Line chart canvas — takes the visual right portion of
-                // the chart area (first child of the RTL Row).
                 Expanded(
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: _TrendLinePainter(),
+                  child: _Sparkline(
+                    color: const Color(0xFF22C55E),
+                    points: _normalizeToUnit(trendPoints, effectiveYMax),
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Y-axis labels (top→bottom). Render on the visual
-                // left side of the chart area (last child of the RTL
-                // Row). Tight width so labels sit close to the line.
                 SizedBox(
                   width: 28,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
-                    children: const [
-                      _YLabel('25K'),
-                      _YLabel('20K'),
-                      _YLabel('15K'),
-                      _YLabel('10K'),
-                      _YLabel('5K'),
-                      _YLabel('0'),
+                    children: [
+                      for (final t in yLabels) _YLabel(t),
                     ],
                   ),
                 ),
@@ -587,21 +783,41 @@ class _LineChartCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          // X-axis labels. In RTL we reverse the children so the visual
-          // order stays chronological from left to right (يوم 1 on the
-          // left → يوم 7 on the right) matching the reference.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _XLabel('يوم 7'),
-              _XLabel('يوم 5'),
-              _XLabel('يوم 3'),
-              _XLabel('يوم 1'),
+            children: [
+              for (final idx in xIndices) _XLabel(trendPoints[idx].label),
             ],
           ),
         ],
       ),
     );
+  }
+
+  // Y-axis labels are produced by [ChartAxis.yAxisLabels] in
+  // `lib/services/ai/chart_axis.dart` (extracted so the logic is
+  // unit-testable in isolation).
+
+  /// Normalizes real-valued [points] (e.g. 4K, 8K, 12K) to the
+  /// 0..1 range expected by [_Sparkline]. We use the same
+  /// [effectiveYMax] we already computed so the visual height
+  /// matches the Y-axis labels on the side.
+  static List<double> _normalizeToUnit(
+    List<MarketTrendPoint> points,
+    double yMax,
+  ) {
+    if (points.isEmpty) return const [];
+    if (yMax <= 0) {
+      // Fall back to the data's own max with a touch of headroom.
+      final max = points
+          .map((p) => p.value)
+          .fold<double>(0, (a, b) => a > b ? a : b);
+      if (max <= 0) return points.map((_) => 0.0).toList();
+      return points.map((p) => (p.value / max).clamp(0.0, 1.0)).toList();
+    }
+    return points
+        .map((p) => (p.value / yMax).clamp(0.0, 1.0))
+        .toList();
   }
 }
 
@@ -639,118 +855,41 @@ class _XLabel extends StatelessWidget {
   }
 }
 
-/// Paints an irregular green trend line that rises sharply to the
-/// right (mirroring the screenshot), with a soft area-fill below.
-class _TrendLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Plot points (normalized 0..1 in both axes). The line gently
-    // rises to the right with a sharp peak at the end.
-    final points = <Offset>[
-      const Offset(0.00, 0.85),
-      const Offset(0.08, 0.78),
-      const Offset(0.16, 0.82),
-      const Offset(0.24, 0.70),
-      const Offset(0.32, 0.75),
-      const Offset(0.40, 0.60),
-      const Offset(0.48, 0.65),
-      const Offset(0.56, 0.55),
-      const Offset(0.64, 0.45),
-      const Offset(0.72, 0.55),
-      const Offset(0.80, 0.40),
-      const Offset(0.88, 0.30),
-      const Offset(0.94, 0.18),
-      const Offset(1.00, 0.08),
-    ];
-
-    Offset toCanvas(Offset p) =>
-        Offset(p.dx * size.width, p.dy * size.height);
-    final canvasPoints = points.map(toCanvas).toList();
-
-    // Smooth the polyline using a Catmull-Rom → cubic Bezier conversion.
-    // This produces a gentle curve between every pair of points (instead
-    // of sharp line segments) so the trend looks more organic.
-    Path buildSmoothPath(List<Offset> pts, {required bool closed}) {
-      final path = Path();
-      if (pts.isEmpty) return path;
-      path.moveTo(pts.first.dx, pts.first.dy);
-      const tension = 0.20; // 0 = straight lines, larger = more curvy
-      for (var i = 0; i < pts.length - 1; i++) {
-        final p0 = pts[i == 0 ? (closed ? pts.length - 2 : i) : i - 1];
-        final p1 = pts[i];
-        final p2 = pts[i + 1];
-        final p3 = pts[i + 2 >= pts.length
-            ? (closed ? 1 : pts.length - 1)
-            : i + 2];
-        final cp1 = Offset(
-          p1.dx + (p2.dx - p0.dx) * tension,
-          p1.dy + (p2.dy - p0.dy) * tension,
-        );
-        final cp2 = Offset(
-          p2.dx - (p3.dx - p1.dx) * tension,
-          p2.dy - (p3.dy - p1.dy) * tension,
-        );
-        path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, p2.dx, p2.dy);
-      }
-      return path;
-    }
-
-    // Area fill below the smoothed line.
-    final fillPath = buildSmoothPath(canvasPoints, closed: false)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF22C55E).withValues(alpha: 0.55),
-          const Color(0xFF22C55E).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(fillPath, fillPaint);
-
-    // Smoothed stroke.
-    final strokePath = buildSmoothPath(canvasPoints, closed: false);
-    final strokePaint = Paint()
-      ..color = const Color(0xFF22C55E)
-      ..strokeWidth = 1.6
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true;
-    canvas.drawPath(strokePath, strokePaint);
-
-    // End-point marker (small filled circle).
-    final last = toCanvas(points.last);
-    canvas.drawCircle(
-      last,
-      3,
-      Paint()..color = const Color(0xFF22C55E),
-    );
-    canvas.drawCircle(
-      last,
-      3,
-      Paint()
-        ..color = const Color(0xFF22C55E).withValues(alpha: 0.30)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _TrendLinePainter old) => false;
-}
-
 // ============================ Donut Chart ============================
 class _DonutCard extends StatelessWidget {
-  const _DonutCard({required this.l});
+  const _DonutCard({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
+    // Resolve source segments. Fall back to localized demo values.
+    final List<MarketSourceSegment> segments =
+        (data != null && data!.sources.length >= 3)
+            ? data!.sources.take(3).toList()
+            : <MarketSourceSegment>[
+                MarketSourceSegment(
+                  name: l.t('mp_source_news'),
+                  fraction: 0.68,
+                  colorName: 'green',
+                ),
+                MarketSourceSegment(
+                  name: l.t('mp_source_chats'),
+                  fraction: 0.20,
+                  colorName: 'amber',
+                ),
+                MarketSourceSegment(
+                  name: l.t('mp_source_social'),
+                  fraction: 0.12,
+                  colorName: 'red',
+                ),
+              ];
+
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
       decoration: BoxDecoration(
@@ -761,7 +900,6 @@ class _DonutCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header title — centered (matches the reference).
           Text(
             l.t('mp_chart_sources'),
             textAlign: TextAlign.center,
@@ -773,56 +911,53 @@ class _DonutCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 6),
+          // Donut centered at the top.
+          Center(
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: CustomPaint(
+                size: const Size(72, 72),
+                painter: _DonutPainter(segments: segments),
+              ),
+            ),
+          ),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 90,
-            child: Row(
-              children: [
-                // Legend on the start side (right in RTL), so it appears
-                // on the visual right side, matching the reference.
+          // Legend below the donut, evenly distributed across the
+          // available width. Each item gets equal space via
+          // [Expanded] so long names ellipsize cleanly instead of
+          // overflowing the card.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (var i = 0; i < segments.length; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      _LegendItem(
-                        color: Color(0xFF22C55E),
-                        label: '68%',
-                        name: 'mp_source_news',
-                      ),
-                      SizedBox(height: 6),
-                      _LegendItem(
-                        color: Color(0xFFFBBF24),
-                        label: '20%',
-                        name: 'mp_source_chats',
-                      ),
-                      SizedBox(height: 6),
-                      _LegendItem(
-                        color: Color(0xFFEF4444),
-                        label: '12%',
-                        name: 'mp_source_social',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Donut on the end side (left in RTL), so it appears on
-                // the visual left side, matching the reference.
-                Expanded(
-                  child: SizedBox(
-                    height: 90,
-                    child: CustomPaint(
-                      size: const Size(90, 90),
-                      painter: _DonutPainter(),
-                    ),
+                  child: _LegendItem(
+                    color: _colorForName(segments[i].colorName),
+                    label: '${(segments[i].fraction * 100).round()}%',
+                    name: segments[i].name,
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  static Color _colorForName(String name) {
+    switch (name) {
+      case 'amber':
+        return const Color(0xFFFBBF24);
+      case 'red':
+        return const Color(0xFFEF4444);
+      case 'green':
+      default:
+        return const Color(0xFF22C55E);
+    }
   }
 }
 
@@ -838,39 +973,12 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    // Order reversed so that in an RTL Row the visual layout matches
-    // the reference: colored dot on the left, label name in the middle,
-    // percentage on the right.
-    return Row(
+    // Compact horizontal layout: dot + name + percentage.
+    // Wrapped in a Column so each legend slot has a uniform height
+    // regardless of the source name's length.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Flexible(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            l.t(name),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: KashfPalette.active.textPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 6),
         Container(
           width: 8,
           height: 8,
@@ -879,32 +987,55 @@ class _LegendItem extends StatelessWidget {
             shape: BoxShape.circle,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: KashfPalette.active.textSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          name,
+          style: TextStyle(
+            color: KashfPalette.active.textPrimary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
 }
 
-/// Paints a 3-segment donut chart (68% green / 20% amber / 12% red).
-/// Uses `BlendMode.srcOver` with a small gap between segments.
+/// Paints a 3-segment donut chart. Segments and colors are
+/// supplied so the painter can render AI-driven or demo data.
 class _DonutPainter extends CustomPainter {
+  _DonutPainter({required List<MarketSourceSegment> segments})
+      : _segments = segments;
+  final List<MarketSourceSegment> _segments;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final segments = <_DonutSegment>[
-      _DonutSegment(0.68, const Color(0xFF22C55E)),
-      _DonutSegment(0.20, const Color(0xFFFBBF24)),
-      _DonutSegment(0.12, const Color(0xFFEF4444)),
-    ];
-
     final center = size.center(Offset.zero);
     final radius = math.min(size.width, size.height) / 2 - 4;
     final stroke = 12.0;
 
     var start = -math.pi / 2;
     const gap = 0.012; // small gap between segments, in radians
-    for (final s in segments) {
+    for (final s in _segments) {
+      final color = _colorForName(s.colorName);
       final sweep = s.fraction * 2 * math.pi - gap;
       final paint = Paint()
-        ..color = s.color
+        ..color = color
         ..strokeWidth = stroke
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.butt
@@ -920,8 +1051,20 @@ class _DonutPainter extends CustomPainter {
     }
   }
 
+  static Color _colorForName(String name) {
+    switch (name) {
+      case 'amber':
+        return const Color(0xFFFBBF24);
+      case 'red':
+        return const Color(0xFFEF4444);
+      case 'green':
+      default:
+        return const Color(0xFF22C55E);
+    }
+  }
+
   @override
-  bool shouldRepaint(covariant _DonutPainter old) => false;
+  bool shouldRepaint(covariant _DonutPainter old) => old._segments != _segments;
 }
 
 class _DonutSegment {
@@ -955,48 +1098,67 @@ class _SectionHeader extends StatelessWidget {
 
 // ============================ Topics Row ============================
 class _TopicsRow extends StatelessWidget {
-  const _TopicsRow({required this.l});
+  const _TopicsRow({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    final topics = <_TopicCardData>[
-      _TopicCardData(
-        label: l.t('mp_topic1_label'),
-        brand: l.t('mp_topic1_brand'),
-        change: l.t('mp_topic1_change'),
-        positive: true,
-        points: _kTopic1,
-      ),
-      _TopicCardData(
-        label: l.t('mp_topic2_label'),
-        brand: l.t('mp_topic2_brand'),
-        change: l.t('mp_topic2_change'),
-        positive: true,
-        points: _kTopic2,
-      ),
-      _TopicCardData(
-        label: l.t('mp_topic3_label'),
-        brand: l.t('mp_topic3_brand'),
-        change: l.t('mp_topic3_change'),
-        positive: false,
-        points: _kTopic3,
-      ),
-      _TopicCardData(
-        label: l.t('mp_topic4_label'),
-        brand: l.t('mp_topic4_brand'),
-        change: l.t('mp_topic4_change'),
-        positive: false,
-        points: _kTopic4,
-      ),
-      _TopicCardData(
-        label: l.t('mp_topic5_label'),
-        brand: l.t('mp_topic5_brand'),
-        change: l.t('mp_topic5_change'),
-        positive: true,
-        points: _kTopic5,
-      ),
-    ];
+    final List<_TopicCardData> topics;
+    if (data != null && data!.topics.isNotEmpty) {
+      topics = data!.topics.take(5).map((t) {
+        return _TopicCardData(
+          label: localiseBrandOrTag(t.label, locale: l.language.code),
+          brand: localiseBrandOrTag(t.brand, locale: l.language.code),
+          change: t.change,
+          positive: t.positive,
+          points: t.points,
+        );
+      }).toList();
+    } else {
+      topics = <_TopicCardData>[
+        _TopicCardData(
+          label: l.t('mp_topic1_label'),
+          brand: l.t('mp_topic1_brand'),
+          change: l.t('mp_topic1_change'),
+          positive: true,
+          points: _kTopic1,
+        ),
+        _TopicCardData(
+          label: l.t('mp_topic2_label'),
+          brand: l.t('mp_topic2_brand'),
+          change: l.t('mp_topic2_change'),
+          positive: true,
+          points: _kTopic2,
+        ),
+        _TopicCardData(
+          label: l.t('mp_topic3_label'),
+          brand: l.t('mp_topic3_brand'),
+          change: l.t('mp_topic3_change'),
+          positive: false,
+          points: _kTopic3,
+        ),
+        _TopicCardData(
+          label: l.t('mp_topic4_label'),
+          brand: l.t('mp_topic4_brand'),
+          change: l.t('mp_topic4_change'),
+          positive: false,
+          points: _kTopic4,
+        ),
+        _TopicCardData(
+          label: l.t('mp_topic5_label'),
+          brand: l.t('mp_topic5_brand'),
+          change: l.t('mp_topic5_change'),
+          positive: true,
+          points: _kTopic5,
+        ),
+      ];
+    }
 
     return SizedBox(
       height: 80,
@@ -1135,49 +1297,106 @@ class _TopicCard extends StatelessWidget {
 
 // ============================ Brands Row ============================
 class _BrandsRow extends StatelessWidget {
-  const _BrandsRow({required this.l});
+  const _BrandsRow({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    final brands = <_BrandCardData>[
-      _BrandCardData(
-        logo: 'assets/images/lattafa.jpeg',
-        name: l.t('mp_brand_lattafa'),
-        growth: '+45%',
-        positive: true,
-      ),
-      _BrandCardData(
-        logo: 'assets/images/borge.jpeg',
-        name: l.t('mp_brand_nike'),
-        growth: '+32%',
-        positive: true,
-      ),
-      _BrandCardData(
-        logo: 'assets/images/sauvage.jpeg',
-        name: l.t('mp_brand_dior'),
-        growth: '+28%',
-        positive: true,
-      ),
-      _BrandCardData(
-        logo: 'assets/images/winner.jpeg',
-        name: l.t('mp_brand_starbucks'),
-        growth: '+24%',
-        positive: true,
-      ),
-      _BrandCardData(
-        logo: 'assets/images/parfum.jpeg',
-        name: l.t('mp_brand_adidas'),
-        growth: '+21%',
-        positive: true,
-      ),
-      _BrandCardData(
-        logo: 'assets/images/lattafa.jpeg',
-        name: l.t('mp_brand_skin'),
-        growth: '+18%',
-        positive: true,
-      ),
+    const fallbackImages = <String>[
+      'assets/images/lattafa.jpeg',
+      'assets/images/borge.jpeg',
+      'assets/images/sauvage.jpeg',
+      'assets/images/winner.jpeg',
+      'assets/images/parfum.jpeg',
     ];
+    const hintToImage = <String, String>{
+      'perfume': 'assets/images/parfum.jpeg',
+      'phone': 'assets/images/sauvage.jpeg',
+      'shoe': 'assets/images/borge.jpeg',
+      'coffee': 'assets/images/sauvage.jpeg',
+      'fashion': 'assets/images/winner.jpeg',
+      'beauty': 'assets/images/lattafa.jpeg',
+    };
+
+    final List<_BrandCardData> brands;
+    if (data != null && data!.brands.isNotEmpty) {
+      brands = data!.brands.take(6).toList().asMap().entries.map((e) {
+        final b = e.value;
+        final lower = b.imageHint.toLowerCase();
+        final logo = hintToImage.entries
+                .firstWhere(
+                  (kv) => lower.contains(kv.key),
+                  orElse: () => const MapEntry('', ''),
+                )
+                .value
+                .isNotEmpty
+            ? hintToImage.entries
+                .firstWhere((kv) => lower.contains(kv.key))
+                .value
+            : fallbackImages[e.key % fallbackImages.length];
+        return _BrandCardData(
+          logo: logo,
+          name: b.name,
+          growth: b.growth,
+          positive: b.positive,
+          logoUrl: LogoService.urlFor(b.domain, size: 128),
+        );
+      }).toList();
+      // Diagnostic: show which resolved logo URLs we're about to
+      // render. Helps debug cases where the AI didn't return a
+      // domain or the resolver returned null.
+      // ignore: avoid_print
+      print('[MarketScreen] brand logo URLs:');
+      for (var i = 0; i < brands.length; i++) {
+        // ignore: avoid_print
+        print('  [$i] ${brands[i].name} -> ${brands[i].logoUrl ?? "(asset)"}');
+      }
+    } else {
+      brands = <_BrandCardData>[
+        _BrandCardData(
+          logo: 'assets/images/lattafa.jpeg',
+          name: l.t('mp_brand_lattafa'),
+          growth: '+45%',
+          positive: true,
+        ),
+        _BrandCardData(
+          logo: 'assets/images/borge.jpeg',
+          name: l.t('mp_brand_nike'),
+          growth: '+32%',
+          positive: true,
+        ),
+        _BrandCardData(
+          logo: 'assets/images/sauvage.jpeg',
+          name: l.t('mp_brand_dior'),
+          growth: '+28%',
+          positive: true,
+        ),
+        _BrandCardData(
+          logo: 'assets/images/winner.jpeg',
+          name: l.t('mp_brand_starbucks'),
+          growth: '+24%',
+          positive: true,
+        ),
+        _BrandCardData(
+          logo: 'assets/images/parfum.jpeg',
+          name: l.t('mp_brand_adidas'),
+          growth: '+21%',
+          positive: true,
+        ),
+        _BrandCardData(
+          logo: 'assets/images/lattafa.jpeg',
+          name: l.t('mp_brand_skin'),
+          growth: '+18%',
+          positive: true,
+        ),
+      ];
+    }
 
     return SizedBox(
       height: 118,
@@ -1197,11 +1416,16 @@ class _BrandCardData {
     required this.name,
     required this.growth,
     required this.positive,
+    this.logoUrl,
   });
   final String logo;
   final String name;
   final String growth;
   final bool positive;
+  /// Remote logo URL (Logo.dev) when the AI gave us a domain. The
+  /// card renders this URL with the bundled `logo` asset as a
+  /// fallback for any network failure.
+  final String? logoUrl;
 }
 
 class _BrandCard extends StatelessWidget {
@@ -1223,27 +1447,63 @@ class _BrandCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Logo circle.
+          // Logo circle. Uses a `Stack` with `Positioned.fill` to
+          // guarantee the image paints the entire inner rect of the
+          // circle edge-to-edge. No border on the container (it
+          // would consume pixels and leave a visible gap).
           Container(
-            width: 44,
-            height: 44,
+            width: 55,
+            height: 55,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: KashfPalette.active.fieldFill,
-              border: Border.all(color: KashfPalette.active.cardBorder),
             ),
             clipBehavior: Clip.antiAlias,
-            alignment: Alignment.center,
-            child: Image.asset(
-              data.logo,
-              width: 36,
-              height: 36,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Icon(
-                Icons.image_outlined,
-                color: KashfPalette.active.textSecondary,
-                size: 20,
-              ),
+            child: SizedBox.expand(
+              child: data.logoUrl != null
+                  ? Image.network(
+                      data.logoUrl!,
+                      fit: BoxFit.cover,
+                      // Logo.dev 404s are common for regional
+                      // perfume / fashion brands that don't have a
+                      // public website. Log the failure (so we can
+                      // tell which brands to drop from the
+                      // dictionary) and fall back to the bundled
+                      // asset so the user always sees something.
+                      errorBuilder: (context, error, stack) {
+                        // ignore: avoid_print
+                        print(
+                            '[MarketScreen] Logo.dev failed for '
+                            '${data.name} (${data.logoUrl}): $error');
+                        return Image.asset(
+                          data.logo,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.image_outlined,
+                            color: Color(0xFF94A3B8),
+                            size: 20,
+                          ),
+                        );
+                      },
+                      // Loading: keep the slot reserved with the
+                      // fallback asset already painted underneath.
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Image.asset(
+                          data.logo,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      data.logo,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.image_outlined,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 6),
@@ -1281,37 +1541,58 @@ class _BrandCard extends StatelessWidget {
 
 // ============================ Events List ============================
 class _EventsList extends StatelessWidget {
-  const _EventsList({required this.l});
+  const _EventsList({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
   final AppLocalizations l;
+  final MarketDetailData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    final events = <_EventData>[
-      _EventData(
-        title: l.t('mp_news1_title'),
-        subtitle: l.t('mp_news1_sub'),
-        time: l.t('mp_event_35m'),
-        status: l.t('mp_news_status_viral'),
-        statusColor: const Color(0xFFFBBF24),
-        statusBg: const Color(0xFF241F12),
-      ),
-      _EventData(
-        title: l.t('mp_news2_title'),
-        subtitle: l.t('mp_news2_sub'),
-        time: l.t('mp_event_2h'),
-        status: l.t('mp_news_status_important'),
-        statusColor: const Color(0xFF22C55E),
-        statusBg: const Color(0xFF12241A),
-      ),
-      _EventData(
-        title: l.t('mp_news3_title'),
-        subtitle: l.t('mp_news3_sub'),
-        time: l.t('mp_event_4h'),
-        status: l.t('mp_news_status_banned'),
-        statusColor: const Color(0xFFEF4444),
-        statusBg: const Color(0xFF241318),
-      ),
-    ];
+    final List<_EventData> events;
+    if (data != null && data!.events.isNotEmpty) {
+      events = data!.events.take(3).map((e) {
+        final colors = _statusColors(e.statusColorName);
+        return _EventData(
+          title: e.title,
+          subtitle: e.subtitle,
+          time: e.time,
+          status: e.status,
+          statusColor: colors.fg,
+          statusBg: colors.bg,
+        );
+      }).toList();
+    } else {
+      events = <_EventData>[
+        _EventData(
+          title: l.t('mp_news1_title'),
+          subtitle: l.t('mp_news1_sub'),
+          time: l.t('mp_event_35m'),
+          status: l.t('mp_news_status_viral'),
+          statusColor: const Color(0xFFFBBF24),
+          statusBg: const Color(0xFF241F12),
+        ),
+        _EventData(
+          title: l.t('mp_news2_title'),
+          subtitle: l.t('mp_news2_sub'),
+          time: l.t('mp_event_2h'),
+          status: l.t('mp_news_status_important'),
+          statusColor: const Color(0xFF22C55E),
+          statusBg: const Color(0xFF12241A),
+        ),
+        _EventData(
+          title: l.t('mp_news3_title'),
+          subtitle: l.t('mp_news3_sub'),
+          time: l.t('mp_event_4h'),
+          status: l.t('mp_news_status_banned'),
+          statusColor: const Color(0xFFEF4444),
+          statusBg: const Color(0xFF241318),
+        ),
+      ];
+    }
 
     return Column(
       children: [
@@ -1321,6 +1602,27 @@ class _EventsList extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  static ({Color fg, Color bg}) _statusColors(String name) {
+    switch (name) {
+      case 'red':
+        return (
+          fg: const Color(0xFFEF4444),
+          bg: const Color(0xFF241318),
+        );
+      case 'green':
+        return (
+          fg: const Color(0xFF22C55E),
+          bg: const Color(0xFF12241A),
+        );
+      case 'amber':
+      default:
+        return (
+          fg: const Color(0xFFFBBF24),
+          bg: const Color(0xFF241F12),
+        );
+    }
   }
 }
 
@@ -1430,50 +1732,50 @@ class _EventCard extends StatelessWidget {
   }
 }
 
-// ============================ Action Buttons ============================
-class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.l});
-  final AppLocalizations l;
+// // ============================ Action Buttons ============================
+// class _ActionButtons extends StatelessWidget {
+//   const _ActionButtons({required this.l});
+//   final AppLocalizations l;
 
-  @override
-  Widget build(BuildContext context) {
-    // Visual order (left → right) should be:
-    //   [Compare] [Watchlist] [Start new investigation]
-    // In an RTL Row, the first child renders on the right, so the
-    // data order is reversed: [Investigate, Watchlist, Compare].
-    return Row(
-      children: [
-        // Start new investigation (gold filled) — renders on the
-        // visual right edge.
-        Expanded(
-          child: _PrimaryActionButton(
-            icon: Icons.search,
-            label: l.t('mp_investigate_btn'),
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(width: 6),
-        // Watchlist (outline).
-        Expanded(
-          child: _OutlineActionButton(
-            icon: Icons.bookmark_outline,
-            label: l.t('mp_watchlist_btn'),
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(width: 6),
-        // Compare (outline) — renders on the visual left edge.
-        Expanded(
-          child: _OutlineActionButton(
-            icon: Icons.compare_arrows,
-            label: l.t('mp_compare_btn'),
-            onTap: () {},
-          ),
-        ),
-      ],
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     // Visual order (left → right) should be:
+//     //   [Compare] [Watchlist] [Start new investigation]
+//     // In an RTL Row, the first child renders on the right, so the
+//     // data order is reversed: [Investigate, Watchlist, Compare].
+//     return Row(
+//       children: [
+//         // Start new investigation (gold filled) — renders on the
+//         // visual right edge.
+//         Expanded(
+//           child: _PrimaryActionButton(
+//             icon: Icons.search,
+//             label: l.t('mp_investigate_btn'),
+//             onTap: () {},
+//           ),
+//         ),
+//         const SizedBox(width: 6),
+//         // Watchlist (outline).
+//         Expanded(
+//           child: _OutlineActionButton(
+//             icon: Icons.bookmark_outline,
+//             label: l.t('mp_watchlist_btn'),
+//             onTap: () {},
+//           ),
+//         ),
+//         const SizedBox(width: 6),
+//         // Compare (outline) — renders on the visual left edge.
+//         Expanded(
+//           child: _OutlineActionButton(
+//             icon: Icons.compare_arrows,
+//             label: l.t('mp_compare_btn'),
+//             onTap: () {},
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }
 
 class _OutlineActionButton extends StatelessWidget {
   const _OutlineActionButton({

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, User;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 import 'l10n/app_locale.dart';
@@ -16,11 +17,27 @@ import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load the .env file so `OpenRouterConfig` can read the API key.
+  // We tolerate a missing file (missing `.env` should not crash the
+  // app — the AI service falls back to demo data instead).
+  await _loadEnv();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   final localeController = await LocaleController.load();
   runApp(KashfApp(localeController: localeController));
+}
+
+/// Loads `.env` if present. Silently no-ops if the file is missing
+/// so first-launch / unsigned builds continue to work.
+Future<void> _loadEnv() async {
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Missing or unreadable .env — the AI service will fall back
+    // to demo data and surface a "configure API key" hint in the
+    // audit log.
+  }
 }
 
 class KashfApp extends StatefulWidget {

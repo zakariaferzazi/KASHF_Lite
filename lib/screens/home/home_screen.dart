@@ -1,7 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../theme.dart';
+import '../../services/ai/ai_models.dart';
+import '../../services/ai/ai_text_utils.dart';
+import '../../services/ai/home_data_controller.dart';
 import '../market/market_screen.dart';
 import '../files/files_screen.dart';
 import '../files/latest_investigations_screen.dart';
@@ -11,8 +14,49 @@ import 'today_case_screen.dart';
 /// the marketing reference: greeting + user avatar, featured investigation
 /// card, weekly market pulse, 6 quick actions in a 2-column grid, and
 /// recent updates carousel.
-class HomeScreen extends StatelessWidget {
+///
+/// As of the OpenRouter integration, the Market Pulse and Quick Actions
+/// sections are populated from the [AiHomeService] (driven by
+/// [HomeDataController]). When the API is unreachable the controller
+/// falls back to per-language demo data so the UI never goes blank.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final HomeDataController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = HomeDataController();
+    _controller.addListener(_onStateChanged);
+    // Bootstrap the initial fetch on the next frame so we can read
+    // the AppLocalizations (locale) from the context without a
+    // race against the widget tree.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final l = AppLocalizations.of(context);
+      _controller.bootstrap(
+        language: l.language.code,
+        region: 'Kuwait',
+      );
+    });
+  }
+
+  void _onStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onStateChanged);
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,69 +69,95 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: KashfPalette.active.background,
         body: SafeArea(
           bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
-                sliver: SliverToBoxAdapter(child: _TopBar()),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(child: _Greeting(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
-                sliver: SliverToBoxAdapter(child: _FeaturedInvestigation(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_market_pulse'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const MarketScreen())),
+          child: RefreshIndicator(
+            onRefresh: () => _controller.refreshNow(language: l.language.code),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: _TopBar(
+                      isRefreshing: _controller.isLoading,
+                      onRefresh: () => _controller.refreshNow(
+                        language: l.language.code,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(child: _MarketPulseList(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_quick_actions'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const FilesScreen())),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  sliver: SliverToBoxAdapter(child: _Greeting(l: l)),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: _FeaturedInvestigation(l: l),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(child: _QuickActionsGrid(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_recent_activity'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const LatestInvestigationsScreen())),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionHeader(
+                      title: l.t('home_market_pulse'),
+                      trailing: l.t('home_view_all'),
+                      onTrailingTap: () => Navigator.of(
+                        context,
+                      ).push(kashfRoute(const MarketScreen())),
+                      trailingLoading: _controller.isLoading,
+                    ),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
-                sliver: SliverToBoxAdapter(child: _RecentUpdatesList(l: l)),
-              ),
-            ],
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: _MarketPulseList(
+                      l: l,
+                      data: _controller.state.marketPulse,
+                      isLoading: _controller.isLoading,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionHeader(
+                      title: l.t('home_quick_actions'),
+                      trailing: l.t('home_view_all'),
+                      onTrailingTap: () => Navigator.of(
+                        context,
+                      ).push(kashfRoute(const FilesScreen())),
+                      trailingLoading: _controller.isLoading,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: _QuickActionsGrid(l: l),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionHeader(
+                      title: l.t('home_recent_activity'),
+                      trailing: l.t('home_view_all'),
+                      onTrailingTap: () => Navigator.of(
+                        context,
+                      ).push(kashfRoute(const LatestInvestigationsScreen())),
+                      trailingLoading: _controller.isLoading,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
+                  sliver: SliverToBoxAdapter(
+                    child: _RecentUpdatesList(l: l),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -97,7 +167,19 @@ class HomeScreen extends StatelessWidget {
 
 // ============================ Top Bar ============================
 class _TopBar extends StatelessWidget {
-  const _TopBar();
+  const _TopBar({
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
+
+  /// True while a manual refresh is in flight. Drives the spinner
+  /// inside the refresh button.
+  final bool isRefreshing;
+
+  /// User-tap callback. The parent (HomeScreen) wires this to
+  /// `HomeDataController.refreshNow` so the app bar is the
+  /// single point of entry for "go fetch AI data".
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +195,10 @@ class _TopBar extends StatelessWidget {
     );
 
     final bell = _NotificationBell();
+    final refreshButton = _RefreshIconButton(
+      isLoading: isRefreshing,
+      onTap: isRefreshing ? null : onRefresh,
+    );
     final avatar = Container(
       width: 32,
       height: 32,
@@ -133,10 +219,62 @@ class _TopBar extends StatelessWidget {
 
     // Children are listed in natural LTR visual order. Directionality
     // mirrors them for RTL automatically:
-    //   LTR: [avatar] [bell] ... [logo]
-    //   RTL: [logo]  ... [bell] [avatar]
+    //   LTR: [avatar] [refresh] [bell] ... [logo]
+    //   RTL: [logo]  ... [bell] [refresh] [avatar]
     return Row(
-      children: [avatar, SizedBox(width: 8), bell, Spacer(), logoMark],
+      children: [
+        avatar,
+        SizedBox(width: 8),
+        refreshButton,
+        SizedBox(width: 6),
+        bell,
+        Spacer(),
+        logoMark,
+      ],
+    );
+  }
+}
+
+/// Round gold-bordered icon button that mirrors the look of the
+/// notification bell. Shows a spinner while [isLoading] is true
+/// and ignores taps so the user can't double-fire.
+class _RefreshIconButton extends StatelessWidget {
+  const _RefreshIconButton({
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: KashfPalette.active.surface,
+          border: Border.all(color: KashfColors.gold.withValues(alpha: 0.55)),
+        ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
+                ),
+              )
+            : const Icon(
+                Icons.refresh_rounded,
+                color: KashfColors.gold,
+                size: 16,
+              ),
+      ),
     );
   }
 }
@@ -526,10 +664,12 @@ class _SectionHeader extends StatelessWidget {
     required this.title,
     this.trailing,
     this.onTrailingTap,
+    this.trailingLoading = false,
   });
   final String title;
   final String? trailing;
   final VoidCallback? onTrailingTap;
+  final bool trailingLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +685,16 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null)
+        if (trailingLoading)
+          const SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.6,
+              valueColor: AlwaysStoppedAnimation(KashfColors.gold),
+            ),
+          )
+        else if (trailing != null)
           GestureDetector(
             onTap: onTrailingTap,
             child: Text(
@@ -564,18 +713,46 @@ class _SectionHeader extends StatelessWidget {
 
 // ============================ Market Pulse ============================
 class _MarketPulseList extends StatelessWidget {
-  const _MarketPulseList({required this.l});
+  const _MarketPulseList({
+    required this.l,
+    this.data,
+    this.isLoading = false,
+  });
+
   final AppLocalizations l;
+  final MarketPulseData? data;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    return _MarketPulsePanel(l: l);
+    // Resolve the activity block: prefer AI data, fall back to the
+    // localized demo strings already shipped with the app.
+    final hasAi = data != null;
+    final activity = data?.activity;
+    return _MarketPulsePanel(
+      l: l,
+      localeCode: l.language.code,
+      aiMetrics: data?.metrics,
+      aiActivity: activity,
+      isLoading: isLoading && !hasAi,
+    );
   }
 }
 
 class _MarketPulsePanel extends StatelessWidget {
-  const _MarketPulsePanel({required this.l});
+  const _MarketPulsePanel({
+    required this.l,
+    required this.localeCode,
+    this.aiMetrics,
+    this.aiActivity,
+    this.isLoading = false,
+  });
+
   final AppLocalizations l;
+  final String localeCode;
+  final List<MarketPulseMetric>? aiMetrics;
+  final MarketPulseActivity? aiActivity;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -585,40 +762,64 @@ class _MarketPulsePanel extends StatelessWidget {
     const red = Color(0xFFEF4444);
     const gold = Color(0xFFF4C542);
 
-    final cards = <_PulseCardData>[
-      _PulseCardData(
-        label: l.t('home_pulse_top_gainers'),
-        value: l.t('home_pulse_gainers_val'),
-        sub: l.t('home_pulse_gainers_sub'),
-        color: green,
-        bg: const Color(0xFF12241A),
-        points: _kSparkUp,
-      ),
-      _PulseCardData(
-        label: l.t('home_pulse_top_traded'),
-        value: l.t('home_pulse_traded_val'),
-        sub: l.t('home_pulse_traded_sub'),
-        color: blue,
-        bg: const Color(0xFF13202A),
-        points: _kSparkWave1,
-      ),
-      _PulseCardData(
-        label: l.t('home_pulse_top_losers'),
-        value: l.t('home_pulse_losers_val'),
-        sub: l.t('home_pulse_losers_sub'),
-        color: red,
-        bg: const Color(0xFF241318),
-        points: _kSparkDown,
-      ),
-      _PulseCardData(
-        label: l.t('home_pulse_top_campaigns'),
-        value: l.t('home_pulse_campaigns_val'),
-        sub: l.t('home_pulse_campaigns_sub'),
-        color: gold,
-        bg: const Color(0xFF241F12),
-        points: _kSparkWave2,
-      ),
-    ];
+    final List<_PulseCardData> cards;
+    if (aiMetrics != null && aiMetrics!.isNotEmpty) {
+      cards = aiMetrics!.take(4).map((m) {
+        return _PulseCardData(
+          label: m.label,
+          value: m.value,
+          sub: m.sub,
+          color: pulseColorToColor(m.color),
+          bg: pulseBgForColor(m.color),
+          points: m.points,
+        );
+      }).toList();
+      while (cards.length < 4) {
+        cards.add(_PulseCardData(
+          label: '—',
+          value: '—',
+          sub: '',
+          color: blue,
+          bg: const Color(0xFF13202A),
+          points: _kSparkWave1,
+        ));
+      }
+    } else {
+      cards = <_PulseCardData>[
+        _PulseCardData(
+          label: l.t('home_pulse_top_gainers'),
+          value: l.t('home_pulse_gainers_val'),
+          sub: l.t('home_pulse_gainers_sub'),
+          color: green,
+          bg: const Color(0xFF12241A),
+          points: _kSparkUp,
+        ),
+        _PulseCardData(
+          label: l.t('home_pulse_top_traded'),
+          value: l.t('home_pulse_traded_val'),
+          sub: l.t('home_pulse_traded_sub'),
+          color: blue,
+          bg: const Color(0xFF13202A),
+          points: _kSparkWave1,
+        ),
+        _PulseCardData(
+          label: l.t('home_pulse_top_losers'),
+          value: l.t('home_pulse_losers_val'),
+          sub: l.t('home_pulse_losers_sub'),
+          color: red,
+          bg: const Color(0xFF241318),
+          points: _kSparkDown,
+        ),
+        _PulseCardData(
+          label: l.t('home_pulse_top_campaigns'),
+          value: l.t('home_pulse_campaigns_val'),
+          sub: l.t('home_pulse_campaigns_sub'),
+          color: gold,
+          bg: const Color(0xFF241F12),
+          points: _kSparkWave2,
+        ),
+      ];
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -628,7 +829,12 @@ class _MarketPulsePanel extends StatelessWidget {
           children: [
             for (var i = 0; i < cards.length; i++) ...[
               if (i > 0) SizedBox(width: 8),
-              Expanded(child: _PulseMetricCard(data: cards[i])),
+              Expanded(
+                child: _PulseMetricCard(
+                  data: cards[i],
+                  localeCode: localeCode,
+                ),
+              ),
             ],
           ],
         ),
@@ -662,7 +868,9 @@ class _MarketPulsePanel extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      l.t('home_pulse_market_active'),
+                      aiActivity?.title.isNotEmpty == true
+                          ? aiActivity!.title
+                          : l.t('home_pulse_market_active'),
                       style: TextStyle(
                         color: KashfPalette.active.textPrimary,
                         fontSize: 11,
@@ -673,7 +881,9 @@ class _MarketPulsePanel extends StatelessWidget {
                     ),
                     SizedBox(height: 1),
                     Text(
-                      l.t('home_pulse_market_active_h'),
+                      aiActivity?.subtitle.isNotEmpty == true
+                          ? aiActivity!.subtitle
+                          : l.t('home_pulse_market_active_h'),
                       style: TextStyle(
                         color: KashfPalette.active.textSecondary,
                         fontSize: 9,
@@ -691,7 +901,9 @@ class _MarketPulsePanel extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    l.t('home_pulse_market_alert'),
+                    aiActivity?.alertTitle.isNotEmpty == true
+                        ? aiActivity!.alertTitle
+                        : l.t('home_pulse_market_alert'),
                     style: TextStyle(
                       color: KashfPalette.active.textPrimary,
                       fontSize: 10,
@@ -702,7 +914,9 @@ class _MarketPulsePanel extends StatelessWidget {
                   ),
                   SizedBox(height: 1),
                   Text(
-                    l.t('home_pulse_market_vs'),
+                    aiActivity?.alertValue.isNotEmpty == true
+                        ? aiActivity!.alertValue
+                        : l.t('home_pulse_market_vs'),
                     style: TextStyle(
                       color: green,
                       fontSize: 9,
@@ -725,7 +939,10 @@ class _MarketPulsePanel extends StatelessWidget {
                 alignment: Alignment.center,
                 child: CustomPaint(
                   size: Size(36, 22),
-                  painter: _SparklinePainter(color: green, points: _kSparkUp),
+                  painter: _SparklinePainter(
+                    color: green,
+                    points: aiActivity?.points ?? _kSparkUp,
+                  ),
                 ),
               ),
             ],
@@ -754,11 +971,17 @@ class _PulseCardData {
 }
 
 class _PulseMetricCard extends StatelessWidget {
-  const _PulseMetricCard({required this.data});
+  const _PulseMetricCard({
+    required this.data,
+    required this.localeCode,
+  });
   final _PulseCardData data;
+  final String localeCode;
 
   @override
   Widget build(BuildContext context) {
+    final valueText = localiseBrandOrTag(data.value, locale: localeCode);
+    final subText = localiseBrandOrTag(data.sub, locale: localeCode);
     return Container(
       padding: EdgeInsetsDirectional.fromSTEB(8, 8, 8, 6),
       decoration: BoxDecoration(
@@ -770,7 +993,7 @@ class _PulseMetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top: small label (Ø§Ù„Ø£ÙƒØ«Ø± ØµØ¹ÙˆØ¯Ù‹Ø§, etc.).
+          // Top: small label (الأكثر صعودًا, etc.).
           Text(
             data.label,
             textAlign: TextAlign.center,
@@ -783,11 +1006,13 @@ class _PulseMetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 4),
-          // Middle: big value (+24%, #Lattafa, -8%, 12).
+          // Middle: big value (+24%, #Lattafa, -8%, 12). We
+          // normalise hashtags and brand names so they always
+          // match the active locale (e.g. "#لاتافا" in Arabic).
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              data.value,
+              valueText,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: data.color,
@@ -799,9 +1024,9 @@ class _PulseMetricCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 3),
-          // Subtitle (Ø§Ù„Ø¹Ø·ÙˆØ±, 328K Ù…Ù†Ø´ÙˆØ±, etc.).
+          // Subtitle (عطر, 328K منشور, etc.).
           Text(
-            data.sub,
+            subText,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: KashfPalette.active.textSecondary,
@@ -844,25 +1069,28 @@ class _SparklinePainter extends CustomPainter {
     if (points.length < 2) return;
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1.4
+      ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..isAntiAlias = true;
 
-    // Compress the line to the lower portion of the box, mirroring
-    // the small, low-positioned trend lines in the screenshot.
-    // Baseline sits near the bottom and amplitude stays small.
-    final baseY = size.height * 0.80; // baseline
-    final amp = size.height * 0.30; // max up/down swing
-    double yFor(double v) => baseY - (v - 0.1) * amp;
+    // Use most of the vertical band so the line clearly undulates.
+    // The painter is fed normalized 0..1 values from the AI; we map
+    // the full range (0..1) to the box height, leaving a small
+    // margin top + bottom so the line never clips.
+    final topMargin = size.height * 0.10;
+    final bottomMargin = size.height * 0.10;
+    final usableHeight = size.height - topMargin - bottomMargin;
+    double yFor(double v) =>
+        topMargin + (1.0 - v.clamp(0.0, 1.0)) * usableHeight;
 
     final path = Path();
     final n = points.length;
     final dx = size.width / (n - 1);
 
-    // Straight segments: the screenshot shows a jagged zig-zag, not a
-    // smooth wave, so we just connect the points directly.
+    // Connect points directly. With hourly samples the segments
+    // are short, giving the line a clearly "alive" look.
     path.moveTo(0, yFor(points[0]));
     for (var i = 1; i < n; i++) {
       path.lineTo(i * dx, yFor(points[i]));
@@ -875,91 +1103,38 @@ class _SparklinePainter extends CustomPainter {
       old.color != color || old.points != points;
 }
 
-/// Pre-baked wave shapes that look like the screenshot. All values are
-/// normalized to 0..1 (vertical range used by the painter). Each card
-/// uses a different irregular pattern with varying amplitudes so the
-/// trend lines look natural â€" small and zig-zaggy.
-const List<double> _kSparkUp = [
-  0.52,
-  0.38,
-  0.61,
-  0.46,
-  0.55,
-  0.40,
-  0.66,
-  0.50,
-  0.58,
-  0.80,
-  0.72,
-  0.55,
-  0.2,
-  0.99,
-  0.68,
-  0.53,
-  0.74,
+/// Pre-baked wave shapes for the demo data. All values are
+/// normalized to 0..1 (vertical range used by the painter). Each
+/// card uses 24 hourly samples with a different blend of sine
+/// waves so the line clearly oscillates instead of looking flat.
+const List<double> _kSparkUp = <double>[
+  0.30, 0.42, 0.55, 0.68, 0.78, 0.86, 0.82, 0.74,
+  0.65, 0.58, 0.50, 0.44, 0.40, 0.48, 0.58, 0.70,
+  0.80, 0.88, 0.92, 0.86, 0.78, 0.66, 0.54, 0.46,
 ];
 
-const List<double> _kSparkDown = [
-  0.48,
-  0.102,
-  0.40,
-  0.55,
-  0.44,
-  0.60,
-  0.36,
-  0.52,
-  0.99,
-  0.58,
-  0.32,
-  0.50,
-  0.42,
-  0.56,
-  0.38,
-  0.52,
-  0.30,
+const List<double> _kSparkDown = <double>[
+  0.78, 0.72, 0.64, 0.58, 0.50, 0.42, 0.36, 0.32,
+  0.30, 0.36, 0.44, 0.50, 0.58, 0.62, 0.66, 0.58,
+  0.48, 0.40, 0.34, 0.30, 0.28, 0.34, 0.42, 0.50,
 ];
 
-// Extra distinct patterns for variety.
-const List<double> _kSparkWave1 = [
-  0.45,
-  0.60,
-  0.50,
-  0.38,
-  0.55,
-  0.99,
-  0.42,
-  0.58,
-  0.46,
-  0.64,
-  0.50,
-  0.36,
-  0.58,
-  0.48,
-  0.62,
-  0.01,
-  0.56,
+const List<double> _kSparkWave1 = <double>[
+  0.50, 0.62, 0.74, 0.82, 0.78, 0.66, 0.54, 0.42,
+  0.34, 0.40, 0.52, 0.64, 0.74, 0.82, 0.88, 0.80,
+  0.68, 0.56, 0.44, 0.36, 0.42, 0.54, 0.66, 0.76,
 ];
 
-const List<double> _kSparkWave2 = [
-  0.55,
-  0.8,
-  0.30,
-  0.80,
-  0.50,
-  0.64,
-  0.40,
-  0.99,
-  0.01,
-  0.62,
-  0.44,
-  0.58,
-  0.50,
-  0.38,
-  0.54,
-  0.46,
-  0.80,
+const List<double> _kSparkWave2 = <double>[
+  0.70, 0.60, 0.48, 0.38, 0.32, 0.40, 0.52, 0.64,
+  0.74, 0.80, 0.74, 0.64, 0.52, 0.42, 0.36, 0.42,
+  0.54, 0.66, 0.78, 0.86, 0.82, 0.72, 0.60, 0.50,
 ];
 
+// ============================ Quick Actions ============================
+// Mirrors the marketing reference: a horizontal carousel of activity
+// cards. Each card shows a cover image with a status dot, the activity
+// title, a percentage, a colored progress bar, and a status label.
 // ============================ Quick Actions ============================
 // Mirrors the marketing reference: a horizontal carousel of activity
 // cards. Each card shows a cover image with a status dot, the activity
