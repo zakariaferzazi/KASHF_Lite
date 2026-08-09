@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
 import '../../theme.dart';
 
 /// Reports tab — redesigned to match the marketing reference: a header
@@ -118,65 +119,78 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Directionality(
-      textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        backgroundColor: KashfPalette.active.background,
-        body: SafeArea(
-          bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _Header(l: l, onFilter: () {}),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _SearchField(
-                    controller: _searchCtrl,
-                    hint: l.t('reports_search_hint'),
+    // Subscribe to the theme controller so the screen rebuilds
+    // instantly when the user switches themes in Settings.
+    final themeCtrl = ThemeScope.of(context);
+    return AnimatedBuilder(
+      animation: themeCtrl,
+      builder: (context, _) {
+        return Directionality(
+          textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Scaffold(
+            backgroundColor: KashfPalette.active.background,
+            body: SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      12,
+                      20,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _Header(l: l, onFilter: () {}),
+                    ),
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _FilterChipsRow(
-                    filters: _filters,
-                    selectedIndex: _filterIndex,
-                    onSelect: (i) => setState(() => _filterIndex = i),
-                    l: l,
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: _SearchField(
+                        controller: _searchCtrl,
+                        hint: l.t('reports_search_hint'),
+                      ),
+                    ),
                   ),
-                ),
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: _FilterChipsRow(
+                        filters: _filters,
+                        selectedIndex: _filterIndex,
+                        onSelect: (i) => setState(() => _filterIndex = i),
+                        l: l,
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.fromSTEB(20, 18, 20, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: _KpiRow(kpis: _kpis, l: l),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.fromSTEB(20, 22, 20, 6),
+                    sliver: SliverToBoxAdapter(
+                      child: _RecentHeader(l: l, onSort: () {}),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+                    sliver: SliverList.separated(
+                      itemCount: _items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) =>
+                          _ReportCard(item: _items[i], l: l),
+                    ),
+                  ),
+                ],
               ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 18, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _KpiRow(kpis: _kpis, l: l),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 22, 20, 6),
-                sliver: SliverToBoxAdapter(
-                  child: _RecentHeader(l: l, onSort: () {}),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
-                sliver: SliverList.separated(
-                  itemCount: _items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) =>
-                      _ReportCard(item: _items[i], l: l),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

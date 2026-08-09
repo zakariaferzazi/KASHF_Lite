@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/user_profile_scope.dart';
 import '../../theme.dart';
+import '../../widgets/user_avatar.dart';
 import '../explore/explore_screen.dart';
 import '../home/home_screen.dart';
 import '../investigation/investigation_screen.dart';
@@ -363,22 +365,11 @@ class _AvatarChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: KashfColors.gold.withValues(alpha: 0.20),
-              border: Border.all(color: KashfColors.gold, width: 1),
-            ),
-            clipBehavior: Clip.antiAlias,
-            alignment: Alignment.center,
-            child: Image.asset(
-              'assets/images/logoprofile.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.person, color: KashfColors.gold, size: 14),
-            ),
+          UserAvatar(
+            profile: UserProfileScope.of(context).profile,
+            size: 24,
+            borderColor: KashfColors.gold,
+            borderWidth: 1,
           ),
           const SizedBox(width: 6),
           Column(

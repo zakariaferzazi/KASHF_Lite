@@ -10,15 +10,15 @@ import 'l10n/locale_controller.dart';
 import 'l10n/locale_scope.dart';
 import 'l10n/theme_controller.dart';
 import 'l10n/theme_scope.dart';
+import 'l10n/user_profile_controller.dart';
+import 'l10n/user_profile_scope.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/shell/home_shell.dart';
 import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final localeController = await LocaleController.load();
   runApp(KashfApp(localeController: localeController));
 }
@@ -33,34 +33,23 @@ class KashfApp extends StatefulWidget {
 
 class _KashfAppState extends State<KashfApp> {
   late final ThemeController _themeController;
+  late final UserProfileController _userProfileController;
 
   @override
   void initState() {
     super.initState();
+    // The ThemeController constructor applies the initial palette so
+    // the very first frame is correct.
     _themeController = ThemeController();
-    // Apply the initial palette so the very first frame is correct.
-    _applyPalette(_themeController.mode);
+    _userProfileController = UserProfileController();
   }
 
   @override
   void dispose() {
     widget.localeController.dispose();
     _themeController.dispose();
+    _userProfileController.dispose();
     super.dispose();
-  }
-
-  void _applyPalette(AppThemeMode mode) {
-    switch (mode) {
-      case AppThemeMode.dark:
-        KashfPalette.setActive(KashfPalette.dark);
-        break;
-      case AppThemeMode.light:
-        KashfPalette.setActive(KashfPalette.light);
-        break;
-      case AppThemeMode.main:
-        KashfPalette.setActive(KashfPalette.main);
-        break;
-    }
   }
 
   @override
@@ -69,56 +58,80 @@ class _KashfAppState extends State<KashfApp> {
       controller: widget.localeController,
       child: ThemeScope(
         controller: _themeController,
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            widget.localeController,
-            _themeController,
-          ]),
-          builder: (context, _) {
-            _applyPalette(_themeController.mode);
-            final l = AppLocalizations(widget.localeController.language);
-            // Use MaterialApp.builder (instead of wrapping MaterialApp
-            // from outside) so the Directionality lives *inside* the
-            // Navigator. This is the officially supported way to force
-            // RTL across the entire app and ensures that screens which
-            // themselves override `Directionality` (e.g. via the
-            // Localizations widget) still inherit our RTL direction.
-            return MaterialApp(
-              title: l.t('app_title'),
-              debugShowCheckedModeBanner: false,
-              themeMode: _themeController.mode.materialMode,
-              theme: _buildTheme(Brightness.light),
-              darkTheme: _buildTheme(Brightness.dark),
-              locale: widget.localeController.language.locale,
-              // Stub delegate so MaterialApp accepts our locale. We avoid
-              // pulling in flutter_localizations for the MVP.
-              localizationsDelegates: const [
-                _StubLocalizationsDelegate(),
-                _StubCupertinoLocalizationsDelegate(),
-              ],
-              supportedLocales: const [Locale('en'), Locale('ar')],
-              localeResolutionCallback: (deviceLocale, supported) {
-                if (deviceLocale == null) return const Locale('en');
-                for (final loc in supported) {
-                  if (loc.languageCode == deviceLocale.languageCode) {
-                    return loc;
+        child: UserProfileScope(
+          controller: _userProfileController,
+          // IMPORTANT: We deliberately do NOT listen to the theme
+          // controller here. The `MaterialApp` only needs to rebuild
+          // when the *language* changes (because `AppLocalizations` is
+          // built from the locale). Rebuilding `MaterialApp` on every
+          // theme switch causes a visible delay because the Navigator
+          // and all routes get torn down and rebuilt.
+          //
+          // Theme switching is handled in two places:
+          //   1. `ThemeController.setMode` updates `KashfPalette.active`
+          //      synchronously so any widget that reads the static
+          //      palette gets the new colors.
+          //   2. `HomeShell` (and any other listening widget) wraps
+          //      itself in an `AnimatedBuilder` keyed to the theme
+          //      controller, so only the relevant subtree rebuilds.
+          child: AnimatedBuilder(
+            animation: widget.localeController,
+            builder: (context, _) {
+              final l = AppLocalizations(widget.localeController.language);
+              // Use MaterialApp.builder (instead of wrapping MaterialApp
+              // from outside) so the Directionality lives *inside* the
+              // Navigator. This is the officially supported way to force
+              // RTL across the entire app and ensures that screens which
+              // themselves override `Directionality` (e.g. via the
+              // Localizations widget) still inherit our RTL direction.
+              return MaterialApp(
+                title: l.t('app_title'),
+                debugShowCheckedModeBanner: false,
+                // We always render with a dark Material theme (the app's
+                // brand is dark-first) and override the perceived
+                // brightness via a `Theme` widget inside the
+                // `home:`. This avoids rebuilding `MaterialApp` on
+                // every theme switch — the previous behavior was
+                // visible to users as a ~200ms freeze because the
+                // Navigator, the route stack, and every screen get
+                // torn down and rebuilt when the `themeMode` flips.
+                // Our screens all read `KashfPalette.active.*`
+                // directly, so the perceived color change is
+                // instant.
+                themeMode: ThemeMode.dark,
+                theme: _buildTheme(Brightness.dark),
+                locale: widget.localeController.language.locale,
+                // Stub delegate so MaterialApp accepts our locale. We avoid
+                // pulling in flutter_localizations for the MVP.
+                localizationsDelegates: const [
+                  _StubLocalizationsDelegate(),
+                  _StubCupertinoLocalizationsDelegate(),
+                ],
+                supportedLocales: const [Locale('en'), Locale('ar')],
+                localeResolutionCallback: (deviceLocale, supported) {
+                  if (deviceLocale == null) return const Locale('en');
+                  for (final loc in supported) {
+                    if (loc.languageCode == deviceLocale.languageCode) {
+                      return loc;
+                    }
                   }
-                }
-                return const Locale('en');
-              },
-              builder: (context, child) {
-                // Force a Directionality inside the Navigator so every
-                // screen (including the auth screens) inherits RTL when
-                // Arabic is selected.
-                return Directionality(
-                  textDirection:
-                      l.isRtl ? TextDirection.rtl : TextDirection.ltr,
-                  child: child ?? const SizedBox.shrink(),
-                );
-              },
-              home: const _AuthGate(),
-            );
-          },
+                  return const Locale('en');
+                },
+                builder: (context, child) {
+                  // Force a Directionality inside the Navigator so every
+                  // screen (including the auth screens) inherits RTL when
+                  // Arabic is selected.
+                  return Directionality(
+                    textDirection: l.isRtl
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
+                home: const _AuthGate(),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -213,20 +226,18 @@ class _AuthGate extends StatelessWidget {
 /// Uses pushAndRemoveUntil so the auth stack is fully cleared and the
 /// user lands on HomeShell as the only remaining route.
 void navigateToHome(BuildContext context) {
-  Navigator.of(context).pushAndRemoveUntil(
-    kashfRoute(const HomeShell()),
-    (route) => false,
-  );
+  Navigator.of(
+    context,
+  ).pushAndRemoveUntil(kashfRoute(const HomeShell()), (route) => false);
 }
 
 /// Public helper so the settings screen can navigate back to the
 /// welcome screen after sign-out. Mirrors [navigateToHome] but lands
 /// on the unauthenticated landing page.
 void navigateToWelcome(BuildContext context) {
-  Navigator.of(context).pushAndRemoveUntil(
-    kashfRoute(const WelcomeScreen()),
-    (route) => false,
-  );
+  Navigator.of(
+    context,
+  ).pushAndRemoveUntil(kashfRoute(const WelcomeScreen()), (route) => false);
 }
 
 /// Helper for AppLanguage's locale from a code.

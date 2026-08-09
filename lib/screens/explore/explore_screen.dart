@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_controller.dart';
+import '../../l10n/theme_scope.dart';
 import '../../theme.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -19,100 +21,151 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The screen reads `KashfPalette.active.*` everywhere, but those
+    // are static fields — they don't notify listeners. We need an
+    // `AnimatedBuilder` keyed to the theme controller so this screen
+    // rebuilds the instant the user switches themes in Settings,
+    // without having to navigate to another tab and back.
+    final themeCtrl = ThemeScope.of(context);
     final l = AppLocalizations.of(context);
-    return Directionality(
-      textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        backgroundColor: const Color(0xFF050608),
-        body: SafeArea(
-          bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 8),
-                sliver: SliverToBoxAdapter(child: _TopBar(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 6, 20, 14),
-                sliver: SliverToBoxAdapter(
-                  child: _CategoryChipsRow(
-                    selected: _selectedCategory,
-                    onChanged: (i) => setState(() => _selectedCategory = i),
-                    l: l,
+    return AnimatedBuilder(
+      animation: themeCtrl,
+      builder: (context, _) {
+        return Directionality(
+          textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Scaffold(
+            backgroundColor: KashfPalette.active.background,
+            body: SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      12,
+                      20,
+                      8,
+                    ),
+                    sliver: SliverToBoxAdapter(child: _TopBar(l: l)),
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
-                sliver: SliverToBoxAdapter(
-                  child: _TrendingSectionHeader(
-                    title: l.t('explore_trending_title'),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
-                sliver: SliverToBoxAdapter(
-                  child: _TrendingCarousel(
-                    onPageChanged: (i) => setState(() => _trendingPage = i),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
-                sliver: SliverToBoxAdapter(
-                  child: _DotsIndicator(count: 4, index: _trendingPage),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
-                sliver: SliverToBoxAdapter(
-                  child: _DiscoverSectionHeader(
-                    title: l.t('explore_discover_title'),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-                sliver: SliverToBoxAdapter(child: _DiscoverGrid(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
-                sliver: SliverToBoxAdapter(
-                  child: _RecentSectionHeader(
-                    title: l.t('explore_recent_title'),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(12, 0, 12, 32),
-                sliver: SliverToBoxAdapter(
-                  child: _RecentInvestigationsList(
-                    items: [
-                      _RecentInvestigationItem(
-                        brandAsset: 'assets/images/parfum.jpeg',
-                        title: l.t('explore_recent1_title'),
-                        subtitle: l.t('explore_recent1_sub'),
-                        time: l.t('explore_recent1_time'),
-                        statusLabel: l.t('explore_recent_complete'),
-                        statusStyle: _StatusStyle.completed,
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      6,
+                      20,
+                      14,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _CategoryChipsRow(
+                        selected: _selectedCategory,
+                        onChanged: (i) => setState(() => _selectedCategory = i),
+                        l: l,
                       ),
-                      _RecentInvestigationItem(
-                        brandAsset: 'assets/images/sauvage.jpeg',
-                        title: l.t('explore_recent2_title'),
-                        subtitle: l.t('explore_recent2_sub'),
-                        time: l.t('explore_recent2_time'),
-                        statusLabel: l.t('explore_recent_add'),
-                        statusStyle: _StatusStyle.quickAnswer,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      16,
+                      20,
+                      12,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _TrendingSectionHeader(
+                        title: l.t('explore_trending_title'),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
+                    sliver: SliverToBoxAdapter(
+                      child: _TrendingCarousel(
+                        onPageChanged: (i) => setState(() => _trendingPage = i),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      4,
+                      20,
+                      16,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _DotsIndicator(count: 4, index: _trendingPage),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      16,
+                      20,
+                      12,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _DiscoverSectionHeader(
+                        title: l.t('explore_discover_title'),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      0,
+                      20,
+                      12,
+                    ),
+                    sliver: SliverToBoxAdapter(child: _DiscoverGrid(l: l)),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      16,
+                      20,
+                      12,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _RecentSectionHeader(
+                        title: l.t('explore_recent_title'),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      12,
+                      0,
+                      12,
+                      32,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _RecentInvestigationsList(
+                        items: [
+                          _RecentInvestigationItem(
+                            brandAsset: 'assets/images/parfum.jpeg',
+                            title: l.t('explore_recent1_title'),
+                            subtitle: l.t('explore_recent1_sub'),
+                            time: l.t('explore_recent1_time'),
+                            statusLabel: l.t('explore_recent_complete'),
+                            statusStyle: _StatusStyle.completed,
+                          ),
+                          _RecentInvestigationItem(
+                            brandAsset: 'assets/images/sauvage.jpeg',
+                            title: l.t('explore_recent2_title'),
+                            subtitle: l.t('explore_recent2_sub'),
+                            time: l.t('explore_recent2_time'),
+                            statusLabel: l.t('explore_recent_add'),
+                            statusStyle: _StatusStyle.quickAnswer,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -244,7 +297,7 @@ class _CategoryChip extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? KashfColors.gold : const Color(0xFF2A2D38),
+            color: selected ? KashfColors.gold : KashfPalette.active.cardBorder,
             width: 1,
           ),
         ),
@@ -255,13 +308,17 @@ class _CategoryChip extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: selected ? KashfColors.gold : Colors.white,
+              color: selected
+                  ? KashfColors.gold
+                  : KashfPalette.active.textPrimary,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: selected ? KashfColors.gold : Colors.white,
+                color: selected
+                    ? KashfColors.gold
+                    : KashfPalette.active.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -420,7 +477,7 @@ class _TrendingCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Material(
-        color: const Color(0xFF171A20),
+        color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(15),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -435,12 +492,12 @@ class _TrendingCard extends StatelessWidget {
                 asset,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => Container(
-                  color: const Color(0xFF0E0F14),
+                  color: KashfPalette.active.surfaceLight,
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.image_outlined,
                     size: 28,
-                    color: const Color(0xFF8A8F9C),
+                    color: KashfPalette.active.textSecondary,
                   ),
                 ),
               ),
@@ -461,8 +518,8 @@ class _TrendingCard extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: KashfPalette.active.textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
@@ -473,8 +530,8 @@ class _TrendingCard extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA0A6),
+                      style: TextStyle(
+                        color: KashfPalette.active.textSecondary,
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                         height: 1.3,
@@ -526,8 +583,8 @@ class _TrendingSectionHeader extends StatelessWidget {
 
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -562,7 +619,9 @@ class _DotsIndicator extends StatelessWidget {
               width: i == index ? 20 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: i == index ? KashfColors.gold : const Color(0xFF2A2D38),
+                color: i == index
+                    ? KashfColors.gold
+                    : KashfPalette.active.cardBorder,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -601,8 +660,8 @@ class _DiscoverSectionHeader extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -681,13 +740,14 @@ class _DiscoverTile extends StatelessWidget {
   const _DiscoverTile({required this.item});
   final _DiscoverItem item;
 
-  // Color tokens pinned exactly to the reference spec.
-  static const _cardFill = Color(0xFF171A20);
-  static const _cardBorder = Color(0xFF26282E);
-  static const _iconCircleFill = Color(0xFF1F2128);
+  // Color tokens. The ones that follow the theme come from
+  // `KashfPalette.active.*`; the brand-gold accent and status
+  // (success/info) tints stay constant across themes.
   static const _iconGold = Color(0xFFD4A33A);
-  static const _chevronColor = Color(0xFF6B6F76);
-  static const _secondaryText = Color(0xFF9AA0A6);
+  static const _successBg = Color(0xFF103C26);
+  static const _successFg = Color(0xFF3DDC84);
+  static const _infoBg = Color(0xFF112B45);
+  static const _infoFg = Color(0xFF4DA3FF);
 
   @override
   Widget build(BuildContext context) {
@@ -695,9 +755,9 @@ class _DiscoverTile extends StatelessWidget {
       height: 88,
       padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 10, 12),
       decoration: BoxDecoration(
-        color: _cardFill,
+        color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _cardBorder, width: 1),
+        border: Border.all(color: KashfPalette.active.cardBorder, width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -707,8 +767,8 @@ class _DiscoverTile extends StatelessWidget {
           Container(
             width: 38,
             height: 38,
-            decoration: const BoxDecoration(
-              color: _iconCircleFill,
+            decoration: BoxDecoration(
+              color: KashfPalette.active.surfaceLight,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -727,8 +787,8 @@ class _DiscoverTile extends StatelessWidget {
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: KashfPalette.active.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
@@ -739,8 +799,8 @@ class _DiscoverTile extends StatelessWidget {
                   item.subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _secondaryText,
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
                     fontSize: 10,
                     height: 1.35,
                     fontWeight: FontWeight.w500,
@@ -751,9 +811,13 @@ class _DiscoverTile extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           // Right-side chevron pinned to the far right, vertically centered.
-          const Padding(
-            padding: EdgeInsetsDirectional.only(start: 2),
-            child: Icon(Icons.chevron_left, color: _chevronColor, size: 20),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 2),
+            child: Icon(
+              Icons.chevron_left,
+              color: KashfPalette.active.textSecondary,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -794,8 +858,8 @@ class _RecentSectionHeader extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -847,9 +911,9 @@ class _RecentInvestigationsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171A20),
+        color: KashfPalette.active.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF26282E), width: 1),
+        border: Border.all(color: KashfPalette.active.cardBorder, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -857,10 +921,10 @@ class _RecentInvestigationsList extends StatelessWidget {
           for (var i = 0; i < items.length; i++) ...[
             _RecentInvestigationRow(item: items[i]),
             if (i != items.length - 1)
-              const Padding(
-                padding: EdgeInsetsDirectional.only(start: 12, end: 12),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12, end: 12),
                 child: Divider(
-                  color: Color(0xFF26282E),
+                  color: KashfPalette.active.divider,
                   height: 1,
                   thickness: 1,
                 ),
@@ -900,8 +964,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                 item.time,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF9AA0A6),
+                style: TextStyle(
+                  color: KashfPalette.active.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   height: 1.2,
@@ -922,8 +986,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                     item.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: KashfPalette.active.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       height: 1.2,
@@ -934,8 +998,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                     item.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9AA0A6),
+                    style: TextStyle(
+                      color: KashfPalette.active.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       height: 1.2,
@@ -951,7 +1015,7 @@ class _RecentInvestigationRow extends StatelessWidget {
               child: Container(
                 width: 48,
                 height: 48,
-                color: const Color(0xFF0E0F14),
+                color: KashfPalette.active.surfaceLight,
                 alignment: Alignment.center,
                 child: Image.asset(
                   item.brandAsset,
@@ -961,14 +1025,18 @@ class _RecentInvestigationRow extends StatelessWidget {
                   errorBuilder: (_, _, _) => Icon(
                     Icons.branding_watermark_outlined,
                     size: 22,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: KashfPalette.active.textSecondary,
                   ),
                 ),
               ),
             ),
             // 5. Three-dot menu — far right, 10–12 px from the image.
             const SizedBox(width: 10),
-            const Icon(Icons.more_vert, color: Color(0xFF8A8A8A), size: 18),
+            Icon(
+              Icons.more_vert,
+              color: KashfPalette.active.textSecondary,
+              size: 18,
+            ),
           ],
         ),
       ),
