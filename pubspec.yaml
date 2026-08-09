@@ -43,6 +43,20 @@ dependencies:
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
 
+  # Image picker for profile-photo selection (camera + gallery).
+  # Pinned to exactly 1.1.0 because newer versions (1.1.2+, 1.2.x)
+  # transitively require AndroidX libraries (activity 1.12.4,
+  # core 1.18.0) which in turn require Android Gradle Plugin 8.9.1+.
+  # This project uses AGP 8.7.0 (see android/settings.gradle.kts).
+  image_picker: 1.1.0
+
+# Force a specific image_picker_android release because the default
+# resolution picks up 0.8.13+17 (which hardcodes core 1.18.0 and
+# activity 1.12.4 → both require AGP 8.9.1+). 0.8.13+3 uses
+# core 1.13.1 + activity 1.10.1 which are compatible with AGP 8.7.0.
+dependency_overrides:
+  image_picker_android: 0.8.13+3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

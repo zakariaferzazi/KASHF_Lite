@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
 import '../../theme.dart';
 import '../market/market_screen.dart';
 import '../files/files_screen.dart';
@@ -17,80 +18,145 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    // Use the natural direction for the active language so Arabic flows
-    // right-to-left and English flows left-to-right natively.
-    return Directionality(
-      textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+    // Subscribe to the theme controller so the home screen rebuilds
+    // instantly when the user switches themes in Settings, instead of
+    // keeping stale colors until the user navigates away and back.
+    final themeCtrl = ThemeScope.of(context);
+    return AnimatedBuilder(
+      animation: themeCtrl,
+      builder: (context, _) {
+        // Use the natural direction for the active language so Arabic
+        // flows right-to-left and English flows left-to-right natively.
+        return Directionality(
+          textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: KashfPalette.active.background,
         body: SafeArea(
           bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
-                sliver: SliverToBoxAdapter(child: _TopBar()),
+          child: Column(
+            children: [
+              // Full-width dark appbar. Sits on top of the scrollable
+              // content so the logo, bell, and avatar stay readable
+              // regardless of the active theme.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 10),
+                decoration: const BoxDecoration(color: Color(0xFF050608)),
+                child: _TopBar(),
               ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(child: _Greeting(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
-                sliver: SliverToBoxAdapter(child: _FeaturedInvestigation(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_market_pulse'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const MarketScreen())),
-                  ),
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        12,
+                        16,
+                        4,
+                      ),
+                      sliver: SliverToBoxAdapter(child: _Greeting(l: l)),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        0,
+                        16,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _FeaturedInvestigation(l: l),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        0,
+                        16,
+                        4,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _SectionHeader(
+                          title: l.t('home_market_pulse'),
+                          trailing: l.t('home_view_all'),
+                          onTrailingTap: () => Navigator.of(
+                            context,
+                          ).push(kashfRoute(const MarketScreen())),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        4,
+                        16,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(child: _MarketPulseList(l: l)),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        0,
+                        16,
+                        4,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _SectionHeader(
+                          title: l.t('home_quick_actions'),
+                          trailing: l.t('home_view_all'),
+                          onTrailingTap: () => Navigator.of(
+                            context,
+                          ).push(kashfRoute(const FilesScreen())),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        4,
+                        16,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _QuickActionsGrid(l: l),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        0,
+                        16,
+                        4,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _SectionHeader(
+                          title: l.t('home_recent_activity'),
+                          trailing: l.t('home_view_all'),
+                          onTrailingTap: () => Navigator.of(context).push(
+                            kashfRoute(const LatestInvestigationsScreen()),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        4,
+                        16,
+                        16,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _RecentUpdatesList(l: l),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(child: _MarketPulseList(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_quick_actions'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const FilesScreen())),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(child: _QuickActionsGrid(l: l)),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    title: l.t('home_recent_activity'),
-                    trailing: l.t('home_view_all'),
-                    onTrailingTap: () => Navigator.of(
-                      context,
-                    ).push(kashfRoute(const LatestInvestigationsScreen())),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
-                sliver: SliverToBoxAdapter(child: _RecentUpdatesList(l: l)),
               ),
             ],
           ),
-        ),
-      ),
+        ))
+        );
+      },
     );
   }
 }
@@ -101,6 +167,13 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The top bar always renders on a dark strip — we use the *main*
+    // palette colors directly so the bell, avatar, and logo stay
+    // readable regardless of the active theme.
+    const darkSurface = Color(0xFF15151C);
+    const darkBorder = Color(0xFF262626);
+    const darkText = Color(0xFFFFFFFF);
+
     // The logo image already contains the brand name, so we just render it
     // as-is. Width is sized to match the action controls (bell + avatar).
     final logoMark = Image.asset(
@@ -112,7 +185,11 @@ class _TopBar extends StatelessWidget {
       errorBuilder: (_, _, _) => KashfLogo(width: 90),
     );
 
-    final bell = _NotificationBell();
+    final bell = _NotificationBell(
+      surface: darkSurface,
+      border: darkBorder,
+      iconColor: darkText,
+    );
     final avatar = Container(
       width: 32,
       height: 32,
@@ -142,8 +219,20 @@ class _TopBar extends StatelessWidget {
 }
 
 class _NotificationBell extends StatelessWidget {
+  const _NotificationBell({
+    required this.surface,
+    required this.border,
+    required this.iconColor,
+  });
+  final Color surface;
+  final Color border;
+  final Color iconColor;
+
   @override
   Widget build(BuildContext context) {
+    // Border around the badge uses the dark strip's background (so it
+    // looks "carved out" of the strip regardless of theme).
+    const stripBg = Color(0xFF050608);
     return SizedBox(
       width: 30,
       height: 30,
@@ -155,13 +244,13 @@ class _NotificationBell extends StatelessWidget {
             height: 30,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: KashfPalette.active.surface,
-              border: Border.all(color: KashfPalette.active.cardBorder),
+              color: surface,
+              border: Border.all(color: border),
             ),
             alignment: Alignment.center,
             child: Icon(
               Icons.notifications_none_outlined,
-              color: KashfPalette.active.textPrimary,
+              color: iconColor,
               size: 16,
             ),
           ),
@@ -174,10 +263,7 @@ class _NotificationBell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: KashfColors.gold,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: KashfPalette.active.background,
-                  width: 1.5,
-                ),
+                border: Border.all(color: stripBg, width: 1.5),
               ),
               alignment: Alignment.center,
               child: Text(
