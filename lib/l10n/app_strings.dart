@@ -111,8 +111,14 @@ class AppLocalizations {
       'home_branch_filter': 'branches',
       'home_featured_today': "Today's case",
       'home_featured_title': 'Lattafa global markets rise analysis',
+      'home_featured_title_with_brand_en':
+          '{brand} global markets rise analysis',
+      'home_featured_title_with_brand_ar':
+          'Global markets rise analysis for {brand}',
       'home_featured_subtitle':
           'In-depth investigation of expansion and growth strategy in Gulf and European markets',
+      'home_featured_subtitle_with_brand':
+          'In-depth investigation of {brand} expansion and growth strategy in Gulf and European markets',
       'home_featured_metric1': '12 sources',
       'home_featured_metric2': '8 articles',
       'home_featured_metric3': '24 indexes',
@@ -1143,8 +1149,13 @@ class AppLocalizations {
       'home_branch_filter': 'الفروع',
       'home_featured_today': 'قضية اليوم',
       'home_featured_title': 'تحليل صعود Lattafa في الأسواق العالمية',
+      'home_featured_title_with_brand_ar': 'تحليل صعود {brand} في الأسواق العالمية',
+      'home_featured_title_with_brand_en':
+          'تحليل صعود {brand} في الأسواق العالمية',
       'home_featured_subtitle':
           'تحقيق شامل حول استراتيجيّة التوسّع والنمو في الأسواق الخليجية والأوروبية',
+      'home_featured_subtitle_with_brand':
+          'تحقيق شامل حول استراتيجيّة {brand} في التوسّع والنمو داخل الأسواق الخليجية والأوروبية',
       'home_featured_metric1': '١٢',
       'home_featured_metric2': '٨',
       'home_featured_metric3': '٢٤',

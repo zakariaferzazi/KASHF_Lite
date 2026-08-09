@@ -15,6 +15,7 @@ import 'screens/auth/welcome_screen.dart';
 import 'screens/shell/home_shell.dart';
 import 'services/ai/ai_home_service.dart';
 import 'services/ai/disk_cache.dart';
+import 'services/ai/featured_brand_controller.dart';
 import 'services/news/news_service.dart';
 import 'theme.dart';
 
@@ -33,6 +34,7 @@ void main() async {
   final diskCache = await DiskCache.create();
   AiHomeService.initDiskCache(diskCache);
   NewsService.initDiskCache(diskCache);
+  FeaturedBrandController.initDiskCache(diskCache);
   final localeController = await LocaleController.load();
   runApp(KashfApp(localeController: localeController));
 }

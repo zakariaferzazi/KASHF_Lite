@@ -4,6 +4,7 @@ import '../../l10n/app_strings.dart';
 import '../../theme.dart';
 import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_text_utils.dart';
+import '../../services/ai/featured_brand_controller.dart';
 import '../../services/ai/home_data_controller.dart';
 import '../../services/news/news_data_controller.dart';
 import '../../services/news/news_models.dart';
@@ -32,6 +33,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final HomeDataController _controller;
   late final NewsDataController _newsController;
+  late final FeaturedBrandController _featuredBrand;
   NewsTopic? _selectedTopic;
   int _trendingPage = 0;
 
@@ -45,6 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _controller.addListener(_onStateChanged);
     _newsController = NewsDataController();
     _newsController.addListener(_onNewsChanged);
+    _featuredBrand = FeaturedBrandController();
+    _featuredBrand.addListener(_onStateChanged);
     // Bootstrap the initial fetch on the next frame so we can read
     // the AppLocalizations (locale) from the context without a
     // race against the widget tree.
@@ -55,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
         language: l.language.code,
         region: 'Kuwait',
       );
+      // Restore the previously featured brand from disk so the
+      // user sees the same brand after a restart.
+      await _featuredBrand.bootstrap();
       // Default to Trends so the home carousel surfaces what's
       // going viral right now across the region.
       _selectedTopic ??= NewsTopic.companies;
@@ -79,27 +86,38 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Single entry-point for the user-facing "refresh everything"
+  /// action (app-bar icon + pull-to-refresh). Refreshes the AI
+  /// payloads AND rotates the featured brand so the brand name
+  /// + logo on the featured card change in lock-step with the
+  /// rest of the page.
+  Future<void> _onRefreshAll({required String language}) async {
+    await Future.wait(<Future<void>>[
+      _controller.refreshNow(language: language),
+      _featuredBrand.refresh(),
+    ]);
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_onStateChanged);
     _controller.dispose();
     _newsController.removeListener(_onNewsChanged);
     _newsController.dispose();
+    _featuredBrand.removeListener(_onStateChanged);
+    _featuredBrand.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    // True while the very first AI fetch is in flight AND nothing
-    // is cached yet. Once we have at least one AI payload on
-    // screen the per-section loading spinners take over so the
-    // user can interact with the rest of the UI.
-    final hasAnyAi =
-        _controller.state.marketPulse != null ||
-            _controller.state.quickActions != null;
-    final showFullOverlay =
-        _controller.isLoading && !hasAnyAi;
+    // The centered brand spinner overlays the whole page on every
+    // refresh — both the very first cold load AND any tap on the
+    // app-bar refresh / pull-to-refresh afterwards. The backdrop
+    // fades in, blocking taps so the user can't trigger a second
+    // refresh while one is in flight.
+    final showFullOverlay = _controller.isLoading;
     // Use the natural direction for the active language so Arabic flows
     // right-to-left and English flows left-to-right natively.
     return Directionality(
@@ -115,8 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: SafeArea(
             bottom: false,
             child: RefreshIndicator(
-              onRefresh: () =>
-                  _controller.refreshNow(language: l.language.code),
+              onRefresh: () => _onRefreshAll(language: l.language.code),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -125,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   sliver: SliverToBoxAdapter(
                     child: _TopBar(
                       isRefreshing: _controller.isLoading,
-                      onRefresh: () => _controller.refreshNow(
+                      onRefresh: () => _onRefreshAll(
                         language: l.language.code,
                       ),
                     ),
@@ -138,7 +155,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
                   sliver: SliverToBoxAdapter(
-                    child: _FeaturedInvestigation(l: l),
+                    child: _FeaturedInvestigation(
+                      l: l,
+                      brandController: _featuredBrand,
+                    ),
                   ),
                 ),
                 SliverPadding(
@@ -454,8 +474,42 @@ class _Greeting extends StatelessWidget {
 
 // ============================ Featured Investigation ============================
 class _FeaturedInvestigation extends StatelessWidget {
-  const _FeaturedInvestigation({required this.l});
+  const _FeaturedInvestigation({
+    required this.l,
+    required this.brandController,
+  });
   final AppLocalizations l;
+  final FeaturedBrandController brandController;
+
+  /// Brand-aware headline. Picks the Arabic label for RTL users
+  /// (`brandController.brandLabel` is the Arabic form when one
+  /// is known, the raw English key otherwise) and falls back to
+  /// the raw English key for LTR users.
+  String _title(AppLocalizations l) {
+    final brand = brandController.brandKey ?? '';
+    if (brand.isEmpty) return l.t('home_featured_title');
+    if (l.isRtl) {
+      final arabic = brandController.brandLabel;
+      if (arabic.isNotEmpty && arabic != brand) {
+        return l.t('home_featured_title_with_brand_ar')
+            .replaceAll('{brand}', arabic);
+      }
+      return l.t('home_featured_title_with_brand_en')
+          .replaceAll('{brand}', brand);
+    }
+    return l.t('home_featured_title_with_brand_en')
+        .replaceAll('{brand}', brand);
+  }
+
+  /// Subtitle: includes the brand name so the user immediately
+  /// sees WHICH brand the card is about. Brand name comes from
+  /// the same source as [_title] so they stay in sync.
+  String _subtitle(AppLocalizations l) {
+    final brand = brandController.brandKey ?? '';
+    if (brand.isEmpty) return l.t('home_featured_subtitle');
+    return l.t('home_featured_subtitle_with_brand')
+        .replaceAll('{brand}', brand);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -511,9 +565,10 @@ class _FeaturedInvestigation extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title â€" white, bold.
+                          // Title — white, bold. Brand-aware so the
+                          // headline rotates when the user refreshes.
                           Text(
-                            l.t('home_featured_title'),
+                            _title(l),
                             textAlign: TextAlign.start,
                             style: TextStyle(
                               color: KashfPalette.active.textPrimary,
@@ -525,9 +580,9 @@ class _FeaturedInvestigation extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 6),
-                          // Subtitle â€" lighter gray, plain text (no icon).
+                          // Subtitle — lighter gray, plain text (no icon).
                           Text(
-                            l.t('home_featured_subtitle'),
+                            _subtitle(l),
                             style: TextStyle(
                               color: KashfPalette.active.textPrimary.withValues(
                                 alpha: 0.7,
@@ -635,18 +690,9 @@ class _FeaturedInvestigation extends StatelessWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.asset(
-                              'assets/images/lattafa.jpeg',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Container(
-                                color: const Color(0xFF2A1A0F),
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  Icons.local_florist,
-                                  color: purple,
-                                  size: 36,
-                                ),
-                              ),
+                            _FeaturedBrandLogo(
+                              logoUrl: brandController.logoUrl,
+                              fallbackBrandKey: brandController.brandKey,
                             ),
                             DecoratedBox(
                               decoration: BoxDecoration(
@@ -671,6 +717,73 @@ class _FeaturedInvestigation extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Renders the brand logo for the currently featured brand via
+/// `LogoService.urlFor(...)`. Falls back to the bundled Lattafa
+/// asset if the Logo.dev URL hasn't loaded yet or fails, so the
+/// card never looks empty.
+class _FeaturedBrandLogo extends StatelessWidget {
+  const _FeaturedBrandLogo({
+    required this.logoUrl,
+    required this.fallbackBrandKey,
+  });
+
+  final String? logoUrl;
+  final String? fallbackBrandKey;
+
+  @override
+  Widget build(BuildContext context) {
+    const purple = Color(0xFF8B5CF6);
+    if (logoUrl == null) {
+      // No brand picked yet (extremely rare — bootstrap fills it
+      // synchronously on launch). Render the bundled fallback so
+      // the slot is never blank.
+      return _fallback(purple);
+    }
+    return Image.network(
+      logoUrl!,
+      fit: BoxFit.contain,
+      alignment: Alignment.center,
+      // White background lets light logos (e.g. Starbucks on a
+      // white CDN) read against the dark card surface.
+      color: Colors.white,
+      colorBlendMode: BlendMode.modulate,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          alignment: Alignment.center,
+          child: const InlineSpinner(size: 18),
+        );
+      },
+      errorBuilder: (_, error, _) {
+        assert(() {
+          // ignore: avoid_print
+          print('[FeaturedBrand] logo load failed for '
+              '$logoUrl: $error');
+          return true;
+        }());
+        return _fallback(purple);
+      },
+    );
+  }
+
+  Widget _fallback(Color purple) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/lattafa.jpeg',
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: const Color(0xFF2A1A0F),
+            alignment: Alignment.center,
+            child: Icon(Icons.local_florist, color: purple, size: 36),
+          ),
+        ),
+      ],
     );
   }
 }

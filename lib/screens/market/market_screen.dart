@@ -79,11 +79,12 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    // Full-screen overlay only when we have nothing cached AND the
-    // first AI fetch is in flight. Once any payload lands the
-    // section-level spinners take over.
-    final hasAny = _controller.state.data != null;
-    final showFullOverlay = _controller.isLoading && !hasAny;
+    // The centered brand spinner overlays the whole page on every
+    // refresh — both the very first cold load AND any tap on the
+    // app-bar refresh afterwards. The backdrop fades in, blocking
+    // taps so the user can't trigger a second refresh while one
+    // is in flight.
+    final showFullOverlay = _controller.isLoading;
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(

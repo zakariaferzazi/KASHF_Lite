@@ -531,7 +531,7 @@ Variety — IMPORTANT:
     final shuffled = List<String>.from(allBrands)..shuffle(math.Random(seed));
     final picked = shuffled.take(count).toList();
     if (isArabic) {
-      return picked.map((b) => _brandNamesAr[b] ?? b).join(', ');
+      return picked.map((b) => brandNamesAr[b] ?? b).join(', ');
     }
     return picked.join(', ');
   }
@@ -585,7 +585,7 @@ Variety — IMPORTANT:
   /// Arabic translations for brand names in [allBrands]. Used only
   /// as a contextual hint when the user's language is Arabic — the
   /// JSON output MUST always use English/Latin names.
-  static const Map<String, String> _brandNamesAr = {
+  static const Map<String, String> brandNamesAr = {
     'lattafa': 'لاتافا',
     'arabian oud': 'عود عربي',
     'ajmal': 'عجمان',
@@ -632,4 +632,52 @@ Variety — IMPORTANT:
     'rivoli group': 'ريڤولي',
     'talabat': 'طلبات',
   };
+
+  static const Map<String, String> brandUrls = {
+'lattafa': 'https://www.lattafa.com',
+  'arabian oud': 'https://www.arabianoud.com',
+  'ajmal': 'https://en-ae.ajmal.com',
+  'al halal perfumes': 'https://alhelal4perfumes.com',
+  'al rehab': 'https://www.alrehab.com',
+  'swiss arabian': 'https://www.swissarabian.com',
+  'ard al zaafaran': 'https://ardalzaafaran.com',
+  'rasasi': 'https://www.rasasi.com',
+  'almarai': 'https://www.almarai.com',
+  'sadafco': 'https://www.sadafco.com',
+  'herfy': 'https://herfy.com',
+  'kudu': 'https://www.kudu.com.sa',
+  'al baik': 'https://www.albaik.com',
+  'stc': 'https://www.stc.com.sa',
+  'mobily': 'https://www.mobily.com.sa',
+  'zain': 'https://sa.zain.com',
+  'ooredoo': 'https://www.ooredoo.com',
+  'batelco': 'https://www.batelco.com',
+  'lulu hypermarket': 'https://www.luluhypermarket.com',
+  'carrefour': 'https://www.carrefourksa.com',
+  'spinneys': 'https://www.spinneys.com',
+  'jarir bookstore': 'https://www.jarir.com',
+  'xcite': 'https://www.xcite.com',
+  'namshi': 'https://namshi.com',
+  'centrepoint': 'https://www.centrepointstores.com',
+  'h&m': 'https://www.hm.com',
+  'max fashion': 'https://www.maxfashion.com',
+  'cafe bateel': 'https://bateel.com',
+  'costa coffee': 'https://costacoffee.ae',
+  'caribou coffee': 'https://www.cariboucoffee.com',
+  'starbucks': 'https://www.starbucks.ae',
+  'kfc': 'https://www.kfc.me',
+  'mcdonalds': 'https://www.mcdonalds.com',
+  'subway': 'https://www.subway.sa',
+  'shake shack': 'https://shakeshack.com',
+  'sephora': 'https://www.sephora.me',
+  'mac cosmetics': 'https://www.maccosmetics.com',
+  'the body shop': 'https://www.thebodyshop.com',
+  'zara': 'https://www.zara.com',
+  'mango': 'https://shop.mango.com',
+  'lacoste': 'https://www.lacoste.com',
+  'al tayer': 'https://www.altayer.com',
+  'al futuraim': 'https://www.alfuttaim.com',
+  'rivoli group': 'https://www.rivoligroup.com',
+  'talabat': 'https://www.talabat.com',
+};
 }
