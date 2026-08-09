@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../services/ai/ai_text_utils.dart';
 import 'app_locale.dart';
 import 'locale_scope.dart';
 
@@ -353,6 +354,9 @@ class AppLocalizations {
       'explore_trending_title': 'Trending topics',
       'explore_discover_title': 'Discover by medium',
       'explore_recent_title': 'Recent investigations',
+      'explore_news_empty': 'No trending news right now. Pull down to refresh.',
+      'explore_news_error': 'Couldn\'t load trending news. Tap refresh to retry.',
+      'explore_news_tap_hint': 'Tap to see latest articles',
       'explore_recent_complete': 'Complete investigation',
       'explore_recent_add': 'Quick answer',
       'explore_recent1_title': 'Dior',
@@ -1173,16 +1177,16 @@ class AppLocalizations {
       'mp_kpi_tweets': 'إجمالي التغريدات',
       'mp_kpi_dominance': 'نسبة الهيمنة',
       'mp_kpi_activity': 'مستوى النشاط',
-      'mp_kpi_24h': 'ساعة ٢٤',
+      'mp_kpi_24h': 'ساعة 24',
       'mp_kpi_medium': 'متوسط',
       'mp_kpi_high': 'مرتفع',
       'mp_kpi_currently': 'حالياً',
       'mp_chart_trend': 'الاتجاه العام',
-      'mp_chart_days': '٧ أيام',
+      'mp_chart_days': '7 أيام',
       'mp_chart_sources': 'توزيع المصادر',
       'mp_source_news': 'أخبار',
-      'mp_source_chats': 'الذكاء الاصطناعي',
-      'mp_source_social': 'سوشل',
+      'mp_source_chats': 'ذكاء اصطناعي',
+      'mp_source_social': 'التواصل الاجتماعي',
       'mp_section_topics': 'أكثر الموضوعات تداولاً',
       'mp_section_brands': 'أكثر العلامات نمواً',
       'mp_section_events': 'أهم الأحداث الحالية',
@@ -1203,19 +1207,19 @@ class AppLocalizations {
       'mp_investigate_btn': 'بدء تحقيق جديد',
       'mp_topic1_label': 'تصنيفات بيو نيو',
       'mp_topic1_brand': 'بيتس',
-      'mp_topic1_change': '+24٪',
+      'mp_topic1_change': '+24%',
       'mp_topic2_label': 'حملة بوتاجاز',
       'mp_topic2_brand': 'لطافة',
-      'mp_topic2_change': '+18٪',
+      'mp_topic2_change': '+18%',
       'mp_topic3_label': 'كنوز أثرية جديدة',
       'mp_topic3_brand': 'كاتشي',
-      'mp_topic3_change': '-6٪',
+      'mp_topic3_change': '-6%',
       'mp_topic4_label': 'نوم في ضواحي',
       'mp_topic4_brand': 'نايكي',
-      'mp_topic4_change': '-9٪',
+      'mp_topic4_change': '-9%',
       'mp_topic5_label': 'تصنيفات بنك نوي',
       'mp_topic5_brand': 'نور',
-      'mp_topic5_change': '+3٪',
+      'mp_topic5_change': '+3%',
       'mp_brand_lattafa': 'لطافة',
       'mp_brand_nike': 'نايكي',
       'mp_brand_dior': 'ديور',
@@ -1377,6 +1381,9 @@ class AppLocalizations {
       'explore_trending_title': 'مواضيع رائجة',
       'explore_discover_title': 'اكتشف بواسطة',
       'explore_recent_title': 'تحقيقات حديثة',
+      'explore_news_empty': 'لا توجد أخبار رائجة حالياً. اسحب للأسفل للتحديث.',
+      'explore_news_error': 'تعذّر تحميل الأخبار. اضغط تحديث للمحاولة مجدداً.',
+      'explore_news_tap_hint': 'اضغط لعرض أحدث المقالات',
       'explore_recent_complete': 'تحقيق كامل',
       'explore_recent_add': 'إجابة سريعة',
       'explore_recent1_title': 'Dior',
@@ -1947,7 +1954,14 @@ class AppLocalizations {
 
   String t(String key) {
     final map = _strings[language.code];
-    return map?[key] ?? _strings['en']![key] ?? key;
+    final raw = map?[key] ?? _strings['en']![key] ?? key;
+    // Normalize any Arabic-Indic digits / Arabic percent sign to
+    // ASCII so digits always render in Western form regardless of
+    // the active locale. The prompt and our source strings aim to
+    // use ASCII digits already; this is a belt-and-braces safety
+    // net that handles legacy strings, AI fallbacks, and any
+    // strings added in the future.
+    return normalizeDigits(raw);
   }
 
   /// Returns a translated string with simple `{name}` placeholders

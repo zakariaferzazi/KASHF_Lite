@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'openrouter_client.dart';
 
 /// Prompt templates for the dashboard's AI-driven sections.
@@ -258,6 +259,18 @@ locally relevant to $region.
 
 Language: $language. ALL string values must be in $language.
 
+Number formatting (CRITICAL — read carefully):
+  * ALL digits inside ANY string (kpi.value, kpi.delta, kpi.sub,
+    topic.change, brand.growth, event.time, trend.point labels,
+    etc.) MUST be WESTERN / ASCII digits 0-9, NEVER Arabic-Indic
+    digits ٠-٩. Even when the surrounding text is in Arabic.
+  * The percent sign must always be the ASCII `%`, NEVER the
+    Arabic `٪`. Write e.g. "+24%", not "+٢٤٪".
+  * This applies to BOTH labels/numbers written in Arabic text
+    AND any English strings — digits are always ASCII.
+  * The app converts any Arabic-Indic digits back to ASCII as a
+    safety net, but you should produce ASCII digits directly.
+
 Schema:
 {
   "kpis": [
@@ -273,12 +286,19 @@ Schema:
   ],
   "sources": [
     {
-      "name": string,             // short label (≤ 8 chars) in the
-                                  // user's language. In Arabic use
-                                  // e.g. "أخبار", "دردشات", "اجتماعي".
-                                  // In English use "News", "Chats",
-                                  // "Social". The card renders this
-                                  // verbatim.
+      "name": string,             // short label (≤ 16 chars) in the
+                                  // user's language. Use ONLY the
+                                  // three stable values:
+                                  //   Arabic  → "أخبار",
+                                  //              "ذكاء اصطناعي",
+                                  //              "التواصل الاجتماعي"
+                                  //   English → "News",
+                                  //              "AI",
+                                  //              "Social"
+                                  // Do NOT use any other names (no
+                                  // "دردشات", no "اجتماعي", no
+                                  // transliterations). The card
+                                  // renders this verbatim.
       "fraction": number,         // 0..1, sum across segments ~= 1.0
       "color": "green" | "amber" | "red"
     },
@@ -307,14 +327,14 @@ Schema:
       "growth": string,           // e.g. "+45%"
       "positive": boolean,
       "image_hint": string,       // short noun (perfume / phone / coffee / shoe / etc.)
-      "domain": string            // the brand's official website domain
-                                 // (e.g. "starbucks.com", "nike.com",
-                                 // "lattafa.com", "apple.com"). No
-                                 // "https://", no "www.", no path.
+      "domain": string            // the brand's official website domain.
+                                 // No "https://", no "www.", no path.
                                  // Used by the app to build the logo
                                  // URL — DO NOT return a logo URL
                                  // yourself, the app constructs it
-                                 // from this domain.
+                                 // from this domain. If the brand
+                                 // has no public English website, omit
+                                 // the field entirely.
     },
     ... 5 entries
   ],
@@ -336,8 +356,15 @@ Rules:
     thousands (e.g. "82.4K"), tweets in millions (e.g. "12.7M"),
     dominance as a percent (e.g. "14%"), and so on.
   * Fractions in `sources` MUST sum to 1.0 (each 0..1).
-  * Sparkline points for `topics` should clearly oscillate
-    across 12..20 points, not a flat line.
+  * Sparkline points for `topics` MUST form a clearly visible,
+    oscillating line (12..20 values). MANDATORY shape rules:
+      - Start lower than the end (a clear upward OR downward
+        trend across the 12..20 points).
+      - Across the trend, include at least 3 visible bumps
+        (local maxima and minima), not just endpoints.
+      - Cover the FULL 0..1 range: min < 0.30 AND max > 0.70.
+      - No flat segments: every consecutive pair must differ
+        by at least 0.04.
   * Use the local currency / units of $region where natural.
   * Keep titles / labels short — they render on small cards.
   * `trend.y_max` MUST be a TIGHT upper bound — within ~1.2x of
@@ -346,23 +373,16 @@ Rules:
     will collapse near the bottom of the chart. Pick a round
     number (e.g. 10000, 25000, 50000) just above the data peak.
   * For `brands[].name`: ALWAYS write the brand name in
-    ENGLISH / Latin script (e.g. "Dior", "Lattafa", "Nike"),
-    even when the user's language is Arabic. Brand names render
-    verbatim on the brand cards and we never translate them.
+    ENGLISH / Latin script, even when the user's language is
+    Arabic. Brand names render verbatim on the brand cards.
   * For `brands[].domain`: return the brand's OFFICIAL website
     domain in ASCII / Latin form (e.g. `starbucks.com`,
-    `nike.com`, `apple.com`). No `https://`, no `www.`, no path.
-    Two extra rules that matter:
-      * Only include a `domain` for brands that ACTUALLY have a
-        public English-website domain. Regional perfume brands
-        like Lattafa, Oud Satin, Yasmine, Maison Alhambra,
-        and similar regional/luxury fragrances often DON'T have
-        a public site — for those, OMIT the `domain` field
-        entirely. The app will render a bundled fallback image.
-      * The `domain` MUST be ASCII even when the user's language
-        is Arabic. If the AI wrote the name in Arabic (e.g.
-        "ديور"), the corresponding `domain` must STILL be in
-        Latin form (`dior.com`).
+    `apple.com`). No `https://`, no `www.`, no path.
+    Only include a `domain` for brands that ACTUALLY have a
+    public English-website domain. For regional / local brands
+    that have no public site, OMIT the `domain` field entirely.
+    The `domain` MUST be ASCII even when the user's language
+    is Arabic.
   * NEVER invent image URLs (Wikimedia, Unsplash, or anything
     else) — the app builds the logo URL from the `domain` field.
   * Return ONLY JSON.
@@ -375,14 +395,21 @@ Rules:
     int? nonce,
     String? userQuery,
   }) {
+    // Dynamically inject a curated pool of REAL, locally-relevant
+    // brands for this region. The AI must pick from this list — it
+    // must NOT make up brand names or reuse the generic examples
+    // from prior prompts. We pick a random subset of 6 brands
+    // per fetch so the AI always sees fresh examples and cannot
+    // memorise a fixed list.
+    final isArabic = language == 'ar';
+    final seed = nonce ?? DateTime.now().millisecondsSinceEpoch;
+    final brandPool = _pickRandomBrands(6, seed, isArabic);
     final userText = userQuery ??
-        'Generate a fresh market pulse detail screen snapshot. '
-            'Use the brand-investigation domain (perfume, beauty, '
-            'fashion, electronics, social-media campaigns) and '
-            'prefer brands and trends relevant to $region. '
-            'All numeric values should be plausible; all strings '
-            'must be in $language.'
-            '${nonce != null ? ' Fetch #$nonce — produce NEW values, do not repeat prior fetches.' : ''}';
+        'Generate a fresh market pulse snapshot for $region. '
+            'All strings must be in $language. '
+            'IMPORTANT: Pick brands ONLY from this list: $brandPool. '
+            'Do NOT invent brand names or use generic placeholders. '
+            '${nonce != null ? ' Fetch #$nonce — produce NEW values.' : ''}';
     return [
       OpenRouterMessage(
         role: 'system',
@@ -397,4 +424,212 @@ Rules:
       ),
     ];
   }
+
+  /// System prompt for the Explore screen detail.
+  static String exploreDetailSystemPrompt({
+    required String language,
+    required String region,
+  }) {
+    return '''
+You are a discovery and exploration guide for a brand-investigation
+dashboard. Produce a JSON payload for the Explore screen. Return
+STRICT JSON only — no commentary, no markdown fences, no trailing prose.
+
+Region: $region. Prefer brands, products, and trends locally
+relevant to $region.
+
+Language: The user may be in English or Arabic. ALL string values
+must be in the same language as the user's request.
+
+Schema:
+{
+  "trending": [
+    {
+      "title_en": string,        // English title (required)
+      "title_ar": string,        // Arabic title (required)
+      "subtitle_en": string,     // English subtitle
+      "subtitle_ar": string,     // Arabic subtitle
+      "image_hint": string,      // short noun for asset picker
+      "category": string         // "markets" | "products" | "beauty" | "brands" | "influencers"
+    },
+    ... 4 entries covering different trending topics
+  ],
+  "discover": [
+    {
+      "type": "companies" | "products" | "influencers" | "reports",
+      "title_en": string,
+      "title_ar": string,
+      "subtitle_en": string,
+      "subtitle_ar": string
+    },
+    ... 4 entries
+  ],
+  "recent": [
+    {
+      "title_en": string,
+      "title_ar": string,
+      "subtitle_en": string,
+      "subtitle_ar": string,
+      "time": string,           // e.g. "2h", "5h", "1d"
+      "status_label_en": string, // e.g. "Completed", "Quick Answer", "Analyzing"
+      "status_label_ar": string,
+      "status_style": "completed" | "quickanswer" | "analyzing" | "paused",
+      "image_hint": string,
+      "domain": string          // optional brand domain for logo
+    },
+    ... 2-4 entries
+  ]
+}
+
+Rules:
+  * trending[].category must be one of: markets, products, beauty, brands, influencers
+  * trending titles should be engaging and relevant to current events
+  * discover tiles should cover: companies, products, influencers, reports
+  * recent investigations should have realistic titles about brand analysis, product launches, or market research
+  * status_style controls the badge color: completed=green, quickanswer=blue, analyzing=amber, paused=red
+  * Use real brand names relevant to $region where appropriate
+  * Return ONLY JSON.
+
+Variety — IMPORTANT:
+  * Each fetch should produce DIFFERENT content. Do not repeat the
+    same titles, brands, or topics.
+  * Pick from diverse industries: perfume, beauty, fashion, electronics,
+    food & beverage, telecom, social-media campaigns.
+  * Vary the time strings across recent items (e.g. "2h", "5h", "13h", "1d").
+''';
+  }
+
+  static List<OpenRouterMessage> exploreDetailMessages({
+    required String language,
+    required String region,
+    int? nonce,
+    String? userQuery,
+  }) {
+    final userText = userQuery ??
+        'Generate a fresh explore screen snapshot for $region. '
+            'All strings must be in $language. '
+            '${nonce != null ? ' Fetch #$nonce — produce NEW content.' : ''}';
+    return [
+      OpenRouterMessage(
+        role: 'system',
+        content: exploreDetailSystemPrompt(
+          language: language,
+          region: region,
+        ),
+      ),
+      OpenRouterMessage(
+        role: 'user',
+        content: PromptSanitizer.sanitize(userText),
+      ),
+    ];
+  }
+
+  /// Picks [count] random brands from the [allBrands] pool using
+  /// [seed] so the selection is deterministic per fetch. Returns
+  /// a comma-separated list for injection into the user prompt.
+  static String _pickRandomBrands(int count, int seed, bool isArabic) {
+    final shuffled = List<String>.from(allBrands)..shuffle(math.Random(seed));
+    final picked = shuffled.take(count).toList();
+    if (isArabic) {
+      return picked.map((b) => _brandNamesAr[b] ?? b).join(', ');
+    }
+    return picked.join(', ');
+  }
+
+  /// A large, flat pool of ~100 real brands with strong market
+  /// presence across the GCC (Kuwait, Saudi, UAE, Qatar, Bahrain,
+  /// Oman). The AI is told to pick from this pool exclusively —
+  /// this prevents it from inventing brand names.
+  ///
+  /// Brands span: perfume/arabs, fashion, food & beverage,
+  /// electronics, telecom, automotive, and general retail.
+  static const List<String> allBrands = [
+    // Perfume / Arab fragrances
+    'Lattafa', 'Arabian Oud', 'Ajmal', 'Al Halal Perfumes', 'Rasasi',
+    'Al Rehab', 'Swiss Arabian', 'Ard Al Zaafaran', 'Al Mujeeb',
+    'Al Ghourab', 'Ahmed Al Maghribi', 'Khalis', 'Moulana',
+    'Fragrance World', 'Riffat Al Sultan', 'My Perfumes',
+    // Fashion / apparel
+    'H&M', 'Max Fashion', 'Boutique 5', 'Vincero', 'Namshi',
+    'Centrepoint', 'Splash', 'London Gallery', 'Koton', 'LC Waikiki',
+    'Decathlon', 'Zara', 'Massimo Dutti', 'Stradivarius', 'Pull&Bear',
+    'BERSHKA', 'Mango', 'Next', 'River Island', 'New Look',
+    // Food & beverage
+    'AlMarai', 'Sadafco', 'Herfy', 'Kudu', 'Al Baik',
+    'Shawarmanji', 'Lean Kitchen', 'Protein Bakery', 'Cafe Bateel',
+    'Paul Bakery', 'Shake Shack', 'Five Guys', 'KFC', 'McDonalds',
+    'Subway', 'Cinnabon', 'Costa Coffee', 'Caribou Coffee',
+    'Starbucks', 'Tim Hortons', 'Joe & The Juice', 'Nando\'s',
+    'The Cheesecake Factory', 'P.F. Chang\'s', 'Kcal',
+    // Electronics / tech retail
+    'Jarir Bookstore', 'Xcite', 'Ecity', 'Sharaf DG',
+    'Euromax', 'Jackys', 'Lulus', 'Plug-Ins', 'Eagle Technologies',
+    // Telecom
+    'STC', 'Mobily', 'Zain', 'Ooredoo', 'Batelco',
+    'Virgin Mobile', 'jawwy', 'Lebara', 'holafly',
+    // Automotive
+    'BMP', 'Al-Futtaim Auto', 'Al Maya Motors', 'Universal Motors',
+    'Saqr Agency', 'Teefa', 'Mulliner', 'Al Mojil Group',
+    // Retail / hypermarkets
+    'Carrefour', 'Lulu Hypermarket', 'Spinneys', 'Union Coop',
+    'Al Meera', 'Masmak', 'Tamimi Markets', 'Al Sadhan',
+    'Danube', 'Khalifa Hypermarket', 'Sharjah Co-op',
+    // Beauty / cosmetics
+    'Sephora', 'MAC Cosmetics', 'Sephora KSA', 'Faces',
+    'Bloom Beauty', 'Sanaa', 'The Body Shop', 'Inglot',
+    // General lifestyle / luxury
+    'Al Tayer', 'Al Futtaim', 'Chalhoub Group', 'Rivoli Group',
+    'Paris Gallery', 'Smile Art', 'Khalti', 'Talabat',
+  ];
+
+  /// Arabic translations for brand names in [allBrands]. Used only
+  /// as a contextual hint when the user's language is Arabic — the
+  /// JSON output MUST always use English/Latin names.
+  static const Map<String, String> _brandNamesAr = {
+    'lattafa': 'لاتافا',
+    'arabian oud': 'عود عربي',
+    'ajmal': 'عجمان',
+    'al halal perfumes': 'العطور الحلال',
+    'al rehab': 'الرحاب',
+    'swiss arabian': 'سويسري عربي',
+    'ard al zaafaran': 'عرض الطائف',
+    'rasasi': 'راساسي',
+    'almarai': 'المراعي',
+    'sadafco': 'صدىكو',
+    'herfy': 'هرفي',
+    'kudu': 'كودو',
+    'al baik': 'البيك',
+    'stc': 'الاتصالات السعودية',
+    'mobily': 'موبيلي',
+    'zain': 'زين',
+    'ooredoo': 'أوريدو',
+    'batelco': 'باتلتكو',
+    'lulu hypermarket': 'لولو هايبرماركت',
+    'carrefour': 'كارفور',
+    'spinneys': 'سبينيس',
+    'jarir bookstore': 'جارتي',
+    'xcite': 'أكسيت',
+    'namshi': 'نمشي',
+    'centrepoint': 'سنتر بوينت',
+    'h&m': 'اتش آند ام',
+    'max fashion': 'ماكس فاشن',
+    'cafe bateel': 'كافيه باتيل',
+    'costa coffee': 'كوستا كوفي',
+    'caribou coffee': 'كاريبو كوفي',
+    'starbucks': 'ستاربكس',
+    'kfc': 'كيه اف سي',
+    'mcdonalds': 'ماكدونالدز',
+    'subway': 'سبلوي',
+    'shake shack': 'شيك شاك',
+    'sephora': 'سيفورا',
+    'mac cosmetics': 'ماك كوزمتكس',
+    'the body shop': 'ذا بودي شوب',
+    'zara': 'زارا',
+    'mango': 'مانجو',
+    'lacoste': 'لاكوست',
+    'al tayer': 'الطاير',
+    'al futuraim': 'الفطيم',
+    'rivoli group': 'ريڤولي',
+    'talabat': 'طلبات',
+  };
 }

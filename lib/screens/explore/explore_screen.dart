@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../services/news/news_data_controller.dart';
+import '../../services/news/news_models.dart';
 import '../../theme.dart';
+import '../../widgets/article_reader_sheet.dart';
+import '../../widgets/loading_overlay.dart';
+import '../../widgets/news_carousel.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -11,11 +16,50 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  /// Index inside [ExploreCategory.values] (0 == All → pill highlighted).
-  int _selectedCategory = 0;
-
-  /// Index of the currently visible dot inside the trending carousel.
+  NewsTopic? _selectedTopic;
   int _trendingPage = 0;
+  late final NewsDataController _newsController;
+
+  /// ISO 3166-1 alpha-2 country code used for the news feed.
+  /// Maps the display name "Kuwait" → "KW". Add more entries as
+  /// we support more regions.
+  static const String _countryCode = 'KW';
+
+  @override
+  void initState() {
+    super.initState();
+    _newsController = NewsDataController();
+    _newsController.addListener(_onNewsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final l = AppLocalizations.of(context);
+      // Default to Brands on first load so the carousel shows
+      // brand-investigation-relevant articles from the start
+      // instead of generic regional news.
+      _selectedTopic ??= NewsTopic.influencers;
+      await _newsController.bootstrap(
+        language: l.language.code,
+        country: _countryCode,
+        topic: _selectedTopic,
+      );
+      _newsController.refreshNow(
+        language: l.language.code,
+        country: _countryCode,
+        topic: _selectedTopic,
+      );
+    });
+  }
+
+  void _onNewsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _newsController.removeListener(_onNewsChanged);
+    _newsController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,14 +74,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
             slivers: [
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 8),
-                sliver: SliverToBoxAdapter(child: _TopBar(l: l)),
+                sliver: SliverToBoxAdapter(
+                  child: _TopBar(
+                    l: l,
+                    isRefreshing: _newsController.isLoading,
+                    onRefresh: () {
+                      _newsController.refreshNow(
+                        language: l.language.code,
+                        country: _countryCode,
+                        topic: _selectedTopic,
+                      );
+                    },
+                  ),
+                ),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 6, 20, 14),
                 sliver: SliverToBoxAdapter(
-                  child: _CategoryChipsRow(
-                    selected: _selectedCategory,
-                    onChanged: (i) => setState(() => _selectedCategory = i),
+                  child: CategoryChipsRow(
+                    selected: _selectedTopic,
+                    onChanged: (t) {
+                      setState(() => _selectedTopic = t);
+                      _newsController.setTopic(t);
+                    },
                     l: l,
                   ),
                 ),
@@ -45,15 +104,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
                 sliver: SliverToBoxAdapter(
-                  child: _TrendingSectionHeader(
-                    title: l.t('explore_trending_title'),
+                  child: TrendingSectionHeader(
+                    title: _selectedTopic == null
+                        ? l.t('explore_trending_title')
+                        : (l.isRtl
+                            ? _selectedTopic!.labelAr
+                            : _selectedTopic!.label),
                   ),
                 ),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
                 sliver: SliverToBoxAdapter(
-                  child: _TrendingCarousel(
+                  child: TrendingCarousel(
+                    newsState: _newsController.state,
                     onPageChanged: (i) => setState(() => _trendingPage = i),
                   ),
                 ),
@@ -61,7 +125,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
                 sliver: SliverToBoxAdapter(
-                  child: _DotsIndicator(count: 4, index: _trendingPage),
+                  child: DotsIndicator(
+                    count: _newsController.state.articles.length,
+                    index: _trendingPage,
+                  ),
                 ),
               ),
               SliverPadding(
@@ -74,7 +141,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-                sliver: SliverToBoxAdapter(child: _DiscoverGrid(l: l)),
+                sliver: SliverToBoxAdapter(
+                  child: _DiscoverGridStatic(
+                    l: l,
+                    onTapTopic: (t) {
+                      _TopicArticlesSheet.show(
+                        context,
+                        topic: t,
+                        languageCode: l.language.code,
+                        countryCode: _countryCode,
+                      );
+                    },
+                  ),
+                ),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
@@ -122,14 +201,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
 // ============================================================================
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.l});
+  const _TopBar({
+    required this.l,
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
   final AppLocalizations l;
+  final bool isRefreshing;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    // Mirror-friendly row: Directionality flips start/end in RTL.
-    // LTR visual:  [filter] ──spacer── [title]
-    // RTL visual:  [title] ──spacer── [filter]
     return SizedBox(
       height: 48,
       child: Stack(
@@ -150,20 +232,9 @@ class _TopBar extends StatelessWidget {
           ),
           Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.transparent,
-                border: Border.all(color: KashfColors.gold, width: 1.4),
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                Icons.filter_alt_outlined,
-                color: KashfColors.gold,
-                size: 20,
-              ),
+            child: _RefreshIcon(
+              isLoading: isRefreshing,
+              onTap: isRefreshing ? null : onRefresh,
             ),
           ),
         ],
@@ -172,402 +243,36 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ============================================================================
-// Category filter chips
-// ============================================================================
-
-class _CategoryChipsRow extends StatelessWidget {
-  const _CategoryChipsRow({
-    required this.selected,
-    required this.onChanged,
-    required this.l,
-  });
-  final int selected;
-  final ValueChanged<int> onChanged;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    // Hand-picked visual order so "All" pill lands on the trailing side
-    // (right in LTR, left in RTL) once ListView + Directionality flips it.
-    const ordered = <ExploreCategory>[
-      ExploreCategory.influencers,
-      ExploreCategory.brands,
-      ExploreCategory.beauty,
-      ExploreCategory.products,
-      ExploreCategory.markets,
-      ExploreCategory.all,
-    ];
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        reverse: l.isRtl,
-        padding: EdgeInsets.zero,
-        itemCount: ordered.length,
-        separatorBuilder: (_, _) => SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final c = ordered[i];
-          final picked = c.valueIndex == selected;
-          return _CategoryChip(
-            icon: c.icon,
-            label: c.label(l),
-            selected: picked,
-            onTap: () => onChanged(c.valueIndex),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.icon,
-    required this.label,
-    required this.selected,
+class _RefreshIcon extends StatelessWidget {
+  const _RefreshIcon({
+    required this.isLoading,
     required this.onTap,
   });
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final bool isLoading;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
+          shape: BoxShape.circle,
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? KashfColors.gold : const Color(0xFF2A2D38),
-            width: 1,
-          ),
+          border: Border.all(color: KashfColors.gold.withValues(alpha: 0.55)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected ? KashfColors.gold : Colors.white,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? KashfColors.gold : Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+        alignment: Alignment.center,
+        child: isLoading
+            ? const InlineSpinner(size: 18)
+            : Icon(
+                Icons.refresh_rounded,
+                color: KashfColors.gold,
+                size: 20,
               ),
-            ),
-          ],
-        ),
       ),
-    );
-  }
-}
-
-// ============================================================================
-// ============================================================================
-// Trending topics carousel
-// ============================================================================
-
-class _TrendingCarousel extends StatefulWidget {
-  const _TrendingCarousel({required this.onPageChanged});
-  final ValueChanged<int> onPageChanged;
-
-  @override
-  State<_TrendingCarousel> createState() => _TrendingCarouselState();
-}
-
-class _TrendingCarouselState extends State<_TrendingCarousel> {
-  static const _items = <_TrendingItem>[
-    _TrendingItem(
-      asset: 'assets/images/winner.jpeg',
-      titleEn: 'Commodity analysis',
-      titleAr: 'تحليل السلع',
-      subtitleEn: 'Gold and oil',
-      subtitleAr: 'الذهب والنفط',
-    ),
-    _TrendingItem(
-      asset: 'assets/images/sauvage.jpeg',
-      titleEn: 'Market news',
-      titleAr: 'أخبار السوق',
-      subtitleEn: 'Top economic headlines',
-      subtitleAr: 'أبرز العناوين الاقتصادية',
-    ),
-    _TrendingItem(
-      asset: 'assets/images/mic.jpeg',
-      titleEn: 'Investor portfolio',
-      titleAr: 'محفظة المستثمر',
-      subtitleEn: 'Risk and reward management',
-      subtitleAr: 'إدارة المخاطر والعوائد',
-    ),
-    _TrendingItem(
-      asset: 'assets/images/borge.jpeg',
-      titleEn: 'Highest influencer',
-      titleAr: 'أعلى المؤثرين',
-      subtitleEn: 'Top of the year',
-      subtitleAr: 'لعام كامل',
-    ),
-  ];
-
-  late final ScrollController _scroll;
-
-  @override
-  void initState() {
-    super.initState();
-    _scroll = ScrollController()..addListener(_recomputeActive);
-  }
-
-  @override
-  void dispose() {
-    _scroll
-      ..removeListener(_recomputeActive)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _recomputeActive() {
-    if (!_scroll.hasClients) return;
-    const outerH = 20.0;
-    const inner = 12.0;
-    const visibleCount = 3;
-    final width = MediaQuery.of(context).size.width;
-    final cardW =
-        (width - (outerH * 2) - (inner * (visibleCount - 1))) / visibleCount;
-    final stride = cardW + inner;
-    final x = _scroll.position.pixels;
-    // Find the card whose center is closest to the viewport center.
-    final center = x + width / 2;
-    final raw = ((center - outerH - cardW / 2) / stride).round();
-    final idx = raw.clamp(0, _items.length - 1);
-    widget.onPageChanged(idx);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final width = MediaQuery.of(context).size.width;
-    // Card width: fit 3 cards side-by-side minus outer side margins and
-    // inner spacing — 4th+ cards become reachable via scroll.
-    const outerH = 20.0;
-    const inner = 12.0;
-    const visibleCount = 3;
-    final cardWidth =
-        (width - (outerH * 2) - (inner * (visibleCount - 1))) / visibleCount;
-
-    return SizedBox(
-      height: 210,
-      child: ListView.separated(
-        controller: _scroll,
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsetsDirectional.fromSTEB(outerH, 0, outerH, 0),
-        itemCount: _items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: inner),
-        itemBuilder: (_, i) {
-          final it = _items[i];
-          final title = l.isRtl ? it.titleAr : it.titleEn;
-          final subtitle = l.isRtl ? it.subtitleAr : it.subtitleEn;
-          return _TrendingCard(
-            asset: it.asset,
-            title: title,
-            subtitle: subtitle,
-            width: cardWidth,
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TrendingItem {
-  const _TrendingItem({
-    required this.asset,
-    required this.titleEn,
-    required this.titleAr,
-    required this.subtitleEn,
-    required this.subtitleAr,
-  });
-  final String asset;
-  final String titleEn;
-  final String titleAr;
-  final String subtitleEn;
-  final String subtitleAr;
-}
-
-class _TrendingCard extends StatelessWidget {
-  const _TrendingCard({
-    required this.asset,
-    required this.title,
-    required this.subtitle,
-    required this.width,
-  });
-  final String asset;
-  final String title;
-  final String subtitle;
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: const Color(0xFF171A20),
-        borderRadius: BorderRadius.circular(15),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Image at top - fills card width with rounded TOP corners.
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 130,
-              child: Image.asset(
-                asset,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  color: const Color(0xFF0E0F14),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.image_outlined,
-                    size: 28,
-                    color: const Color(0xFF8A8F9C),
-                  ),
-                ),
-              ),
-            ),
-            // Bottom content area (dark card) with text + share icon.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              top: 130,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA0A6),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        height: 1.3,
-                      ),
-                    ),
-                    // Small chart icon (line graph + arrow) — no background
-                    // container; pinned to the LEFT visual edge via
-                    // [centerEnd] alignment under the outer RTL row.
-                    const SizedBox(height: 9),
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: const Icon(
-                        Icons.trending_up,
-                        color: Color(0xFFD4A33A),
-                        size: 22,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Section header specific to Trending — small gold trending icon on the
-/// left, followed by the title text. Pinned to the LEFT side of the
-/// screen via Directionality so the icon stays visually to the left of
-/// the title regardless of the app's locale direction.
-class _TrendingSectionHeader extends StatelessWidget {
-  const _TrendingSectionHeader({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.trending_up, color: const Color(0xFFD4A33A), size: 20),
-              const SizedBox(width: 6),
-
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ============================================================================
-// Page indicator (4 dots)
-// ============================================================================
-
-class _DotsIndicator extends StatelessWidget {
-  const _DotsIndicator({required this.count, required this.index});
-  final int count;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < count; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: i == index ? 20 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: i == index ? KashfColors.gold : const Color(0xFF2A2D38),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -582,9 +287,6 @@ class _DiscoverSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sparkle icon followed by the title, both left-aligned on the
-    // leading edge of the screen. Wrapped in Directionality(LTR) so the
-    // icon always sits to the LEFT of the title regardless of locale.
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -615,50 +317,86 @@ class _DiscoverSectionHeader extends StatelessWidget {
   }
 }
 
-class _DiscoverGrid extends StatelessWidget {
-  const _DiscoverGrid({required this.l});
+class _DiscoverGridStatic extends StatelessWidget {
+  const _DiscoverGridStatic({
+    required this.l,
+    required this.onTapTopic,
+  });
   final AppLocalizations l;
+  final ValueChanged<NewsTopic> onTapTopic;
+
+  /// Mirrors the topic chips in [_CategoryChipsRow] so the grid
+  /// acts as a second entry point into the same feeds.
+  static const List<NewsTopic> _topics = <NewsTopic>[
+    NewsTopic.companies,
+    NewsTopic.brands,
+    NewsTopic.products,
+    NewsTopic.influencers,
+    NewsTopic.trends,
+    NewsTopic.businessProblems,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final items = <_DiscoverItem>[
-      _DiscoverItem(
-        icon: Icons.business_outlined,
-        title: l.t('explore_discover_companies_title'),
-        subtitle: l.t('explore_discover_companies_sub'),
-      ),
-      _DiscoverItem(
-        icon: Icons.link_outlined,
-        title: l.t('explore_discover_products_title'),
-        subtitle: l.t('explore_discover_products_sub'),
-      ),
-      _DiscoverItem(
-        icon: Icons.people_outline,
-        title: l.t('explore_discover_influencers_title'),
-        subtitle: l.t('explore_discover_influencers_sub'),
-      ),
-      _DiscoverItem(
-        icon: Icons.description_outlined,
-        title: l.t('explore_discover_reports_title'),
-        subtitle: l.t('explore_discover_reports_sub'),
-      ),
-    ];
-
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _DiscoverTile(item: items[0])),
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[0],
+                onTap: () => onTapTopic(_topics[0]),
+                l: l,
+              ),
+            ),
             const SizedBox(width: 14),
-            Expanded(child: _DiscoverTile(item: items[1])),
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[1],
+                onTap: () => onTapTopic(_topics[1]),
+                l: l,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 14),
         Row(
           children: [
-            Expanded(child: _DiscoverTile(item: items[2])),
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[2],
+                onTap: () => onTapTopic(_topics[2]),
+                l: l,
+              ),
+            ),
             const SizedBox(width: 14),
-            Expanded(child: _DiscoverTile(item: items[3])),
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[3],
+                onTap: () => onTapTopic(_topics[3]),
+                l: l,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[4],
+                onTap: () => onTapTopic(_topics[4]),
+                l: l,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _DiscoverTile(
+                topic: _topics[5],
+                onTap: () => onTapTopic(_topics[5]),
+                l: l,
+              ),
+            ),
           ],
         ),
       ],
@@ -666,118 +404,455 @@ class _DiscoverGrid extends StatelessWidget {
   }
 }
 
-class _DiscoverItem {
-  const _DiscoverItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-  final IconData icon;
-  final String title;
-  final String subtitle;
-}
-
 class _DiscoverTile extends StatelessWidget {
-  const _DiscoverTile({required this.item});
-  final _DiscoverItem item;
+  const _DiscoverTile({
+    required this.topic,
+    required this.onTap,
+    required this.l,
+  });
+  final NewsTopic topic;
+  final VoidCallback onTap;
+  final AppLocalizations l;
 
-  // Color tokens pinned exactly to the reference spec.
   static const _cardFill = Color(0xFF171A20);
   static const _cardBorder = Color(0xFF26282E);
   static const _iconCircleFill = Color(0xFF1F2128);
   static const _iconGold = Color(0xFFD4A33A);
   static const _chevronColor = Color(0xFF6B6F76);
-  static const _secondaryText = Color(0xFF9AA0A6);
+
+  IconData _iconFor(NewsTopic t) {
+    switch (t) {
+      case NewsTopic.companies:
+        return Icons.business_outlined;
+      case NewsTopic.brands:
+        return Icons.shopping_bag_outlined;
+      case NewsTopic.products:
+        return Icons.inventory_2_outlined;
+      case NewsTopic.influencers:
+        return Icons.person_outline;
+      case NewsTopic.trends:
+        return Icons.trending_up;
+      case NewsTopic.businessProblems:
+        return Icons.report_problem_outlined;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 88,
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: _cardFill,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _cardBorder, width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        textDirection: TextDirection.ltr,
-        children: [
-          // Circular dark icon container (24px icon inside ~38px circle).
-          Container(
-            width: 38,
-            height: 38,
-            decoration: const BoxDecoration(
-              color: _iconCircleFill,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(item.icon, color: _iconGold, size: 24),
+    final title = l.isRtl ? topic.labelAr : topic.label;
+    return Material(
+      color: _cardFill,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 88,
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 10, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _cardBorder, width: 1),
           ),
-          const SizedBox(width: 10),
-          // Title + description stacked.
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              textDirection: TextDirection.ltr,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                  ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            textDirection: TextDirection.ltr,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: _iconCircleFill,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _secondaryText,
-                    fontSize: 10,
-                    height: 1.35,
-                    fontWeight: FontWeight.w500,
-                  ),
+                alignment: Alignment.center,
+                child: Icon(_iconFor(topic), color: _iconGold, size: 24),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  textDirection: TextDirection.ltr,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l.t('explore_news_tap_hint'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF9AA0A6),
+                        fontSize: 10,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 6),
+              const Padding(
+                padding: EdgeInsetsDirectional.only(start: 2),
+                child: Icon(Icons.chevron_left, color: _chevronColor, size: 20),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          // Right-side chevron pinned to the far right, vertically centered.
-          const Padding(
-            padding: EdgeInsetsDirectional.only(start: 2),
-            child: Icon(Icons.chevron_left, color: _chevronColor, size: 20),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 // ============================================================================
-// ============================================================================
-// Recent investigations (Dior + Tom Ford rows) — single container list.
+// Topic articles sheet (used by the Discover grid)
 // ============================================================================
 
-/// Section header for "تحقيقات حديثة" — outlined history icon + title,
-/// right-aligned on the RTL leading edge.
+/// Bottom sheet shown when the user taps a Discover tile. Fetches
+/// the same per-topic Google News RSS feed that powers the
+/// trending carousel and renders the resolved articles in a
+/// vertical list. Each row mirrors the carousel card style so
+/// tapping it opens [ArticleReaderSheet] in a WebView.
+class _TopicArticlesSheet extends StatefulWidget {
+  const _TopicArticlesSheet({
+    required this.topic,
+    required this.languageCode,
+    required this.countryCode,
+  });
+
+  final NewsTopic topic;
+  final String languageCode;
+  final String countryCode;
+
+  static Future<void> show(
+    BuildContext context, {
+    required NewsTopic topic,
+    required String languageCode,
+    required String countryCode,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      useSafeArea: true,
+      builder: (_) => _TopicArticlesSheet(
+        topic: topic,
+        languageCode: languageCode,
+        countryCode: countryCode,
+      ),
+    );
+  }
+
+  @override
+  State<_TopicArticlesSheet> createState() => _TopicArticlesSheetState();
+}
+
+class _TopicArticlesSheetState extends State<_TopicArticlesSheet> {
+  late final NewsDataController _controller;
+  NewsState? _state;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = NewsDataController();
+    _controller.addListener(_onChanged);
+    // Bootstrap (which now hydrates from disk) before kicking off
+    // the network refresh so the sheet shows the cached articles
+    // immediately, then re-fetches in the background.
+    _controller
+        .bootstrap(
+          language: widget.languageCode,
+          country: widget.countryCode,
+          topic: widget.topic,
+        )
+        .then((_) {
+          if (!mounted) return;
+          _controller.refreshNow(
+            language: widget.languageCode,
+            country: widget.countryCode,
+            topic: widget.topic,
+          );
+        });
+  }
+
+  void _onChanged() {
+    if (!mounted) return;
+    setState(() => _state = _controller.state);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final title = l.isRtl ? widget.topic.labelAr : widget.topic.label;
+    final state = _state ?? NewsState.initial;
+    final screenH = MediaQuery.of(context).size.height;
+    final sheetH = screenH * 0.86;
+
+    return SizedBox(
+      height: sheetH,
+      child: Material(
+        color: const Color(0xFF0E0F14),
+        elevation: 12,
+        shadowColor: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: Directionality(
+          textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Column(
+            children: [
+              _buildHandle(),
+              _buildHeader(title),
+              Expanded(child: _buildBody(l, state)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHandle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      alignment: Alignment.center,
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2D38),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(String title) {
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 12, 12),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFF1A1D24), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF9AA0A6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close_rounded,
+                color: Color(0xFFD4A33A), size: 22),
+            tooltip: 'Close',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(AppLocalizations l, NewsState state) {
+    if (state.status == NewsStatus.loading && state.articles.isEmpty) {
+      return Center(
+        child: LoadingOverlay(
+          visible: true,
+          message: l.isRtl ? 'جاري التحديث…' : 'Refreshing feed…',
+          child: const SizedBox(
+            width: 220,
+            height: 120,
+          ),
+        ),
+      );
+    }
+    if (state.articles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            state.status == NewsStatus.error
+                ? l.t('explore_news_error')
+                : l.t('explore_news_empty'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF9AA0A6),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24),
+      itemCount: state.articles.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _TopicArticleRow(article: state.articles[i]),
+    );
+  }
+}
+
+class _TopicArticleRow extends StatelessWidget {
+  const _TopicArticleRow({required this.article});
+  final NewsArticle article;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF171A20),
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => ArticleReaderSheet.show(context, article),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF26282E), width: 1),
+          ),
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            textDirection: TextDirection.ltr,
+            children: [
+              _buildThumb(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      article.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      article.source.isNotEmpty
+                          ? article.source
+                          : article.publishedAt,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF9AA0A6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_left,
+                  color: Color(0xFF6B6F76), size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumb() {
+    final placeholder = Container(
+      width: 64,
+      height: 64,
+      decoration: const BoxDecoration(color: Color(0xFF0E0F14)),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.image_outlined,
+        size: 22,
+        color: Color(0xFF8A8F9C),
+      ),
+    );
+    if (article.imageUrl.isEmpty) return placeholder;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: Image.network(
+          article.imageUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (_, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              color: const Color(0xFF0E0F14),
+              alignment: Alignment.center,
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  valueColor: AlwaysStoppedAnimation(Color(0xFFD4A33A)),
+                ),
+              ),
+            );
+          },
+          errorBuilder: (_, _, _) => placeholder,
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Recent investigations
+// ============================================================================
+
 class _RecentSectionHeader extends StatelessWidget {
   const _RecentSectionHeader({required this.title});
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    // Pinned to the RIGHT edge of the screen via [start] alignment under
-    // the outer RTL Directionality (the row reads right→left, so [start]
-    // = visual right). The icon is wrapped in a forced LTR Row so it
-    // always sits to the LEFT of the title.
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -808,8 +883,7 @@ class _RecentSectionHeader extends StatelessWidget {
   }
 }
 
-/// Visual style for a status badge on a recent investigation row.
-enum _StatusStyle { completed, quickAnswer }
+enum _StatusStyle { completed, quickAnswer, analyzing, paused }
 
 class _StatusPalette {
   const _StatusPalette({
@@ -824,14 +898,14 @@ class _StatusPalette {
 
 class _RecentInvestigationItem {
   const _RecentInvestigationItem({
-    required this.brandAsset,
+    this.brandAsset,
     required this.title,
     required this.subtitle,
     required this.time,
     required this.statusLabel,
     required this.statusStyle,
   });
-  final String brandAsset;
+  final String? brandAsset;
   final String title;
   final String subtitle;
   final String time;
@@ -880,12 +954,6 @@ class _RecentInvestigationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = _paletteFor(item.statusStyle);
 
-    // Single horizontal row. Honours the screen's outer Directionality so
-    // Forced LTR direction so that the source order
-    //   [Time] [Badge] [Title] [Image] [Menu]
-    // renders visually left→right as
-    //   [Time] [Badge] [Title] [Image] [Menu]
-    // regardless of the screen's outer RTL Directionality.
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
@@ -893,7 +961,6 @@ class _RecentInvestigationRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 1. Time — far left.
             SizedBox(
               width: 64,
               child: Text(
@@ -908,10 +975,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                 ),
               ),
             ),
-            // 2. Status pill — immediately to the right of time.
             const SizedBox(width: 10),
             _StatusPill(label: item.statusLabel, palette: palette),
-            // 3. Title + subtitle (Expanded) — center-right.
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -944,32 +1009,34 @@ class _RecentInvestigationRow extends StatelessWidget {
                 ],
               ),
             ),
-            // 4. Brand image — to the right of the title block.
             const SizedBox(width: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 48,
-                height: 48,
-                color: const Color(0xFF0E0F14),
-                alignment: Alignment.center,
-                child: Image.asset(
-                  item.brandAsset,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Icon(
-                    Icons.branding_watermark_outlined,
-                    size: 22,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
-                ),
-              ),
-            ),
-            // 5. Three-dot menu — far right, 10–12 px from the image.
+            _buildBrandImage(),
             const SizedBox(width: 10),
             const Icon(Icons.more_vert, color: Color(0xFF8A8A8A), size: 18),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 48,
+        height: 48,
+        color: const Color(0xFF0E0F14),
+        alignment: Alignment.center,
+        child: Image.asset(
+          item.brandAsset!,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Icon(
+            Icons.branding_watermark_outlined,
+            size: 22,
+            color: Colors.white.withValues(alpha: 0.4),
+          ),
         ),
       ),
     );
@@ -988,6 +1055,18 @@ class _RecentInvestigationRow extends StatelessWidget {
           bg: Color(0xFF112B45),
           fg: Color(0xFF4DA3FF),
           icon: Icons.bolt_outlined,
+        );
+      case _StatusStyle.analyzing:
+        return const _StatusPalette(
+          bg: Color(0xFF241F12),
+          fg: Color(0xFFFBBF24),
+          icon: Icons.analytics_outlined,
+        );
+      case _StatusStyle.paused:
+        return const _StatusPalette(
+          bg: Color(0xFF241318),
+          fg: Color(0xFFEF4444),
+          icon: Icons.pause,
         );
     }
   }
@@ -1028,35 +1107,5 @@ class _StatusPill extends StatelessWidget {
 }
 
 // ============================================================================
-// Categories enum + helpers (kept at the bottom so the build() method
-// reads top-to-bottom like a story).
+// NewsTopic icon/label mapping for the chip row
 // ============================================================================
-
-enum ExploreCategory {
-  markets,
-  products,
-  beauty,
-  brands,
-  influencers,
-  all;
-
-  int get valueIndex => values.indexOf(this);
-
-  IconData get icon => switch (this) {
-    ExploreCategory.markets => Icons.show_chart_outlined,
-    ExploreCategory.products => Icons.inventory_2_outlined,
-    ExploreCategory.beauty => Icons.spa_outlined,
-    ExploreCategory.brands => Icons.shopping_bag_outlined,
-    ExploreCategory.influencers => Icons.person_outline,
-    ExploreCategory.all => Icons.apps_rounded,
-  };
-
-  String label(AppLocalizations l) => switch (this) {
-    ExploreCategory.markets => l.t('explore_filter_markets'),
-    ExploreCategory.products => l.t('explore_filter_products'),
-    ExploreCategory.beauty => l.t('explore_filter_beauty'),
-    ExploreCategory.brands => l.t('explore_filter_brands'),
-    ExploreCategory.influencers => l.t('explore_filter_influencers'),
-    ExploreCategory.all => l.t('explore_filter_all'),
-  };
-}

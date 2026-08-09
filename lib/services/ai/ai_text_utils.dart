@@ -36,6 +36,49 @@ bool startsWithHash(String input) {
   return input.startsWith('#');
 }
 
+/// Converts Arabic-Indic digits (٠-٩) and Eastern Arabic-Indic
+/// digits (۰-۹) to Western / ASCII digits (0-9). Also normalizes
+/// the Arabic percent sign `٪` to ASCII `%`. This is a safety net
+/// for AI responses that contain non-ASCII digits even though the
+/// prompt asks for ASCII digits.
+String normalizeDigits(String input) {
+  if (input.isEmpty) return input;
+  // Quick reject: nothing to convert.
+  var needsWork = false;
+  for (var i = 0; i < input.length; i++) {
+    final c = input.codeUnitAt(i);
+    if ((c >= 0x0660 && c <= 0x0669) || // Arabic-Indic ٠-٩
+        (c >= 0x06F0 && c <= 0x06F9) || // Extended Arabic-Indic ۰-۹
+        c == 0x066A || c == 0x066B) {   // Arabic ٪ , ٫
+      needsWork = true;
+      break;
+    }
+  }
+  if (!needsWork) return input;
+
+  final buf = StringBuffer();
+  for (var i = 0; i < input.length; i++) {
+    final c = input.codeUnitAt(i);
+    // Arabic-Indic digits ٠-٩ → 0-9
+    if (c >= 0x0660 && c <= 0x0669) {
+      buf.writeCharCode(0x30 + (c - 0x0660));
+      continue;
+    }
+    // Eastern Arabic-Indic digits ۰-۹ → 0-9
+    if (c >= 0x06F0 && c <= 0x06F9) {
+      buf.writeCharCode(0x30 + (c - 0x06F0));
+      continue;
+    }
+    // Arabic percent sign ٪ → %
+    if (c == 0x066A) {
+      buf.writeCharCode(0x25); // '%'
+      continue;
+    }
+    buf.writeCharCode(c);
+  }
+  return buf.toString();
+}
+
 /// A small transliteration map for the brand names the model is
 /// most likely to emit. When the active locale is Arabic and
 /// the AI returns a brand written in Latin letters, we look

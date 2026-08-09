@@ -11,6 +11,8 @@ import '../../services/ai/chart_axis.dart';
 import '../../services/ai/market_data_controller.dart';
 import '../../services/ai/market_models.dart';
 import '../../services/ai/logo_service.dart';
+import '../../services/news/market_events_controller.dart';
+import '../../widgets/loading_overlay.dart';
 
 /// "Market Pulse" screen — a strict, pixel-perfect clone of the
 /// reference screenshot. Layout (top → bottom):
@@ -40,7 +42,12 @@ class MarketScreen extends StatefulWidget {
 }
 
 class _MarketScreenState extends State<MarketScreen> {
-  int _tabIndex = 0;
+  final int _tabIndex = 0;
+
+  /// ISO 3166-1 alpha-2 country code used by the Google News
+  /// feed for the in-page events list.
+  static const String _countryCode = 'KW';
+
   late final MarketDataController _controller;
 
   @override
@@ -72,16 +79,27 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // Full-screen overlay only when we have nothing cached AND the
+    // first AI fetch is in flight. Once any payload lands the
+    // section-level spinners take over.
+    final hasAny = _controller.state.data != null;
+    final showFullOverlay = _controller.isLoading && !hasAny;
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: KashfPalette.active.background,
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 96),
-            children: [
+        body: LoadingOverlay(
+          visible: showFullOverlay,
+          blocking: true,
+          message: l.isRtl
+              ? 'جاري تحميل بيانات السوق…'
+              : 'Loading market data…',
+          child: SafeArea(
+            bottom: false,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 96),
+              children: [
               _TopBar(
                 l: l,
                 isRefreshing: _controller.isLoading,
@@ -92,12 +110,12 @@ class _MarketScreenState extends State<MarketScreen> {
               const SizedBox(height: 6),
               _LastUpdated(l: l),
               const SizedBox(height: 6),
-              _TabBar(
-                index: _tabIndex,
-                onChanged: (i) => setState(() => _tabIndex = i),
-                l: l,
-              ),
-              const SizedBox(height: 6),
+              // _TabBar(
+              //   index: _tabIndex,
+              //   onChanged: (i) => setState(() => _tabIndex = i),
+              //   l: l,
+              // ),
+              // const SizedBox(height: 6),
               _KpiRow(
                 l: l,
                 data: _controller.state.data,
@@ -136,12 +154,15 @@ class _MarketScreenState extends State<MarketScreen> {
               const SizedBox(height: 4),
               _EventsList(
                 l: l,
+                languageCode: l.language.code,
+                countryCode: _countryCode,
                 data: _controller.state.data,
                 isLoading: _controller.isLoading,
               ),
               const SizedBox(height: 8),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -234,14 +255,7 @@ class _RefreshIcon extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: isLoading
-            ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.6,
-                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
-                ),
-              )
+            ? const InlineSpinner(size: 14)
             : const Icon(
                 Icons.refresh_rounded,
                 color: KashfColors.gold,
@@ -1308,40 +1322,17 @@ class _BrandsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const fallbackImages = <String>[
-      'assets/images/lattafa.jpeg',
-      'assets/images/borge.jpeg',
-      'assets/images/sauvage.jpeg',
-      'assets/images/winner.jpeg',
-      'assets/images/parfum.jpeg',
-    ];
-    const hintToImage = <String, String>{
-      'perfume': 'assets/images/parfum.jpeg',
-      'phone': 'assets/images/sauvage.jpeg',
-      'shoe': 'assets/images/borge.jpeg',
-      'coffee': 'assets/images/sauvage.jpeg',
-      'fashion': 'assets/images/winner.jpeg',
-      'beauty': 'assets/images/lattafa.jpeg',
-    };
-
+    // Brand cards no longer use bundled image assets — every card
+    // renders a colored circle with the brand's first letter
+    // (see [_BrandAvatar]). We still keep the `logo` field on
+    // [_BrandCardData] for API stability but it is no longer
+    // referenced anywhere.
     final List<_BrandCardData> brands;
     if (data != null && data!.brands.isNotEmpty) {
       brands = data!.brands.take(6).toList().asMap().entries.map((e) {
         final b = e.value;
-        final lower = b.imageHint.toLowerCase();
-        final logo = hintToImage.entries
-                .firstWhere(
-                  (kv) => lower.contains(kv.key),
-                  orElse: () => const MapEntry('', ''),
-                )
-                .value
-                .isNotEmpty
-            ? hintToImage.entries
-                .firstWhere((kv) => lower.contains(kv.key))
-                .value
-            : fallbackImages[e.key % fallbackImages.length];
         return _BrandCardData(
-          logo: logo,
+          logo: '',
           name: b.name,
           growth: b.growth,
           positive: b.positive,
@@ -1355,42 +1346,42 @@ class _BrandsRow extends StatelessWidget {
       print('[MarketScreen] brand logo URLs:');
       for (var i = 0; i < brands.length; i++) {
         // ignore: avoid_print
-        print('  [$i] ${brands[i].name} -> ${brands[i].logoUrl ?? "(asset)"}');
+        print('  [$i] ${brands[i].name} -> ${brands[i].logoUrl ?? "(letter avatar)"}');
       }
     } else {
       brands = <_BrandCardData>[
         _BrandCardData(
-          logo: 'assets/images/lattafa.jpeg',
+          logo: '',
           name: l.t('mp_brand_lattafa'),
           growth: '+45%',
           positive: true,
         ),
         _BrandCardData(
-          logo: 'assets/images/borge.jpeg',
+          logo: '',
           name: l.t('mp_brand_nike'),
           growth: '+32%',
           positive: true,
         ),
         _BrandCardData(
-          logo: 'assets/images/sauvage.jpeg',
+          logo: '',
           name: l.t('mp_brand_dior'),
           growth: '+28%',
           positive: true,
         ),
         _BrandCardData(
-          logo: 'assets/images/winner.jpeg',
+          logo: '',
           name: l.t('mp_brand_starbucks'),
           growth: '+24%',
           positive: true,
         ),
         _BrandCardData(
-          logo: 'assets/images/parfum.jpeg',
+          logo: '',
           name: l.t('mp_brand_adidas'),
           growth: '+21%',
           positive: true,
         ),
         _BrandCardData(
-          logo: 'assets/images/lattafa.jpeg',
+          logo: '',
           name: l.t('mp_brand_skin'),
           growth: '+18%',
           positive: true,
@@ -1428,6 +1419,65 @@ class _BrandCardData {
   final String? logoUrl;
 }
 
+/// Produces a colored circle + first-letter avatar for a brand
+/// name. Used as the permanent fallback for every brand card so
+/// we never have to ship or load a bundled image asset. The
+/// color is derived deterministically from the brand name so
+/// the same brand always shows the same avatar.
+class _BrandAvatar {
+  _BrandAvatar._();
+
+  /// First letter of [name] in upper case, stripping any leading
+  /// `#`, `@`, whitespace, or punctuation. Falls back to `?` when
+  /// the name is empty or contains only symbols.
+  static String initialFor(String name) {
+    final cleaned = name.trim();
+    if (cleaned.isEmpty) return '?';
+    // Skip non-letter / non-digit leading characters (handles
+    // "#starbucks", "@nike", leading whitespace, etc.).
+    for (var i = 0; i < cleaned.length; i++) {
+      final c = cleaned[i];
+      // Match a single Unicode "letter" / "number" — Arabic and
+      // Latin both count so we render the right initial for
+      // either script.
+      final isAlnum = RegExp(r'^[\p{L}\p{N}]$', unicode: true)
+          .hasMatch(c);
+      if (isAlnum) {
+        return c.toUpperCase();
+      }
+    }
+    return cleaned[0].toUpperCase();
+  }
+
+  /// Background color for the brand avatar. We pick from a small
+  /// palette of brand-friendly dark hues and hash the name so
+  /// each brand gets a stable color.
+  static Color colorFor(String name) {
+    const palette = <Color>[
+      Color(0xFF1F3A8A), // navy
+      Color(0xFF7C2D12), // brick
+      Color(0xFF065F46), // forest
+      Color(0xFF581C87), // plum
+      Color(0xFF92400E), // amber-dark
+      Color(0xFF155E75), // teal
+      Color(0xFF831843), // wine
+      Color(0xFF1E40AF), // royal
+      Color(0xFF365314), // olive
+      Color(0xFF7F1D1D), // crimson-dark
+    ];
+    if (name.isEmpty) return palette.first;
+    var hash = 0;
+    for (var i = 0; i < name.length; i++) {
+      hash = (hash * 31 + name.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    return palette[hash % palette.length];
+  }
+
+  /// Foreground (letter) color — always near-white for contrast
+  /// on the dark backgrounds above.
+  static Color fgFor(String name) => Colors.white;
+}
+
 class _BrandCard extends StatelessWidget {
   const _BrandCard({required this.data});
   final _BrandCardData data;
@@ -1447,63 +1497,58 @@ class _BrandCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Logo circle. Uses a `Stack` with `Positioned.fill` to
-          // guarantee the image paints the entire inner rect of the
-          // circle edge-to-edge. No border on the container (it
-          // would consume pixels and leave a visible gap).
+          // Logo circle. The card always renders a colored circle
+          // with the brand's first letter. When the AI gave us a
+          // remote logo URL we paint it ON TOP of the initial, so
+          // a successful load shows the real logo and a failed /
+          // missing URL falls back to a clean letter avatar (no
+          // bundled asset image is ever used).
           Container(
             width: 55,
             height: 55,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: KashfPalette.active.fieldFill,
+              color: _BrandAvatar.colorFor(data.name),
             ),
             clipBehavior: Clip.antiAlias,
             child: SizedBox.expand(
-              child: data.logoUrl != null
-                  ? Image.network(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // 1) The initial letter (always painted).
+                  Center(
+                    child: Text(
+                      _BrandAvatar.initialFor(data.name),
+                      style: TextStyle(
+                        color: _BrandAvatar.fgFor(data.name),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                  // 2) The remote logo (if any) painted on top.
+                  //    Any error / missing URL leaves the initial
+                  //    visible, so the user always sees something
+                  //    readable.
+                  if (data.logoUrl != null)
+                    Image.network(
                       data.logoUrl!,
                       fit: BoxFit.cover,
-                      // Logo.dev 404s are common for regional
-                      // perfume / fashion brands that don't have a
-                      // public website. Log the failure (so we can
-                      // tell which brands to drop from the
-                      // dictionary) and fall back to the bundled
-                      // asset so the user always sees something.
                       errorBuilder: (context, error, stack) {
                         // ignore: avoid_print
                         print(
                             '[MarketScreen] Logo.dev failed for '
                             '${data.name} (${data.logoUrl}): $error');
-                        return Image.asset(
-                          data.logo,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.image_outlined,
-                            color: Color(0xFF94A3B8),
-                            size: 20,
-                          ),
-                        );
+                        return const SizedBox.shrink();
                       },
-                      // Loading: keep the slot reserved with the
-                      // fallback asset already painted underneath.
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
-                        return Image.asset(
-                          data.logo,
-                          fit: BoxFit.cover,
-                        );
+                        return const SizedBox.shrink();
                       },
-                    )
-                  : Image.asset(
-                      data.logo,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.image_outlined,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
-                      ),
                     ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 6),
@@ -1521,7 +1566,9 @@ class _BrandCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.arrow_upward, color: color, size: 10),
+              data.positive
+        ? Icon(Icons.arrow_upward, color: color, size: 10)
+        : Icon(Icons.arrow_downward, color: color, size: 10),
               const SizedBox(width: 2),
               Text(
                 data.growth,
@@ -1540,21 +1587,97 @@ class _BrandCard extends StatelessWidget {
 }
 
 // ============================ Events List ============================
-class _EventsList extends StatelessWidget {
+// Drives its own `MarketEventsController` so each list shows
+// fresh, on-topic Google News headlines. Falls back to the AI
+// events when the news feed is empty (e.g. cold launch with no
+// cache and a network failure), so the section is never blank.
+class _EventsList extends StatefulWidget {
   const _EventsList({
     required this.l,
+    required this.languageCode,
+    required this.countryCode,
     this.data,
     this.isLoading = false,
   });
   final AppLocalizations l;
+  final String languageCode;
+  final String countryCode;
   final MarketDetailData? data;
   final bool isLoading;
 
   @override
+  State<_EventsList> createState() => _EventsListState();
+}
+
+class _EventsListState extends State<_EventsList> {
+  late final MarketEventsController _events;
+
+  @override
+  void initState() {
+    super.initState();
+    _events = MarketEventsController();
+    _events.addListener(_onChanged);
+    // Kick off the first fetch on the next frame so we don't
+    // touch the network during build. Hydrate → render cached
+    // → network refresh in the background.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _events.bootstrap(
+        language: widget.languageCode,
+        country: widget.countryCode,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _events.removeListener(_onChanged);
+    _events.dispose();
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List<_EventData> events;
-    if (data != null && data!.events.isNotEmpty) {
-      events = data!.events.take(3).map((e) {
+    final l = widget.l;
+    final List<_EventData> events = _resolveEvents(l);
+    return Column(
+      children: [
+        for (var i = 0; i < events.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _EventCard(data: events[i]),
+        ],
+      ],
+    );
+  }
+
+  /// Builds the row list. Prefers Google News articles; falls
+  /// back to the AI-supplied [MarketDetailData.events]; and as a
+  /// last resort renders the localized demo cards so the section
+  /// is never visually empty.
+  List<_EventData> _resolveEvents(AppLocalizations l) {
+    final news = _events.articles;
+    if (news.isNotEmpty) {
+      return news.take(3).map((a) {
+        final colorName = MarketEventsController.classifyColorName(a.title);
+        final colors = _statusColors(colorName);
+        return _EventData(
+          title: a.title,
+          subtitle: a.source.isNotEmpty ? a.source : a.publishedAt,
+          time: a.publishedAt,
+          status: _localisedStatus(colorName, l),
+          statusColor: colors.fg,
+          statusBg: colors.bg,
+        );
+      }).toList(growable: false);
+    }
+
+    final ai = widget.data;
+    if (ai != null && ai.events.isNotEmpty) {
+      return ai.events.take(3).map((e) {
         final colors = _statusColors(e.statusColorName);
         return _EventData(
           title: e.title,
@@ -1564,44 +1687,35 @@ class _EventsList extends StatelessWidget {
           statusColor: colors.fg,
           statusBg: colors.bg,
         );
-      }).toList();
-    } else {
-      events = <_EventData>[
-        _EventData(
-          title: l.t('mp_news1_title'),
-          subtitle: l.t('mp_news1_sub'),
-          time: l.t('mp_event_35m'),
-          status: l.t('mp_news_status_viral'),
-          statusColor: const Color(0xFFFBBF24),
-          statusBg: const Color(0xFF241F12),
-        ),
-        _EventData(
-          title: l.t('mp_news2_title'),
-          subtitle: l.t('mp_news2_sub'),
-          time: l.t('mp_event_2h'),
-          status: l.t('mp_news_status_important'),
-          statusColor: const Color(0xFF22C55E),
-          statusBg: const Color(0xFF12241A),
-        ),
-        _EventData(
-          title: l.t('mp_news3_title'),
-          subtitle: l.t('mp_news3_sub'),
-          time: l.t('mp_event_4h'),
-          status: l.t('mp_news_status_banned'),
-          statusColor: const Color(0xFFEF4444),
-          statusBg: const Color(0xFF241318),
-        ),
-      ];
+      }).toList(growable: false);
     }
 
-    return Column(
-      children: [
-        for (var i = 0; i < events.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
-          _EventCard(data: events[i]),
-        ],
-      ],
-    );
+    return <_EventData>[
+      _EventData(
+        title: l.t('mp_news1_title'),
+        subtitle: l.t('mp_news1_sub'),
+        time: l.t('mp_event_35m'),
+        status: l.t('mp_news_status_viral'),
+        statusColor: const Color(0xFFFBBF24),
+        statusBg: const Color(0xFF241F12),
+      ),
+      _EventData(
+        title: l.t('mp_news2_title'),
+        subtitle: l.t('mp_news2_sub'),
+        time: l.t('mp_event_2h'),
+        status: l.t('mp_news_status_important'),
+        statusColor: const Color(0xFF22C55E),
+        statusBg: const Color(0xFF12241A),
+      ),
+      _EventData(
+        title: l.t('mp_news3_title'),
+        subtitle: l.t('mp_news3_sub'),
+        time: l.t('mp_event_4h'),
+        status: l.t('mp_news_status_banned'),
+        statusColor: const Color(0xFFEF4444),
+        statusBg: const Color(0xFF241318),
+      ),
+    ];
   }
 
   static ({Color fg, Color bg}) _statusColors(String name) {
@@ -1622,6 +1736,21 @@ class _EventsList extends StatelessWidget {
           fg: const Color(0xFFFBBF24),
           bg: const Color(0xFF241F12),
         );
+    }
+  }
+
+  /// Maps a status colour-key to the localised pill text so
+  /// Arabic users see "هام" / "انتشار" / "محظور" while English
+  /// users see "Important" / "Viral" / "Banned".
+  static String _localisedStatus(String colorName, AppLocalizations l) {
+    switch (colorName) {
+      case 'red':
+        return l.t('mp_news_status_banned');
+      case 'amber':
+        return l.t('mp_news_status_viral');
+      case 'green':
+      default:
+        return l.t('mp_news_status_important');
     }
   }
 }
@@ -1649,6 +1778,8 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Render-only card: no taps, no reader-sheet pop-up — the
+    // section is meant to glance at, not to drill into.
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
       decoration: BoxDecoration(

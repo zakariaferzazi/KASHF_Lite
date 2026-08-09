@@ -103,6 +103,13 @@ class HomeDataController extends ChangeNotifier {
     _language = language;
     if (region != null) _region = region;
 
+    // Hydrate the underlying service from disk so cross-restart
+    // data is replayed before we look at the in-memory cache.
+    await _service.hydrateFromDisk(
+      language: language,
+      region: _region,
+    );
+
     final cachedPulse = _service.cachedMarketPulse;
     final cachedActions = _service.cachedQuickActions;
     if (cachedPulse != null || cachedActions != null) {

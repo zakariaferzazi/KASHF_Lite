@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'ai_models.dart';
 import 'ai_parser.dart';
 import 'ai_prompts.dart';
+import 'disk_cache.dart';
+import 'explore_models.dart';
+import 'explore_parser.dart';
+export 'explore_models.dart' show ExploreStatusStyle;
 import 'market_models.dart';
 import 'market_parser.dart';
 import 'openrouter_client.dart';
@@ -26,13 +30,21 @@ class AiHomeService {
   AiHomeService({
     OpenRouterClient? client,
     Duration cacheTtl = const Duration(minutes: 5),
+    DiskCache? diskCache,
   })  : _client = client ?? OpenRouterClient.instance,
-        _cacheTtl = cacheTtl;
+        _cacheTtl = cacheTtl,
+        _disk = diskCache ?? _sharedDiskCache;
 
   static final AiHomeService instance = AiHomeService();
 
   final OpenRouterClient _client;
   final Duration _cacheTtl;
+  DiskCache? _disk;
+
+  /// Shared disk cache instance created lazily at app startup.
+  /// Stored on a static so tests / multiple service instances
+  /// share the same backing store.
+  static DiskCache? _sharedDiskCache;
 
   MarketPulseData? _marketPulseCache;
   DateTime? _marketPulseCachedAt;
@@ -40,6 +52,8 @@ class AiHomeService {
   DateTime? _quickActionsCachedAt;
   MarketDetailData? _marketDetailCache;
   DateTime? _marketDetailCachedAt;
+  ExploreDetailData? _exploreDetailCache;
+  DateTime? _exploreDetailCachedAt;
 
   final StreamController<HomeAiData> _controller =
       StreamController<HomeAiData>.broadcast();
@@ -52,6 +66,18 @@ class AiHomeService {
   MarketPulseData? get cachedMarketPulse => _marketPulseCache;
   MarketDetailData? get cachedMarketDetail => _marketDetailCache;
   QuickActionsData? get cachedQuickActions => _quickActionsCache;
+  ExploreDetailData? get cachedExploreDetail => _exploreDetailCache;
+
+  /// Wires the shared disk-cache used to persist AI payloads across
+  /// app restarts. Called once from `main.dart` after
+  /// [SharedPreferences] is ready.
+  static void initDiskCache(DiskCache cache) {
+    _sharedDiskCache = cache;
+    // The static [instance] was built before the disk cache
+    // existed; replace it so it sees the new dependency.
+    // ignore: invalid_use_of_visible_for_testing_member
+    instance._disk = cache;
+  }
 
   /// Fetches Market Pulse data. If a fresh-enough cache exists the
   /// call returns immediately. Otherwise it hits OpenRouter and
@@ -89,6 +115,7 @@ class AiHomeService {
       final data = AiParser.parseMarketPulse(json);
       _marketPulseCache = data;
       _marketPulseCachedAt = DateTime.now();
+      _persist('market_pulse', language, region, json);
       _emit();
       return data;
     } catch (e, st) {
@@ -137,6 +164,7 @@ class AiHomeService {
       final data = AiParser.parseQuickActions(json);
       _quickActionsCache = data;
       _quickActionsCachedAt = DateTime.now();
+      _persist('quick_actions', language, region, json);
       _emit();
       return data;
     } catch (e, st) {
@@ -206,6 +234,7 @@ class AiHomeService {
       final data = MarketParser.parse(json);
       _marketDetailCache = data;
       _marketDetailCachedAt = DateTime.now();
+      _persist('market_detail', language, region, json);
       return data;
     } catch (e, st) {
       if (kDebugMode) {
@@ -215,6 +244,53 @@ class AiHomeService {
       final fallback = _buildFallbackMarketDetail(nonce: _newNonce());
       _marketDetailCache = fallback;
       _marketDetailCachedAt = DateTime.now();
+      return fallback;
+    }
+  }
+
+  /// Fetches the Explore screen payload (trending, discover, recent).
+  /// Cached in memory for [_cacheTtl] and falls back to demo values.
+  Future<ExploreDetailData> fetchExploreDetail({
+    required String language,
+    String region = 'Kuwait',
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _exploreDetailCache != null &&
+        _exploreDetailCachedAt != null &&
+        DateTime.now().difference(_exploreDetailCachedAt!) < _cacheTtl) {
+      return _exploreDetailCache!;
+    }
+
+    try {
+      final nonce = _newNonce();
+      final messages = AiPrompts.exploreDetailMessages(
+        language: language,
+        region: region,
+        nonce: nonce,
+      );
+      final json = await _client.chatCompletionJson(
+        OpenRouterRequest(
+          messages: messages,
+          temperature: 0.7,
+          maxTokens: 2500,
+          responseFormat: const {'type': 'json_object'},
+          extra: {'seed': nonce},
+        ),
+      );
+      final data = ExploreParser.parse(json);
+      _exploreDetailCache = data;
+      _exploreDetailCachedAt = DateTime.now();
+      _persist('explore_detail', language, region, json);
+      return data;
+    } catch (e, st) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[AiHomeService] fetchExploreDetail failed: $e\n$st');
+      }
+      final fallback = _buildFallbackExploreDetail(nonce: _newNonce());
+      _exploreDetailCache = fallback;
+      _exploreDetailCachedAt = DateTime.now();
       return fallback;
     }
   }
@@ -249,6 +325,8 @@ class AiHomeService {
     _quickActionsCachedAt = null;
     _marketDetailCache = null;
     _marketDetailCachedAt = null;
+    _exploreDetailCache = null;
+    _exploreDetailCachedAt = null;
   }
 
   Future<void> dispose() async {
@@ -260,6 +338,74 @@ class AiHomeService {
       marketPulse: _marketPulseCache,
       quickActions: _quickActionsCache,
     ));
+  }
+
+  // ---------- Disk persistence ----------
+
+  /// Persist a successful AI response to disk so the same payload
+  /// can be replayed on the next app launch. Failures are silently
+  /// swallowed — disk writes must never break the user-visible flow.
+  void _persist(
+    String kind,
+    String language,
+    String region,
+    Map<String, dynamic> json,
+  ) {
+    final disk = _disk;
+    if (disk == null) return;
+    final key = '$kind|$language|${region.toLowerCase()}';
+    // Fire-and-forget; we never await this on the request path.
+    // ignore: unawaited_futures
+    disk.writeJson(key, json);
+  }
+
+  /// Hydrate all four AI caches from disk on app startup. Called
+  /// once during `HomeDataController.bootstrap` (and similarly by
+  /// the Market / Explore controllers) so the user sees their
+  /// recently-fetched data immediately after a restart, without
+  /// burning API tokens.
+  Future<void> hydrateFromDisk({
+    required String language,
+    String region = 'Kuwait',
+  }) async {
+    final disk = _disk;
+    if (disk == null) return;
+
+    Future<void> tryHydrate(
+      String kind,
+      Future<void> Function(Map<String, dynamic>) apply,
+    ) async {
+      final key = '$kind|$language|${region.toLowerCase()}';
+      final raw = await disk.readJson(key);
+      if (raw == null) return;
+      try {
+        await apply(raw);
+      } catch (e) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('[AiHomeService] hydrate $kind failed: $e');
+        }
+      }
+    }
+
+    await tryHydrate('market_pulse', (json) async {
+      _marketPulseCache = AiParser.parseMarketPulse(json);
+      _marketPulseCachedAt = DateTime.now();
+    });
+    await tryHydrate('quick_actions', (json) async {
+      _quickActionsCache = AiParser.parseQuickActions(json);
+      _quickActionsCachedAt = DateTime.now();
+    });
+    await tryHydrate('market_detail', (json) async {
+      _marketDetailCache = MarketParser.parse(json);
+      _marketDetailCachedAt = DateTime.now();
+    });
+    await tryHydrate('explore_detail', (json) async {
+      _exploreDetailCache = ExploreParser.parse(json);
+      _exploreDetailCachedAt = DateTime.now();
+    });
+
+    _emit();
   }
 
   // ---------- Fallback builders ----------
@@ -530,6 +676,101 @@ class AiHomeService {
           time: '4h',
           status: 'Banned',
           statusColorName: 'red',
+        ),
+      ],
+    );
+  }
+
+  ExploreDetailData _buildFallbackExploreDetail({int? nonce}) {
+    return ExploreDetailData(
+      trending: <ExploreTrendingItem>[
+        ExploreTrendingItem(
+          titleEn: 'Commodity analysis',
+          titleAr: 'تحليل السلع',
+          subtitleEn: 'Gold and oil',
+          subtitleAr: 'الذهب والنفط',
+          imageHint: 'winner',
+          category: 'markets',
+        ),
+        ExploreTrendingItem(
+          titleEn: 'Market news',
+          titleAr: 'أخبار السوق',
+          subtitleEn: 'Top economic headlines',
+          subtitleAr: 'أبرز العناوين الاقتصادية',
+          imageHint: 'sauvage',
+          category: 'markets',
+        ),
+        ExploreTrendingItem(
+          titleEn: 'Investor portfolio',
+          titleAr: 'محفظة المستثمر',
+          subtitleEn: 'Risk and reward management',
+          subtitleAr: 'إدارة المخاطر والعوائد',
+          imageHint: 'mic',
+          category: 'products',
+        ),
+        ExploreTrendingItem(
+          titleEn: 'Highest influencer',
+          titleAr: 'أعلى المؤثرين',
+          subtitleEn: 'Top of the year',
+          subtitleAr: 'لعام كامل',
+          imageHint: 'borge',
+          category: 'influencers',
+        ),
+      ],
+      discover: <ExploreDiscoverItem>[
+        ExploreDiscoverItem(
+          type: 'companies',
+          titleEn: 'Discover Companies',
+          titleAr: 'اكتشف الشركات',
+          subtitleEn: 'Browse brands & firms',
+          subtitleAr: 'تصفح العلامات التجارية',
+        ),
+        ExploreDiscoverItem(
+          type: 'products',
+          titleEn: 'Discover Products',
+          titleAr: 'اكتشف المنتجات',
+          subtitleEn: 'Track product launches',
+          subtitleAr: 'تتبع إصدارات المنتجات',
+        ),
+        ExploreDiscoverItem(
+          type: 'influencers',
+          titleEn: 'Discover Influencers',
+          titleAr: 'اكتشف المؤثرين',
+          subtitleEn: 'Find top creators',
+          subtitleAr: 'ابحث عن أبرز المؤثرين',
+        ),
+        ExploreDiscoverItem(
+          type: 'reports',
+          titleEn: 'Discover Reports',
+          titleAr: 'اكتشف التقارير',
+          subtitleEn: 'Read market reports',
+          subtitleAr: 'اقرأ تقارير السوق',
+        ),
+      ],
+      recent: <ExploreRecentItem>[
+        ExploreRecentItem(
+          titleEn: 'Lattafa Asad Analysis',
+          titleAr: 'تحليل عطر عطر أسد',
+          subtitleEn: 'Perfume market share',
+          subtitleAr: 'حصة سوق العطور',
+          time: '2h',
+          statusLabelEn: 'Completed',
+          statusLabelAr: 'مكتمل',
+          statusStyle: ExploreStatusStyle.completed,
+          imageHint: 'parfum',
+          brandDomain: null,
+        ),
+        ExploreRecentItem(
+          titleEn: 'Dior Sauvage Trend',
+          titleAr: 'اتجاه ديور سافاج',
+          subtitleEn: 'Social media buzz',
+          subtitleAr: 'التفاعل على وسائل التواصل',
+          time: '5h',
+          statusLabelEn: 'Quick Answer',
+          statusLabelAr: 'إجابة سريعة',
+          statusStyle: ExploreStatusStyle.quickAnswer,
+          imageHint: 'sauvage',
+          brandDomain: null,
         ),
       ],
     );

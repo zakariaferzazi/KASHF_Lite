@@ -49,6 +49,10 @@ dependencies:
   http: ^1.2.2
   flutter_dotenv: ^5.2.1
 
+  # In-app article reader used by the Explore screen's trending
+  # news carousel. Tapping a card opens a bottom-sheet WebView.
+  webview_flutter: ^4.10.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

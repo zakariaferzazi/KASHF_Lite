@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'ai_models.dart';
+import 'ai_text_utils.dart';
 import 'market_models.dart';
 
 /// Parses the JSON returned by [AiPrompts.marketDetailMessages]
@@ -111,9 +113,12 @@ class MarketParser {
 
   static List<MarketSourceSegment> _parseSources(dynamic raw) {
     if (raw is! List || raw.length < 3) {
+      // Localised fallback. Localised names are applied by the
+      // UI layer via `AppLocalizations`; the parser only owns the
+      // shape so we keep these keys ASCII-stable.
       return const [
         MarketSourceSegment(name: 'News', fraction: 0.68, colorName: 'green'),
-        MarketSourceSegment(name: 'Chats', fraction: 0.20, colorName: 'amber'),
+        MarketSourceSegment(name: 'AI', fraction: 0.20, colorName: 'amber'),
         MarketSourceSegment(name: 'Social', fraction: 0.12, colorName: 'red'),
       ];
     }
@@ -249,10 +254,16 @@ class MarketParser {
       // brand has no public website (or the AI forgot the field),
       // domain stays null and the screen uses the bundled asset.
       final domain = _cleanDomain(item['domain']);
+      final positive = item['positive'] == true;
+      // Belt-and-braces: normalise the sign so the growth string
+      // always matches the positive flag. E.g. AI returns "+12%" but
+      // positive=false → force to "-12%".
+      final rawGrowth = _str(item['growth'], fallback: '+0%');
+      final growth = _normalizeGrowthSign(rawGrowth, positive);
       out.add(MarketBrand(
         name: _str(item['name'], fallback: 'Brand'),
-        growth: _str(item['growth'], fallback: '+0%'),
-        positive: item['positive'] == true,
+        growth: growth,
+        positive: positive,
         imageHint: hint.isEmpty
             ? fallbackImages[out.length % fallbackImages.length]
             : hint,
@@ -271,12 +282,15 @@ class MarketParser {
 
   static MarketBrand _fallbackBrand(int i) {
     const names = ['Lattafa', 'Nike', 'Dior', 'Starbucks', 'Adidas'];
-    const growth = ['+45%', '+32%', '+28%', '+24%', '+21%'];
+    const growth = ['+45%', '-12%', '+28%', '-8%', '+21%'];
     const hints = ['perfume', 'shoe', 'perfume', 'coffee', 'shoe'];
+    // Match sign of growth to positive flag.
+    final pos = (i == 0 || i == 2 || i == 4);
+    final g = pos ? '+${growth[i].substring(1)}' : growth[i];
     return MarketBrand(
       name: names[i % names.length],
-      growth: growth[i % growth.length],
-      positive: true,
+      growth: g,
+      positive: pos,
       imageHint: hints[i % hints.length],
     );
   }
@@ -333,7 +347,13 @@ class MarketParser {
   // ---------- Helpers ----------
 
   static String _str(dynamic v, {String fallback = ''}) {
-    if (v is String && v.trim().isNotEmpty) return v.trim();
+    if (v is String && v.trim().isNotEmpty) {
+      // Normalise any non-ASCII digits (e.g. ٠-٩ or ۰-۹) and the
+      // Arabic percent sign ٪ back to ASCII. The prompt asks for
+      // ASCII digits, but we belt-and-brace it here so digits
+      // always render correctly regardless of locale.
+      return normalizeDigits(v.trim());
+    }
     return fallback;
   }
 
@@ -384,6 +404,16 @@ class MarketParser {
 
   static double _clamp01(double v) => v < 0 ? 0 : (v > 1 ? 1 : v);
 
+  /// Normalises a growth string so its sign matches [positive].
+  /// E.g. "+12%" with positive=false → "-12%".  "-8%" with
+  /// positive=true → "+8%". Strips any leading sign, then
+  /// applies the correct one.
+  static String _normalizeGrowthSign(String raw, bool positive) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (digits.isEmpty) return positive ? '+0%' : '-0%';
+    return '${positive ? '+' : '-'}$digits%';
+  }
+
   static String _normalizeColor(String? s) {
     switch (s?.toLowerCase()) {
       case 'green':
@@ -400,7 +430,7 @@ class MarketParser {
   }
 
   static List<double> _safeSpark(dynamic v) {
-    if (v is! List) return generateFallbackSparkline(length: 17);
+    if (v is! List) return _vibrantSparkline(length: 17, seed: 0.5);
     final out = <double>[];
     for (final item in v) {
       if (item is num) {
@@ -410,7 +440,62 @@ class MarketParser {
         if (p != null) out.add(p.clamp(0.0, 1.0));
       }
     }
-    if (out.length < 2) return generateFallbackSparkline(length: 17);
+    if (out.length < 2) return _vibrantSparkline(length: 17, seed: 0.5);
+
+    // Always re-shape the AI's points through [_vibrantSparkline]
+    // so the chart never looks flat. We use the AI's overall
+    // magnitude (its mean) as a hint to preserve direction, but
+    // we own the curve shape so it is GUARANTEED to span the
+    // 0..1 range with visible bumps. Even if the AI returns a
+    // flat or narrow sequence, the rendered sparkline will
+    // always look alive.
+    var sum = 0.0;
+    for (final v in out) {
+      sum += v;
+    }
+    final mean = sum / out.length;
+    // Direction: 1.0 if AI's curve trends up, -1.0 if down.
+    final direction = (out.last - out.first) >= 0 ? 1.0 : -1.0;
+    return _vibrantSparkline(
+      length: out.length,
+      seed: (mean * 7 + direction).abs(),
+      direction: direction,
+    );
+  }
+
+  /// Builds a guaranteed-visible sparkline:
+  ///   * Spans the FULL 0..1 range (min < 0.30, max > 0.70).
+  ///   * 3+ visible bumps across [length] points.
+  ///   * Direction (up / down) controlled by [direction] (defaults
+  ///     to a clear upward climb).
+  ///   * Deterministic per [seed] so two cards with the same AI
+  ///     input get the same shape — but distinct seeds produce
+  ///     distinct shapes.
+  static List<double> _vibrantSparkline({
+    required int length,
+    required double seed,
+    double direction = 1.0,
+  }) {
+    final rng = math.Random((seed * 1000).toInt() | 1);
+    final out = <double>[];
+    // Phase shift so different cards don't all peak at the same x.
+    final phase = rng.nextDouble() * math.pi * 2;
+    // Random amplitude between 0.12..0.20.
+    final amp = 0.12 + rng.nextDouble() * 0.08;
+    // Random oscillation count between 2.5..4 full bumps.
+    final bumps = 2.5 + rng.nextDouble() * 1.5;
+    for (var i = 0; i < length; i++) {
+      final t = i / (length - 1);
+      // Base trend: 0.20 → 0.80 (or reverse for negative direction).
+      final base = direction >= 0
+          ? 0.20 + 0.60 * t
+          : 0.80 - 0.60 * t;
+      // Visible oscillation.
+      final wave = math.sin(t * math.pi * bumps + phase) * amp;
+      // Tiny per-point jitter so the spline isn't perfectly periodic.
+      final jitter = (rng.nextDouble() - 0.5) * 0.04;
+      out.add((base + wave + jitter).clamp(0.05, 0.95));
+    }
     return out;
   }
 }

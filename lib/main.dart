@@ -13,6 +13,9 @@ import 'l10n/theme_controller.dart';
 import 'l10n/theme_scope.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/shell/home_shell.dart';
+import 'services/ai/ai_home_service.dart';
+import 'services/ai/disk_cache.dart';
+import 'services/news/news_service.dart';
 import 'theme.dart';
 
 void main() async {
@@ -24,6 +27,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Wire the shared disk-cache so AI + Google News payloads
+  // survive app restarts. Created once per process and shared
+  // across every data controller instance.
+  final diskCache = await DiskCache.create();
+  AiHomeService.initDiskCache(diskCache);
+  NewsService.initDiskCache(diskCache);
   final localeController = await LocaleController.load();
   runApp(KashfApp(localeController: localeController));
 }

@@ -3,33 +3,33 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'ai_home_service.dart';
-import 'market_models.dart';
+import 'explore_models.dart';
 
-/// State of the market data controller.
-enum MarketDataStatus { loading, ready, error }
+/// State of the explore data controller.
+enum ExploreDataStatus { loading, ready, error }
 
 @immutable
-class MarketDataState {
-  const MarketDataState({
+class ExploreDataState {
+  const ExploreDataState({
     required this.status,
     this.data,
     this.lastError,
     this.lastUpdated,
   });
 
-  final MarketDataStatus status;
-  final MarketDetailData? data;
+  final ExploreDataStatus status;
+  final ExploreDetailData? data;
   final Object? lastError;
   final DateTime? lastUpdated;
 
-  MarketDataState copyWith({
-    MarketDataStatus? status,
-    MarketDetailData? data,
+  ExploreDataState copyWith({
+    ExploreDataStatus? status,
+    ExploreDetailData? data,
     Object? lastError,
     DateTime? lastUpdated,
     bool clearError = false,
   }) {
-    return MarketDataState(
+    return ExploreDataState(
       status: status ?? this.status,
       data: data ?? this.data,
       lastError: clearError ? null : (lastError ?? this.lastError),
@@ -37,51 +37,40 @@ class MarketDataState {
     );
   }
 
-  static const MarketDataState initial = MarketDataState(
-    status: MarketDataStatus.ready,
+  static const ExploreDataState initial = ExploreDataState(
+    status: ExploreDataStatus.ready,
   );
 }
 
-/// State controller for the AI-driven Market Pulse detail
-/// screen. Like [HomeDataController] this is **manual-only**:
-///   * No automatic fetch on mount.
-///   * No periodic background refresh.
-///   * Hydrates from in-memory cache; only hits the API when
-///     the user explicitly triggers [refreshNow] (e.g. via
-///     the refresh icon in the screen's top bar).
-class MarketDataController extends ChangeNotifier {
-  MarketDataController({
+/// State controller for the AI-driven Explore screen.
+/// Manual-only: no automatic fetch on mount, no periodic refresh.
+/// Hydrates from in-memory cache; only hits the API when the user
+/// explicitly triggers [refreshNow].
+class ExploreDataController extends ChangeNotifier {
+  ExploreDataController({
     AiHomeService? service,
   }) : _service = service ?? AiHomeService.instance;
 
   final AiHomeService _service;
 
-  MarketDataState _state = MarketDataState.initial;
-  MarketDataState get state => _state;
+  ExploreDataState _state = ExploreDataState.initial;
+  ExploreDataState get state => _state;
 
   String? _language;
   String _region = 'Kuwait';
   bool _disposed = false;
 
-  bool get isLoading => _state.status == MarketDataStatus.loading;
+  bool get isLoading => _state.status == ExploreDataStatus.loading;
 
   /// Hydrate from in-memory cache without hitting the network.
-  /// Called once from `MarketScreen.initState`.
-  Future<void> bootstrap({required String language, String? region}) async {
+  /// Called once from `ExploreScreen.initState`.
+  void bootstrap({required String language, String? region}) {
     _language = language;
     if (region != null) _region = region;
-
-    // Hydrate the underlying service from disk so cross-restart
-    // data is replayed before we look at the in-memory cache.
-    await _service.hydrateFromDisk(
-      language: language,
-      region: _region,
-    );
-
-    final cached = _service.cachedMarketDetail;
+    final cached = _service.cachedExploreDetail;
     if (cached != null) {
       _updateState(_state.copyWith(
-        status: MarketDataStatus.ready,
+        status: ExploreDataStatus.ready,
         data: cached,
         lastUpdated: DateTime.now(),
         clearError: true,
@@ -91,37 +80,37 @@ class MarketDataController extends ChangeNotifier {
 
   /// Force a fresh fetch. Safe to call from anywhere.
   Future<void> refreshNow({String? language, String? region}) async {
-    if (_state.status == MarketDataStatus.loading) return;
+    if (_state.status == ExploreDataStatus.loading) return;
     final lang = language ?? _language ?? 'en';
     _language = lang;
     if (region != null) _region = region;
 
     _updateState(_state.copyWith(
-      status: MarketDataStatus.loading,
+      status: ExploreDataStatus.loading,
       clearError: true,
     ));
 
     try {
-      final data = await _service.fetchMarketDetail(
+      final data = await _service.fetchExploreDetail(
         language: lang,
         region: _region,
         forceRefresh: true,
       );
       _updateState(_state.copyWith(
-        status: MarketDataStatus.ready,
+        status: ExploreDataStatus.ready,
         data: data,
         lastUpdated: DateTime.now(),
         clearError: true,
       ));
     } catch (e) {
       _updateState(_state.copyWith(
-        status: MarketDataStatus.error,
+        status: ExploreDataStatus.error,
         lastError: e,
       ));
     }
   }
 
-  void _updateState(MarketDataState next) {
+  void _updateState(ExploreDataState next) {
     if (_disposed) return;
     _state = next;
     notifyListeners();

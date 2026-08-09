@@ -5,8 +5,11 @@ import '../../theme.dart';
 import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_text_utils.dart';
 import '../../services/ai/home_data_controller.dart';
+import '../../services/news/news_data_controller.dart';
+import '../../services/news/news_models.dart';
+import '../../widgets/loading_overlay.dart';
+import '../../widgets/news_carousel.dart';
 import '../market/market_screen.dart';
-import '../files/files_screen.dart';
 import '../files/latest_investigations_screen.dart';
 import 'today_case_screen.dart';
 
@@ -28,21 +31,42 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final HomeDataController _controller;
+  late final NewsDataController _newsController;
+  NewsTopic? _selectedTopic;
+  int _trendingPage = 0;
+
+  /// ISO 3166-1 alpha-2 country code used for the home news feed.
+  static const String _countryCode = 'KW';
 
   @override
   void initState() {
     super.initState();
     _controller = HomeDataController();
     _controller.addListener(_onStateChanged);
+    _newsController = NewsDataController();
+    _newsController.addListener(_onNewsChanged);
     // Bootstrap the initial fetch on the next frame so we can read
     // the AppLocalizations (locale) from the context without a
     // race against the widget tree.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final l = AppLocalizations.of(context);
       _controller.bootstrap(
         language: l.language.code,
         region: 'Kuwait',
+      );
+      // Default to Trends so the home carousel surfaces what's
+      // going viral right now across the region.
+      _selectedTopic ??= NewsTopic.companies;
+      await _newsController.bootstrap(
+        language: l.language.code,
+        country: _countryCode,
+        topic: _selectedTopic,
+      );
+      _newsController.refreshNow(
+        language: l.language.code,
+        country: _countryCode,
+        topic: _selectedTopic,
       );
     });
   }
@@ -51,29 +75,51 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
+  void _onNewsChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_onStateChanged);
     _controller.dispose();
+    _newsController.removeListener(_onNewsChanged);
+    _newsController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // True while the very first AI fetch is in flight AND nothing
+    // is cached yet. Once we have at least one AI payload on
+    // screen the per-section loading spinners take over so the
+    // user can interact with the rest of the UI.
+    final hasAnyAi =
+        _controller.state.marketPulse != null ||
+            _controller.state.quickActions != null;
+    final showFullOverlay =
+        _controller.isLoading && !hasAnyAi;
     // Use the natural direction for the active language so Arabic flows
     // right-to-left and English flows left-to-right natively.
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: KashfPalette.active.background,
-        body: SafeArea(
-          bottom: false,
-          child: RefreshIndicator(
-            onRefresh: () => _controller.refreshNow(language: l.language.code),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
+        body: LoadingOverlay(
+          visible: showFullOverlay,
+          blocking: true,
+          message: l.isRtl
+              ? 'جاري تحميل بيانات الذكاء الاصطناعي…'
+              : 'Loading AI data…',
+          child: SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  _controller.refreshNow(language: l.language.code),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
                   sliver: SliverToBoxAdapter(
@@ -119,22 +165,47 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 SliverPadding(
-                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 10),
                   sliver: SliverToBoxAdapter(
-                    child: _SectionHeader(
-                      title: l.t('home_quick_actions'),
-                      trailing: l.t('home_view_all'),
-                      onTrailingTap: () => Navigator.of(
-                        context,
-                      ).push(kashfRoute(const FilesScreen())),
-                      trailingLoading: _controller.isLoading,
+                    child: CategoryChipsRow(
+                      selected: _selectedTopic,
+                      onChanged: (t) {
+                        setState(() => _selectedTopic = t);
+                        _newsController.setTopic(t);
+                      },
+                      l: l,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: TrendingSectionHeader(
+                      title: _selectedTopic == null
+                          ? l.t('explore_trending_title')
+                          : (l.isRtl
+                              ? _selectedTopic!.labelAr
+                              : _selectedTopic!.label),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: TrendingCarousel(
+                      newsState: _newsController.state,
+                      onPageChanged: (i) =>
+                          setState(() => _trendingPage = i),
                     ),
                   ),
                 ),
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
                   sliver: SliverToBoxAdapter(
-                    child: _QuickActionsGrid(l: l),
+                    child: DotsIndicator(
+                      count: _newsController.state.articles.length,
+                      index: _trendingPage,
+                    ),
                   ),
                 ),
                 SliverPadding(
@@ -159,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );
@@ -261,14 +333,7 @@ class _RefreshIconButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: isLoading
-            ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.6,
-                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
-                ),
-              )
+            ? const InlineSpinner(size: 14)
             : const Icon(
                 Icons.refresh_rounded,
                 color: KashfColors.gold,
@@ -686,14 +751,7 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         if (trailingLoading)
-          const SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.6,
-              valueColor: AlwaysStoppedAnimation(KashfColors.gold),
-            ),
-          )
+          const InlineSpinner(size: 12)
         else if (trailing != null)
           GestureDetector(
             onTap: onTrailingTap,
@@ -1130,254 +1188,6 @@ const List<double> _kSparkWave2 = <double>[
   0.74, 0.80, 0.74, 0.64, 0.52, 0.42, 0.36, 0.42,
   0.54, 0.66, 0.78, 0.86, 0.82, 0.72, 0.60, 0.50,
 ];
-
-// ============================ Quick Actions ============================
-// Mirrors the marketing reference: a horizontal carousel of activity
-// cards. Each card shows a cover image with a status dot, the activity
-// title, a percentage, a colored progress bar, and a status label.
-// ============================ Quick Actions ============================
-// Mirrors the marketing reference: a horizontal carousel of activity
-// cards. Each card shows a cover image with a status dot, the activity
-// title, a percentage, a colored progress bar, and a status label.
-class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid({required this.l});
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = <_QuickAction>[
-      _QuickAction(
-        title: l.t('home_quick_title_perfume'),
-        progress: 0.72,
-        progressColor: const Color(0xFF22C55E),
-        status: l.t('home_monitored'),
-        statusColor: const Color(0xFF22C55E),
-        imagePath: 'assets/images/parfum.jpeg',
-        showDot: true,
-        dotColor: const Color(0xFF22C55E),
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_brand'),
-        progress: 0.65,
-        progressColor: const Color(0xFFF59E0B),
-        status: l.t('home_quick_analyzing'),
-        statusColor: const Color(0xFFF59E0B),
-        imagePath: 'assets/images/borge.jpeg',
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_influencer'),
-        progress: 0.48,
-        progressColor: const Color(0xFFFB923C),
-        status: l.t('home_quick_collecting'),
-        statusColor: const Color(0xFFFB923C),
-        imagePath: 'assets/images/winner.jpeg',
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_starbucks'),
-        progress: 0.38,
-        progressColor: const Color(0xFFEF4444),
-        status: l.t('home_quick_new_updates'),
-        statusColor: const Color(0xFFEF4444),
-        imagePath: 'assets/images/sauvage.jpeg',
-        showDot: true,
-        dotColor: const Color(0xFFEF4444),
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_iphone'),
-        progress: 0.92,
-        progressColor: const Color(0xFF22C55E),
-        status: l.t('home_monitored'),
-        statusColor: const Color(0xFF22C55E),
-        imagePath: 'assets/images/parfum.jpeg',
-        showDot: true,
-        dotColor: const Color(0xFF22C55E),
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_adidas'),
-        progress: 0.88,
-        progressColor: const Color(0xFF3B82F6),
-        status: l.t('home_monitored'),
-        statusColor: const Color(0xFF3B82F6),
-        imagePath: 'assets/images/borge.jpeg',
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_tiktok'),
-        progress: 0.65,
-        progressColor: const Color(0xFFF59E0B),
-        status: l.t('home_quick_analyzing'),
-        statusColor: const Color(0xFFF59E0B),
-        imagePath: 'assets/images/winner.jpeg',
-      ),
-      _QuickAction(
-        title: l.t('home_quick_title_lattafa'),
-        progress: 0.45,
-        progressColor: const Color(0xFFEF4444),
-        status: l.t('home_quick_new_updates'),
-        statusColor: const Color(0xFFEF4444),
-        imagePath: 'assets/images/lattafa.jpeg',
-        showDot: true,
-        dotColor: const Color(0xFFEF4444),
-      ),
-    ];
-    return SizedBox(
-      height: 170,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: actions.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) => _QuickActionCard(action: actions[i]),
-      ),
-    );
-  }
-}
-
-class _QuickAction {
-  const _QuickAction({
-    required this.title,
-    required this.progress,
-    required this.progressColor,
-    required this.status,
-    required this.statusColor,
-    required this.imagePath,
-    this.showDot = false,
-    this.dotColor = const Color(0xFF22C55E),
-  });
-  final String title;
-  final double progress;
-  final Color progressColor;
-  final String status;
-  final Color statusColor;
-  final String imagePath;
-  final bool showDot;
-  final Color dotColor;
-}
-
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({required this.action});
-  final _QuickAction action;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = (action.progress * 100).round();
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () {},
-        child: Container(
-          width: 100,
-          decoration: BoxDecoration(
-            color: KashfPalette.active.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: KashfPalette.active.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 80,
-                      color: const Color(0xFF2D2418),
-                      child: Image.asset(
-                        action.imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          alignment: Alignment.center,
-                          color: const Color(0xFF2D2418),
-                          child: const Icon(
-                            Icons.image_outlined,
-                            color: KashfColors.gold,
-                            size: 30,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (action.showDot)
-                      PositionedDirectional(
-                        top: 6,
-                        end: 6,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: action.dotColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: action.dotColor.withValues(alpha: 0.5),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      action.title,
-                      style: TextStyle(
-                        color: KashfPalette.active.textPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$pct%',
-                      style: TextStyle(
-                        color: action.progressColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: action.progress,
-                        minHeight: 4,
-                        backgroundColor: KashfPalette.active.cardBorder,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          action.progressColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      action.status,
-                      style: TextStyle(
-                        color: action.statusColor,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ============================ Recent Updates ============================
 class _RecentUpdatesList extends StatelessWidget {
