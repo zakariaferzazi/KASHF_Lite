@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Three brightness choices the user can pick from in Settings.
 enum AppThemeMode { dark, light, main }
@@ -15,25 +18,115 @@ extension AppThemeModeX on AppThemeMode {
         return ThemeMode.dark;
     }
   }
+
+  /// The lowercase token persisted in [SharedPreferences]. Round-trips
+  /// through [fromKey] so the saved selection survives an app restart.
+  String get key {
+    switch (this) {
+      case AppThemeMode.dark:
+        return 'dark';
+      case AppThemeMode.light:
+        return 'light';
+      case AppThemeMode.main:
+        return 'main';
+    }
+  }
+
+  /// Reverse lookup for [key]. Falls back to [AppThemeMode.main] when
+  /// the stored token is missing or unrecognised (e.g. upgraded users).
+  static AppThemeMode fromKey(String? key) {
+    switch (key) {
+      case 'dark':
+        return AppThemeMode.dark;
+      case 'light':
+        return AppThemeMode.light;
+      case 'main':
+        return AppThemeMode.main;
+      default:
+        return AppThemeMode.main;
+    }
+  }
 }
 
 /// Tracks the current theme selection. Held high in the widget tree
 /// (in [KashfApp]) so the entire app rebuilds when the user picks a
 /// different mode.
+///
+/// The selection is persisted to [SharedPreferences] so the user's
+/// preference survives app restarts. Persistence is best-effort: if
+/// the platform plugin is unavailable (e.g. running in a unit test)
+/// the controller simply falls back to the in-memory value.
 class ThemeController extends ChangeNotifier {
-  /// Default theme when the app launches. The user can switch via the
-  /// theme picker in Settings.
-  ThemeController([AppThemeMode initial = AppThemeMode.main]) : _mode = initial;
+  /// Builds a controller and asynchronously hydrates the saved mode
+  /// from [SharedPreferences]. Until the read completes, the
+  /// controller uses [initial] (defaults to [AppThemeMode.main]).
+  ///
+  /// Callers that need to wait for the persisted value (for example,
+  /// the splash / first-frame path) should `await` [loaded].
+  factory ThemeController.load({AppThemeMode initial = AppThemeMode.main}) {
+    final controller = ThemeController._internal(initial);
+    // Kick off the async hydration but don't block the constructor.
+    controller._hydrate();
+    return controller;
+  }
+
+  /// In-memory-only controller. Used by tests.
+  ThemeController([AppThemeMode initial = AppThemeMode.main])
+      : _mode = initial,
+        _hydrated = true;
+
+  ThemeController._internal(this._mode) : _hydrated = false;
+
+  /// Persisted key under which the theme mode is stored.
+  static const String _prefsKey = 'kashf_theme_mode';
+
+  /// Completes once the persisted theme has been loaded.
+  Future<void> get loaded => _loadedCompleter.future;
+  final Completer<void> _loadedCompleter = Completer<void>();
 
   AppThemeMode _mode;
+  bool _hydrated;
 
   AppThemeMode get mode => _mode;
 
   bool get isDark => _mode != AppThemeMode.light;
 
+  bool get isHydrated => _hydrated;
+
+  /// Sets the new mode. Notifies listeners and persists the choice
+  /// in the background so callers don't block on disk I/O.
   void setMode(AppThemeMode mode) {
     if (mode == _mode) return;
     _mode = mode;
     notifyListeners();
+    _persist();
+  }
+
+  Future<void> _hydrate() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_prefsKey);
+      final resolved = AppThemeModeX.fromKey(stored);
+      if (resolved != _mode) {
+        _mode = resolved;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Storage unavailable — fall back to the in-memory default.
+    } finally {
+      _hydrated = true;
+      if (!_loadedCompleter.isCompleted) {
+        _loadedCompleter.complete();
+      }
+    }
+  }
+
+  Future<void> _persist() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefsKey, _mode.key);
+    } catch (_) {
+      // Persistence is best-effort; ignored if the plugin fails.
+    }
   }
 }

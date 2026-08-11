@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../main.dart';
+import '../../theme.dart';
+import 'auth_social_block.dart';
 import 'sign_in_email_screen.dart';
 import 'continue_with_phone_screen.dart';
 import 'sign_up_screen.dart';
-import '../../theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -34,13 +34,9 @@ class WelcomeScreen extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
-        const OrDivider(),
-        const SizedBox(height: AuthSpacing.gapBetweenItems),
-        AppleButton(
-          onTap: () => navigateToHome(context),
-          label: l.t('auth_welcome_body_apple'),
-        ),
+        // Apple block — gated to iOS/macOS. On Android the whole
+        // group (divider + button) disappears.
+        const AuthSocialBlock(),
       ],
     );
 

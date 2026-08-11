@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../theme.dart';
+import '../../models/saved_investigation.dart';
 import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_text_utils.dart';
 import '../../services/ai/featured_brand_controller.dart';
 import '../../services/ai/home_data_controller.dart';
 import '../../services/news/news_data_controller.dart';
 import '../../services/news/news_models.dart';
+import '../../state/latest_investigations_controller.dart';
+import '../../theme.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../widgets/news_carousel.dart';
-import '../market/market_screen.dart';
 import '../files/latest_investigations_screen.dart';
+import '../market/market_screen.dart';
 import 'today_case_screen.dart';
 
 /// KASHF Lite dashboard. The entry point after sign-in. Layout mirrors
@@ -34,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final HomeDataController _controller;
   late final NewsDataController _newsController;
   late final FeaturedBrandController _featuredBrand;
-  NewsTopic? _selectedTopic;
+  late final LatestInvestigationsController _latestInvestigations;
+  NewsTopic _selectedTopic = NewsTopic.fashion;
   int _trendingPage = 0;
 
   /// ISO 3166-1 alpha-2 country code used for the home news feed.
@@ -49,6 +52,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _newsController.addListener(_onNewsChanged);
     _featuredBrand = FeaturedBrandController();
     _featuredBrand.addListener(_onStateChanged);
+    _latestInvestigations = LatestInvestigationsController();
+    _latestInvestigations.addListener(_onStateChanged);
     // Bootstrap the initial fetch on the next frame so we can read
     // the AppLocalizations (locale) from the context without a
     // race against the widget tree.
@@ -62,9 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Restore the previously featured brand from disk so the
       // user sees the same brand after a restart.
       await _featuredBrand.bootstrap();
-      // Default to Trends so the home carousel surfaces what's
-      // going viral right now across the region.
-      _selectedTopic ??= NewsTopic.companies;
+      // Default to Fashion so the home carousel surfaces what's
+      // trending in the highest-priority vertical on first load.
       await _newsController.bootstrap(
         language: l.language.code,
         country: _countryCode,
@@ -95,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.wait(<Future<void>>[
       _controller.refreshNow(language: language),
       _featuredBrand.refresh(),
+      _latestInvestigations.refresh(),
     ]);
   }
 
@@ -106,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _newsController.dispose();
     _featuredBrand.removeListener(_onStateChanged);
     _featuredBrand.dispose();
+    _latestInvestigations.removeListener(_onStateChanged);
+    _latestInvestigations.dispose();
     super.dispose();
   }
 
@@ -201,11 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
                   sliver: SliverToBoxAdapter(
                     child: TrendingSectionHeader(
-                      title: _selectedTopic == null
-                          ? l.t('explore_trending_title')
-                          : (l.isRtl
-                              ? _selectedTopic!.labelAr
-                              : _selectedTopic!.label),
+                      title: l.isRtl
+                          ? _selectedTopic.labelAr
+                          : _selectedTopic.label,
                     ),
                   ),
                 ),
@@ -245,6 +250,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
                   sliver: SliverToBoxAdapter(
                     child: _RecentUpdatesList(l: l),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionHeader(
+                      title: l.t('home_latest_investigations'),
+                      trailing: l.t('home_view_all'),
+                      onTrailingTap: () => Navigator.of(
+                        context,
+                      ).push(kashfRoute(const LatestInvestigationsScreen())),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: _LatestInvestigationsList(
+                      l: l,
+                      controller: _latestInvestigations,
+                    ),
                   ),
                 ),
               ],
@@ -1522,6 +1548,420 @@ class _UpdateCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Latest Investigations
+// ============================================================================
+//
+// The bottom-most section on the home screen. Backed by
+// [LatestInvestigationsController] which streams the most-recent
+// completed investigations from the archive service (Firestore
+// + local cache). Renders a vertical card list — clean, easy to
+// scan — and a friendly empty state.
+//
+// Data flow:
+//   SavedInvestigation → _LatestInvestigationCard → home page
+class _LatestInvestigationsList extends StatelessWidget {
+  const _LatestInvestigationsList({
+    required this.l,
+    required this.controller,
+  });
+  final AppLocalizations l;
+  final LatestInvestigationsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        if (controller.isLoading && controller.items.isEmpty) {
+          return const _LatestInvestigationsSkeleton();
+        }
+        if (controller.items.isEmpty) {
+          return _LatestInvestigationsEmpty(l: l);
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < controller.items.length; i++) ...[
+              if (i != 0) const SizedBox(height: 10),
+              _LatestInvestigationCard(
+                item: controller.items[i],
+                l: l,
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LatestInvestigationsEmpty extends StatelessWidget {
+  const _LatestInvestigationsEmpty({required this.l});
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 18),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: KashfColors.gold.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: KashfColors.gold.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.search,
+              color: KashfColors.gold,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.t('home_latest_empty_title'),
+                  style: TextStyle(
+                    color: KashfPalette.active.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l.t('home_latest_empty_sub'),
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LatestInvestigationsSkeleton extends StatefulWidget {
+  const _LatestInvestigationsSkeleton();
+  @override
+  State<_LatestInvestigationsSkeleton> createState() =>
+      _LatestInvestigationsSkeletonState();
+}
+
+class _LatestInvestigationsSkeletonState
+    extends State<_LatestInvestigationsSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final alpha = 0.25 + 0.25 * _ctrl.value;
+        return Column(
+          children: [
+            for (var i = 0; i < 2; i++) ...[
+              if (i != 0) const SizedBox(height: 10),
+              Container(
+                height: 92,
+                decoration: BoxDecoration(
+                  color: KashfPalette.active.surface
+                      .withValues(alpha: alpha),
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: KashfPalette.active.cardBorder),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LatestInvestigationCard extends StatelessWidget {
+  const _LatestInvestigationCard({
+    required this.item,
+    required this.l,
+  });
+  final SavedInvestigation item;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final band = item.confidenceBand;
+    final bandColor = _bandColor(band);
+    final pctText = '${item.confidencePercent}%';
+    final tags = item.tags;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: KashfPalette.active.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KashfPalette.active.cardBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: bandColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: bandColor.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: Icon(
+                    item.entityType.filledIcon,
+                    color: bandColor,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: KashfPalette.active.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _LatestStatusChip(
+                  label: l.t('home_latest_status_complete'),
+                  color: const Color(0xFF22C55E),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              item.subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: KashfPalette.active.textSecondary,
+                fontSize: 11,
+                height: 1.3,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: KashfPalette.active.fieldFill,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: AlignmentDirectional.centerStart,
+                      widthFactor:
+                          (item.confidencePercent / 100).clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: bandColor,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  pctText,
+                  style: TextStyle(
+                    color: bandColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _bandLabel(band),
+              style: TextStyle(
+                color: KashfPalette.active.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (tags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final t in tags) _LatestTagPill(label: t),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _sinceLabel(item.createdAt),
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (item.evidenceCount > 0)
+                  Text(
+                    l.tp('home_latest_evidence', {
+                      'n': item.evidenceCount.toString(),
+                    }),
+                    style: TextStyle(
+                      color: KashfPalette.active.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _bandColor(String band) {
+    switch (band) {
+      case 'high':
+        return const Color(0xFF22C55E);
+      case 'low':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFFF4C542);
+    }
+  }
+
+  String _bandLabel(String band) {
+    switch (band) {
+      case 'high':
+        return l.t('home_latest_band_high');
+      case 'low':
+        return l.t('home_latest_band_low');
+      default:
+        return l.t('home_latest_band_medium');
+    }
+  }
+
+  String _sinceLabel(DateTime then) {
+    final diff = DateTime.now().difference(then);
+    if (diff.inMinutes < 1) {
+      return l.t('home_latest_since_just_now');
+    }
+    if (diff.inMinutes < 60) {
+      return l.t('home_latest_since_minutes')
+          .replaceAll('%{n}', diff.inMinutes.toString());
+    }
+    if (diff.inHours < 24) {
+      return l
+          .t('home_latest_since_hours')
+          .replaceAll('%{n}', diff.inHours.toString());
+    }
+    return l
+        .t('home_latest_since_days')
+        .replaceAll('%{n}', diff.inDays.toString());
+  }
+}
+
+class _LatestStatusChip extends StatelessWidget {
+  const _LatestStatusChip({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _LatestTagPill extends StatelessWidget {
+  const _LatestTagPill({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.fieldFill,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: KashfPalette.active.cardBorder),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: KashfPalette.active.textSecondary,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

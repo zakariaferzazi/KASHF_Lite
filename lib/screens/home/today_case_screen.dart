@@ -32,7 +32,6 @@ const Color _tcAccent = Color(0xFFF4C542);
 
 // Accent colors used on the metric strip / timeline.
 const Color _tcGreen = Color(0xFF22C55E);
-const Color _tcBlue = Color(0xFF3B82F6);
 
 class _TodayCaseScreenState extends State<TodayCaseScreen> {
   int _tabIndex = 0;

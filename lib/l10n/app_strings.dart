@@ -31,6 +31,10 @@ class AppLocalizations {
       'auth_welcome_body_email': 'Continue with Email',
       'auth_welcome_body_phone': 'Continue with Phone',
       'auth_welcome_body_apple': 'Continue with Apple',
+      'auth_apple_not_supported':
+          'Apple sign-in is only available on iOS and macOS.',
+      'auth_apple_cancelled': 'Sign-in cancelled.',
+      'auth_apple_failed': 'Apple sign-in failed. Please try again.',
       'auth_signin_title': 'Welcome back',
       'auth_signin_subtitle': 'Sign in with your email',
       'auth_signin_email_hint': 'Email address',
@@ -44,9 +48,13 @@ class AppLocalizations {
       'auth_signup_subtitle': 'Start your research journey',
       'auth_signup_fullname_hint': 'Full name',
       'auth_signup_email_hint': 'Email address',
+      'auth_signup_country_hint': 'Country / region',
+      'auth_signup_country_required':
+          'Please select your country or region.',
       'auth_signup_phone_hint': 'Phone (optional)',
       'auth_signup_password_hint': 'Create password',
       'auth_signup_confirm_hint': 'Confirm password',
+      'auth_country_search_hint': 'Search country or code',
       'auth_signup_agree': 'I agree to the',
       'auth_signup_terms': 'Terms of Service',
       'auth_signup_and': 'and',
@@ -82,7 +90,10 @@ class AppLocalizations {
       'auth_phone_verify': 'Verify code',
       'auth_phone_verifying': 'Verifying...',
       'auth_phone_resend': 'Resend code',
+      'auth_phone_resend_in': 'Resend in {seconds}s',
+      'auth_phone_change_number': 'Change number',
       'auth_phone_otp_prompt': 'Enter the 6-digit code we sent to {phone}.',
+      'auth_phone_change_country': 'Country',
       // ---------- Bottom nav ----------
       'nav_home_lbl': 'Home',
       'nav_explore_lbl': 'Explore',
@@ -107,6 +118,20 @@ class AppLocalizations {
       'home_active_investigations': 'Active investigations',
       'home_market_pulse': 'Weekly market pulse',
       'home_recent_activity': 'Latest facts',
+      // ---------- Latest Investigations (live, from Firestore cache) ----------
+      'home_latest_investigations': 'Latest investigations',
+      'home_latest_empty_title': 'No saved investigations yet',
+      'home_latest_empty_sub':
+          'Run your first investigation — it will appear here once the AI finishes.',
+      'home_latest_band_high': 'High confidence',
+      'home_latest_band_medium': 'Medium confidence',
+      'home_latest_band_low': 'Low confidence',
+      'home_latest_status_complete': 'Completed',
+      'home_latest_since_just_now': 'just now',
+      'home_latest_since_minutes': '%{n}m ago',
+      'home_latest_since_hours': '%{n}h ago',
+      'home_latest_since_days': '%{n}d ago',
+      'home_latest_evidence': '%{n} evidence files',
       'home_user_menu': 'Menu',
       'home_branch_filter': 'branches',
       'home_featured_today': "Today's case",
@@ -652,6 +677,16 @@ class AppLocalizations {
       'settings_language_sub': 'App interface language',
       'settings_search_prefs': 'Search preferences',
       'settings_search_prefs_sub': 'Sources, filters, results',
+      // ---------- AI model picker ----------
+      'settings_ai_model_picker': 'AI model',
+      'settings_ai_model_picker_sub':
+          'Model used for every OpenRouter request in the app',
+      'ai_model_picker_title': 'AI model',
+      'ai_model_picker_sub':
+          'Picks the model used for every OpenRouter request across the app.',
+      'ai_model_gemini_sub': 'Google · Fast and lightweight',
+      'ai_model_qwen_sub': 'Alibaba · Strong reasoning',
+      'ai_model_inclusion_sub': 'InclusionAI · Optimized for JSON',
       'settings_notifications': 'Notifications',
       'settings_notifications_sub': 'Alerts, updates, and reminders',
       'settings_support': 'Live support',
@@ -696,6 +731,239 @@ class AppLocalizations {
       'settings_signout_success': 'Signed out',
       'settings_signout_success_message': 'See you soon!',
       'settings_coming_soon': 'Coming soon',
+      // ---------- Settings → Personal profile ----------
+      'settings_profile_title': 'Personal profile',
+      'settings_profile_name_label': 'Display name',
+      'settings_profile_email_label': 'Email',
+      'settings_profile_email_verified': 'Verified',
+      'settings_profile_email_unverified': 'Not verified',
+      'settings_profile_save': 'Save changes',
+      'settings_profile_saved': 'Profile updated',
+      'settings_profile_save_failed': 'Could not save your changes.',
+      'settings_profile_name_required': 'Please enter your name.',
+      // ---------- Settings → Security ----------
+      'settings_security_title': 'Security & privacy',
+      'settings_security_password_title': 'Password',
+      'settings_security_password_sub': 'Change your account password',
+      'settings_security_password_action': 'Change password',
+      'settings_security_2fa_title': 'Two-step verification',
+      'settings_security_2fa_sub': 'Add an extra layer of security',
+      'settings_security_sessions_title': 'Active sessions',
+      'settings_security_sessions_sub': 'Manage signed-in devices',
+      'settings_security_sessions_action': 'View sessions',
+      'settings_security_danger_title': 'Delete account',
+      'settings_security_danger_sub': 'Permanently remove your account and data',
+      'settings_security_danger_action': 'Delete account',
+      'settings_security_change_pw_title': 'Change password',
+      'settings_security_current_pw': 'Current password',
+      'settings_security_new_pw': 'New password',
+      'settings_security_confirm_pw': 'Confirm new password',
+      'settings_security_submit': 'Update password',
+      'settings_security_pw_too_short':
+          'Password must be at least 6 characters.',
+      'settings_security_pw_mismatch': 'Passwords do not match.',
+      'settings_security_pw_wrong_current': 'Current password is incorrect.',
+      'settings_security_pw_updated':
+          'Password updated. Please sign in again.',
+      'settings_security_pw_failed':
+          'Could not update your password.',
+      'settings_security_reauth_required':
+          'Please re-enter your current password to continue.',
+      'settings_security_sessions_title_screen': 'Active sessions',
+      'settings_security_sessions_empty':
+          'No other devices are signed in.',
+      'settings_security_sessions_this': 'This device',
+      'settings_security_sessions_sign_out': 'Sign out',
+      'settings_security_sessions_sign_out_all': 'Sign out all other devices',
+      'settings_security_sessions_confirm_title': 'Sign out of all other devices?',
+      'settings_security_sessions_confirm_body':
+          'We will end every other active session for your account. You will stay signed in on this device.',
+      'settings_security_sessions_confirm_action': 'Sign out others',
+      'settings_security_sessions_signed_out':
+          'Other sessions have been signed out.',
+      'settings_security_delete_title': 'Delete account',
+      'settings_security_delete_body':
+          'This will permanently delete your account, investigations, and preferences. This action cannot be undone.',
+      'settings_security_delete_confirm': 'Delete my account',
+      'settings_security_delete_failed':
+          'Could not delete your account. Please try again.',
+      // ---------- Settings → Backup & import ----------
+      'settings_backup_title': 'Backup & import',
+      'settings_backup_export_title': 'Export your data',
+      'settings_backup_export_sub':
+          'Download a copy of your investigations, reports and preferences.',
+      'settings_backup_export_action': 'Export data',
+      'settings_backup_export_in_progress': 'Preparing export…',
+      'settings_backup_export_done': 'Export ready',
+      'settings_backup_export_failed':
+          'Could not prepare your export. Please try again.',
+      'settings_backup_cache_title': 'Clear cached data',
+      'settings_backup_cache_sub':
+          'Remove locally cached news, charts and AI responses.',
+      'settings_backup_cache_action': 'Clear cache',
+      'settings_backup_cache_done': 'Local cache cleared.',
+      'settings_backup_cache_failed': 'Could not clear the cache.',
+      // ---------- Settings → Notifications ----------
+      'settings_notifications_title': 'Notifications',
+      'settings_notifications_push': 'Push notifications',
+      'settings_notifications_push_sub':
+          'Receive alerts on this device.',
+      'settings_notifications_email': 'Email updates',
+      'settings_notifications_email_sub':
+          'Weekly summaries and product news by email.',
+      'settings_notifications_investigation':
+          'Investigation alerts',
+      'settings_notifications_investigation_sub':
+          'Get notified when an investigation completes.',
+      'settings_notifications_monitor':
+          'Monitoring alerts',
+      'settings_notifications_monitor_sub':
+          'Alerts when a monitored entity spikes.',
+      'settings_notifications_saved': 'Notification preferences saved.',
+      // ---------- Settings → Search preferences ----------
+      'settings_search_title': 'Search preferences',
+      'settings_search_default_entity': 'Default entity type',
+      'settings_search_default_region': 'Default region',
+      'settings_search_safe': 'Safe search',
+      'settings_search_safe_sub': 'Filter sensitive content from results.',
+      'settings_search_saved': 'Search preferences saved.',
+      'settings_region_global': 'Global',
+      'settings_region_gulf': 'Gulf region',
+      'settings_region_europe': 'Europe',
+      'settings_region_na': 'North America',
+      // ---------- Settings → Help ----------
+      'settings_help_title': 'Help center',
+      'settings_help_subtitle':
+          'Quick answers to common questions about KASHF Lite.',
+      'settings_help_contact_action': 'Contact support',
+      'settings_help_q1': 'How do I start a new investigation?',
+      'settings_help_a1':
+          'Tap the gold "+" button on the bottom bar, enter a query or attach evidence, then tap Start investigation.',
+      'settings_help_q2': 'Where are my saved reports?',
+      'settings_help_a2':
+          'Open the Reports tab at the bottom of the app. You can filter by favorites, shared or archived.',
+      'settings_help_q3': 'How do I change the language?',
+      'settings_help_a3':
+          'Go to Settings → Language and pick Arabic or English. The app applies the change instantly.',
+      'settings_help_q4': 'How is my data protected?',
+      'settings_help_a4':
+          'Accounts are secured through Firebase Authentication. Your investigations live in your account and are not shared unless you choose to.',
+      'settings_help_q5':
+          'How do I switch between dark, light and the brand main theme?',
+      'settings_help_a5':
+          'Open Settings → Appearance to choose Dark, Light or the Main brand theme. Your choice is remembered for next time.',
+      // ---------- Settings → Live support ----------
+      'settings_support_title': 'Contact support',
+      'settings_support_subtitle':
+          'Send us a message and we will reply by email.',
+      'settings_support_name': 'Your name',
+      'settings_support_email': 'Your email',
+      'settings_support_subject': 'Subject',
+      'settings_support_message': 'How can we help?',
+      'settings_support_send': 'Send message',
+      'settings_support_sending': 'Sending…',
+      'settings_support_send_no_email_app':
+          'No email app is installed. We opened a draft instead — please tap send.',
+      'settings_support_send_done':
+          'Thanks! Your message was sent — we will reply soon.',
+      'settings_support_send_failed':
+          'Could not send your message. Please try again or email us directly.',
+      'settings_support_email_direct': 'Email us directly',
+      'settings_support_validation_required':
+          'Please fill in your name, email and message.',
+      'settings_support_validation_email':
+          'Please enter a valid email address.',
+      // ---------- Settings → Feedback ----------
+      'settings_feedback_title': 'Send feedback',
+      'settings_feedback_subtitle':
+          'Tell us what you love or what we can improve.',
+      'settings_feedback_category': 'Category',
+      'settings_feedback_cat_bug': 'Bug report',
+      'settings_feedback_cat_idea': 'Idea',
+      'settings_feedback_cat_other': 'Other',
+      'settings_feedback_message': 'Your feedback',
+      'settings_feedback_send': 'Send feedback',
+      'settings_feedback_sending': 'Sending…',
+      'settings_feedback_sent':
+          'Thanks for the feedback — we read every message.',
+      'settings_feedback_failed':
+          'Could not send your feedback. Please try again.',
+      'settings_feedback_validation':
+          'Please write a short message before sending.',
+      // ---------- Settings → About ----------
+      'settings_about_title': 'About KASHF Lite',
+      'settings_about_version_label': 'Version',
+      'settings_about_build_label': 'Build',
+      'settings_about_company_label': 'Made by',
+      'settings_about_company_value': 'KASHF Lab',
+      'settings_about_website': 'Website',
+      'settings_about_visit_website': 'Visit website',
+      'settings_about_contact': 'Contact',
+      'settings_about_privacy': 'Privacy policy',
+      'settings_about_terms': 'Terms of service',
+      'settings_about_open_source': 'Open-source licenses',
+      'settings_about_open_source_action': 'View licenses',
+      'settings_about_view': 'View',
+      // ---------- Settings → Bell (notifications inbox) ----------
+      'settings_bell_title': 'Notifications',
+      'settings_bell_empty':
+          'You are all caught up. New alerts will appear here.',
+      'settings_bell_mark_all': 'Mark all as read',
+      'settings_bell_marked': 'All notifications marked as read.',
+      // ---------- Legal dialog ----------
+      'legal_close': 'Close',
+      'legal_text_scale': 'Text size',
+      'legal_last_updated': 'Last updated',
+      'legal_privacy_intro':
+          'KASHF Lite ("we", "our", "us") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and the choices you have.',
+      'legal_privacy_section1_title': '1. Information we collect',
+      'legal_privacy_section1_body':
+          'Account information (email, display name) when you sign up. Authentication tokens managed by Firebase Authentication. Investigation queries, attached evidence files, and notes you choose to save. Device information (model, locale, theme preference) used purely to make the app work on your device.',
+      'legal_privacy_section2_title': '2. How we use your information',
+      'legal_privacy_section2_body':
+          'To operate and secure your account, to run the AI investigations you request, and to remember your preferences (theme, language, notifications). We do not sell your data to third parties.',
+      'legal_privacy_section3_title': '3. AI processing',
+      'legal_privacy_section3_body':
+          'Investigation queries and the evidence you attach are sent to our AI provider (OpenRouter) only when you actively start an investigation. We send the minimum data needed and rely on the provider\'s privacy and security controls.',
+      'legal_privacy_section4_title': '4. Data storage and retention',
+      'legal_privacy_section4_body':
+          'Your account data is stored with Firebase (Google Cloud). You can delete your account at any time from Settings → Security → Delete account. Deletion is permanent and removes your data from our production systems within 30 days.',
+      'legal_privacy_section5_title': '5. Your rights',
+      'legal_privacy_section5_body':
+          'You can request a copy of your data, correct it, or delete it. Write to the address in the Contact section and we will respond within 30 days.',
+      'legal_privacy_section6_title': '6. Contact',
+      'legal_privacy_section6_body':
+          'For privacy questions, email Nawaff89@gmail.com. We typically reply within two business days.',
+      'legal_terms_intro':
+          'These Terms of Service ("Terms") govern your use of KASHF Lite. By creating an account or using the app you agree to them.',
+      'legal_terms_section1_title': '1. The service',
+      'legal_terms_section1_body':
+          'KASHF Lite is an AI-assisted research workspace. It helps you investigate brands, products, influencers and markets using a combination of curated sources, AI analysis and your own evidence.',
+      'legal_terms_section2_title': '2. Your account',
+      'legal_terms_section2_body':
+          'You are responsible for keeping your password secure and for the activity that happens under your account. Tell us immediately if you suspect unauthorized access.',
+      'legal_terms_section3_title': '3. Acceptable use',
+      'legal_terms_section3_body':
+          'Do not use KASHF Lite to harass, defame, or unlawfully surveil other people. Do not attempt to disrupt the service or reverse-engineer the AI models. We may suspend accounts that violate these rules.',
+      'legal_terms_section4_title': '4. AI-generated content',
+      'legal_terms_section4_body':
+          'Insights and summaries generated by the AI are provided for research purposes. They can be wrong. Always cross-check important findings against the listed sources before acting on them.',
+      'legal_terms_section5_title': '5. Plans and changes',
+      'legal_terms_section5_body':
+          'We may add, change or remove features over time. If a change materially affects your rights, we will notify you by email at least 14 days in advance.',
+      'legal_terms_section6_title': '6. Termination',
+      'legal_terms_section6_body':
+          'You can delete your account at any time from Settings → Security → Delete account. We may suspend or terminate accounts that breach these Terms.',
+      'legal_terms_section7_title': '7. Contact',
+      'legal_terms_section7_body':
+          'Questions about these Terms? Email Nawaff89@gmail.com.',
+      'settings_privacy_legal': 'Privacy & terms',
+      'settings_privacy_legal_sub':
+          'Read our Privacy Policy and Terms of Service.',
+      'settings_privacy_legal_action_view': 'View',
+      'settings_privacy_action_terms': 'Terms of service',
+      'settings_privacy_action_privacy': 'Privacy policy',
+      'settings_privacy_action_view_doc': 'View',
       'entity_company': 'Companies',
       'entity_brand': 'Brands',
       'entity_product': 'Products',
@@ -1054,6 +1322,141 @@ class AppLocalizations {
       'settings_system_overview_ar': 'نظرة عامة على النظام',
       'settings_system_overview_sub_ar':
           'لوحة مؤشرات، استوديو المحتوى وإجراءات سريعة',
+      // ---------- Investigation flow (EN) ----------
+      'inv_validation_empty':
+          'Add a query, an action mode, or some evidence to continue.',
+      'inv_url_hint': 'Paste a link (https://…)',
+      'inv_url_add': 'Add',
+      'inv_url_invalid': 'Please enter a valid URL.',
+      'inv_action_seeded': 'Query added — tap Start investigation.',
+      'inv_files_added': 'Files added successfully.',
+      'inv_files_error': 'Could not pick files. Please try again.',
+      'inv_action_selected':
+          'Mode selected — the AI will use this lens on your query.',
+      'inv_action_cleared': 'Mode cleared.',
+      'ir_evidence_uploading': 'Uploading {name}',
+      'ir_evidence_reading_links': 'Reading {n} link(s)',
+      'ir_evidence_extracting': 'Extracting text from {n} file(s)',
+      'ir_error_config':
+          'AI is not configured. Add OPENROUTER_API_KEY to your .env file.',
+      'ir_error_auth': 'AI authentication failed. Check your API key.',
+      'ir_error_rate_limit':
+          'AI rate limit reached. Please wait a moment and try again.',
+      'ir_error_timeout':
+          'AI request timed out. Please try again.',
+      'ir_error_network':
+          'Network error reaching the AI. Check your connection.',
+      'ir_error_parse': 'Could not parse the AI response. Please try again.',
+      'ir_error_server': 'AI service is temporarily unavailable.',
+      'ir_error_unknown':
+          'Something went wrong. Please try again.',
+      'inv_action_compare_query':
+          'Compare Nike and Adidas in the Gulf market',
+      'inv_action_monitor_query':
+          'Monitor Dior Sauvage weekly mentions across platforms',
+      'inv_action_match_query':
+          'Find identity matches for the attached image',
+      'inv_action_campaign_query':
+          'Analyse the Adidas Gulf spring campaign performance',
+      'inv_action_influencer_query':
+          'Analyse the top beauty influencer in Kuwait',
+      'ir_screen_title': 'Investigation results',
+      'ir_processing_title': 'Running your investigation',
+      'ir_processing_failed': 'Investigation failed — try again.',
+      'ir_processing_failed_title': 'Investigation failed',
+      'ir_processing_failed_hint': 'Dismissing — you can retry now.',
+      'ir_error_generic':
+          'Could not start the investigation. Please try again.',
+      'ir_phase_draft': 'Preparing',
+      'ir_phase_collecting': 'Collecting evidence',
+      'ir_phase_processing': 'Processing evidence',
+      'ir_phase_analyzing': 'Analyzing context',
+      'ir_phase_completed': 'Completed',
+      'ir_phase_failed': 'Failed',
+      'ir_title_with_name': 'Investigation · {name}',
+      'ir_subtitle':
+          'Profile overview, insights and sources for your query.',
+      'ir_hero_confidence': 'Overall confidence',
+      'ir_meta_sources': '{n} sources',
+      'ir_meta_items': '{n} insights',
+      'ir_summary_placeholder_query':
+          'AI summary for the query "{query}".',
+      'ir_summary_placeholder_entity':
+          'AI summary for the {entity} sector.',
+      'ir_evidence_summary_files': '{files} file(s) attached.',
+      'ir_evidence_summary_urls': '{urls} link(s) attached.',
+      'ir_evidence_summary_both':
+          '{files} file(s) and {urls} link(s) attached.',
+      'ir_evidence_status_pending': 'Pending',
+      'ir_evidence_status_uploading': 'Uploading',
+      'ir_evidence_status_processing': 'Processing',
+      'ir_evidence_status_processed': 'Ready',
+      'ir_evidence_status_failed': 'Failed',
+      'ir_evidence_kind_pdf': 'PDF document — text extracted.',
+      'ir_evidence_kind_image': 'Image — visual analysis complete.',
+      'ir_evidence_kind_video': 'Video — scenes & audio transcribed.',
+      'ir_evidence_kind_url': 'Web page — content fetched.',
+      'ir_overview_summary_title': 'Summary',
+      'ir_overview_evidence_title': 'Evidence coverage',
+      'ir_overview_confidence_title': 'Confidence',
+      'ir_overview_confidence_body':
+          'The AI cross-references the attached evidence against live sources to estimate how reliable this finding is.',
+      'ir_metric_items': 'items',
+      'ir_metric_confidence': 'confidence',
+      'ir_section_overview_title': 'Overview',
+      'ir_section_overview_sub': 'Top-level summary of the run.',
+      'ir_section_evidence_title': 'Attached evidence',
+      'ir_section_evidence_sub':
+          'Each file or link we processed for this investigation.',
+      'ir_section_insights_title': 'Insights',
+      'ir_section_insights_sub':
+          'Trends, opportunities and risks surfaced by the AI.',
+      'ir_section_sources_title': 'Sources',
+      'ir_section_sources_sub': 'Where the findings came from.',
+      'ir_section_recs_title': 'Recommendations',
+      'ir_section_recs_sub':
+          'Next actions the AI suggests based on this run.',
+      'ir_section_empty': 'Nothing here yet.',
+      'ir_ins_trend_title': 'Top trend',
+      'ir_ins_trend_body':
+          'Woody and amber notes continue to lead in the Gulf fragrance market.',
+      'ir_ins_metric_growth': 'growth (90d)',
+      'ir_ins_opportunity_title': 'Best opportunity',
+      'ir_ins_opportunity_body':
+          'Launch a limited Q3 capsule to capture the back-to-school spike.',
+      'ir_ins_opportunity_body_with_evidence':
+          'The attached evidence aligns with the Q3 launch thesis.',
+      'ir_ins_risk_title': 'Risk index',
+      'ir_ins_risk_body':
+          'Sentiment is stable and reputation risk is low this week.',
+      'ir_ins_risk_metric': 'Risk score',
+      'ir_src_news_title': 'Industry news roundup',
+      'ir_src_news_sub': 'Aggregated coverage from regional outlets.',
+      'ir_src_social_title': 'Social conversation',
+      'ir_src_social_sub': 'Top creators and hashtags mentioning the topic.',
+      'ir_src_linked_sub': 'User-supplied source.',
+      'ir_rec_1_title': 'Double down on the top trend',
+      'ir_rec_1_body':
+          'Run a 7-day campaign around the leading scent family while momentum is high.',
+      'ir_rec_2_title': 'Monitor competitors weekly',
+      'ir_rec_2_body':
+          'Set up automated monitoring on the top 3 competitors to catch early signals.',
+      'ir_rec_3_title': 'Generate a deep report',
+      'ir_rec_3_body':
+          'Use the Insights tab as the input for a full investigation report.',
+      'ir_rec_badge_priority': 'Priority',
+      'ir_badge_verified': 'Verified',
+      'ir_tab_overview': 'Overview',
+      'ir_tab_evidence': 'Evidence',
+      'ir_tab_insights': 'Insights',
+      'ir_tab_sources': 'Sources',
+      'ir_tab_recommendations': 'Actions',
+      'ir_action_export_pdf': 'Export',
+      'ir_action_monitor': 'Monitor',
+      'ir_action_monitor_toast': 'Monitoring scheduled.',
+      'ir_action_report': 'Report',
+      'ir_action_save': 'Save',
+      'ir_action_share': 'Share link copied.',
     },
     'ar': {
       'app_title': 'كاشف لايت',
@@ -1070,6 +1473,11 @@ class AppLocalizations {
       'auth_welcome_body_email': 'المتابعة بالبريد الإلكتروني',
       'auth_welcome_body_phone': 'المتابعة برقم الهاتف',
       'auth_welcome_body_apple': 'المتابعة عبر Apple',
+      'auth_apple_not_supported':
+          '.تسجيل الدخول عبر Apple متاح فقط على نظامي iOS وmacOS',
+      'auth_apple_cancelled': '.تم إلغاء تسجيل الدخول',
+      'auth_apple_failed':
+          '.تعذّر تسجيل الدخول عبر Apple. حاول مرة أخرى',
       'auth_signin_title': 'أهلاً بعودتك',
       'auth_signin_subtitle': 'سجّل الدخول بالبريد الإلكتروني',
       'auth_signin_email_hint': 'البريد الإلكتروني',
@@ -1083,9 +1491,12 @@ class AppLocalizations {
       'auth_signup_subtitle': 'ابدأ رحلة البحث الخاصة بك',
       'auth_signup_fullname_hint': 'الاسم الكامل',
       'auth_signup_email_hint': 'البريد الإلكتروني',
+      'auth_signup_country_hint': 'الدولة / المنطقة',
+      'auth_signup_country_required': '.الرجاء اختيار دولتك أو منطقتك',
       'auth_signup_phone_hint': 'رقم الهاتف (اختياري)',
       'auth_signup_password_hint': 'إنشاء كلمة المرور',
       'auth_signup_confirm_hint': 'تأكيد كلمة المرور',
+      'auth_country_search_hint': 'ابحث عن دولة أو رمز',
       'auth_signup_agree': 'أوافق على',
       'auth_signup_terms': 'شروط الاستخدام',
       'auth_signup_and': 'و',
@@ -1121,7 +1532,10 @@ class AppLocalizations {
       'auth_phone_verify': 'تحقّق من الرمز',
       'auth_phone_verifying': '...جارٍ التحقق',
       'auth_phone_resend': 'إعادة إرسال الرمز',
+      'auth_phone_resend_in': '.إعادة الإرسال خلال {seconds} ثانية',
+      'auth_phone_change_number': 'تغيير الرقم',
       'auth_phone_otp_prompt': '.أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى {phone}',
+      'auth_phone_change_country': 'الدولة',
       // ---------- شريط التنقل ----------
       'nav_home_lbl': 'الرئيسية',
       'nav_explore_lbl': 'استكشف',
@@ -1145,6 +1559,20 @@ class AppLocalizations {
       'home_active_investigations': 'الكشوفات النشطة',
       'home_market_pulse': 'نبض السوق',
       'home_recent_activity': 'أخر التحقيقات',
+      // ---------- آخر التحقيقات (محفوظة محلياً ومزامنتها مع Firestore) ----------
+      'home_latest_investigations': 'آخر التحقيقات',
+      'home_latest_empty_title': 'لا توجد تحقيقات محفوظة بعد',
+      'home_latest_empty_sub':
+          'شغّل أول تحقيق وستظهر نتيجته هنا فور انتهاء الذكاء الاصطناعي.',
+      'home_latest_band_high': 'ثقة عالية',
+      'home_latest_band_medium': 'ثقة متوسطة',
+      'home_latest_band_low': 'ثقة منخفضة',
+      'home_latest_status_complete': 'مكتمل',
+      'home_latest_since_just_now': 'الآن',
+      'home_latest_since_minutes': 'منذ %{n} دقيقة',
+      'home_latest_since_hours': 'منذ %{n} ساعة',
+      'home_latest_since_days': 'منذ %{n} يوم',
+      'home_latest_evidence': '%{n} ملفات دليل',
       'home_user_menu': 'القائمة',
       'home_branch_filter': 'الفروع',
       'home_featured_today': 'قضية اليوم',
@@ -1672,6 +2100,16 @@ class AppLocalizations {
       'settings_language_sub': 'لغة واجهة التطبيق',
       'settings_search_prefs': 'تفضيلات البحث',
       'settings_search_prefs_sub': 'المصادر، الفلاتر، النتائج',
+      // ---------- اختيار نموذج الذكاء الاصطناعي ----------
+      'settings_ai_model_picker': 'نموذج الذكاء الاصطناعي',
+      'settings_ai_model_picker_sub':
+          'النموذج المستخدم لجميع طلبات OpenRouter في التطبيق',
+      'ai_model_picker_title': 'نموذج الذكاء الاصطناعي',
+      'ai_model_picker_sub':
+          'يحدد النموذج المستخدم لجميع طلبات OpenRouter في التطبيق.',
+      'ai_model_gemini_sub': 'Google · سريع وخفيف',
+      'ai_model_qwen_sub': 'Alibaba · منطق قوي',
+      'ai_model_inclusion_sub': 'InclusionAI · محسّن للإخراج JSON',
       'settings_notifications': 'الإشعارات',
       'settings_notifications_sub': 'تنبيهات، تحديثات، وتذكيرات',
       'settings_support': 'الدعم الفني',
@@ -1716,6 +2154,244 @@ class AppLocalizations {
       'settings_signout_success': 'تم تسجيل الخروج',
       'settings_signout_success_message': '!إلى اللقاء',
       'settings_coming_soon': 'قريباً',
+      // ---------- الإعدادات → الملف الشخصي ----------
+      'settings_profile_title': 'الملف الشخصي',
+      'settings_profile_name_label': 'اسم العرض',
+      'settings_profile_email_label': 'البريد الإلكتروني',
+      'settings_profile_email_verified': 'موثّق',
+      'settings_profile_email_unverified': 'غير موثّق',
+      'settings_profile_save': 'حفظ التغييرات',
+      'settings_profile_saved': 'تم تحديث الملف الشخصي',
+      'settings_profile_save_failed': 'تعذّر حفظ التغييرات.',
+      'settings_profile_name_required': 'الرجاء إدخال اسمك.',
+      // ---------- الإعدادات → الأمان ----------
+      'settings_security_title': 'الأمان والخصوصية',
+      'settings_security_password_title': 'كلمة المرور',
+      'settings_security_password_sub': 'تغيير كلمة مرور حسابك',
+      'settings_security_password_action': 'تغيير كلمة المرور',
+      'settings_security_2fa_title': 'التحقق بخطوتين',
+      'settings_security_2fa_sub': 'أضف طبقة أمان إضافية إلى حسابك',
+      'settings_security_sessions_title': 'الجلسات النشطة',
+      'settings_security_sessions_sub': 'إدارة الأجهزة المتصلة بحسابك',
+      'settings_security_sessions_action': 'عرض الجلسات',
+      'settings_security_danger_title': 'حذف الحساب',
+      'settings_security_danger_sub': 'إزالة حسابك وبياناتك نهائياً',
+      'settings_security_danger_action': 'حذف الحساب',
+      'settings_security_change_pw_title': 'تغيير كلمة المرور',
+      'settings_security_current_pw': 'كلمة المرور الحالية',
+      'settings_security_new_pw': 'كلمة المرور الجديدة',
+      'settings_security_confirm_pw': 'تأكيد كلمة المرور الجديدة',
+      'settings_security_submit': 'تحديث كلمة المرور',
+      'settings_security_pw_too_short':
+          'يجب أن تكون كلمة المرور 6 أحرف على الأقل.',
+      'settings_security_pw_mismatch': 'كلمتا المرور غير متطابقتين.',
+      'settings_security_pw_wrong_current':
+          'كلمة المرور الحالية غير صحيحة.',
+      'settings_security_pw_updated':
+          '.تم تحديث كلمة المرور. الرجاء تسجيل الدخول مجدداً',
+      'settings_security_pw_failed':
+          '.تعذّر تحديث كلمة المرور',
+      'settings_security_reauth_required':
+          '.الرجاء إعادة إدخال كلمة المرور الحالية للمتابعة',
+      'settings_security_sessions_title_screen': 'الجلسات النشطة',
+      'settings_security_sessions_empty':
+          'لا توجد أجهزة أخرى مسجّل دخولها.',
+      'settings_security_sessions_this': 'هذا الجهاز',
+      'settings_security_sessions_sign_out': 'تسجيل الخروج',
+      'settings_security_sessions_sign_out_all':
+          'تسجيل الخروج من جميع الأجهزة الأخرى',
+      'settings_security_sessions_confirm_title':
+          '؟تسجيل الخروج من جميع الأجهزة الأخرى',
+      'settings_security_sessions_confirm_body':
+          '.سننهي جميع الجلسات النشطة الأخرى لحسابك. ستبقى مسجّلاً على هذا الجهاز',
+      'settings_security_sessions_confirm_action':
+          'تسجيل الخروج من الأجهزة الأخرى',
+      'settings_security_sessions_signed_out':
+          '.تم تسجيل الخروج من الجلسات الأخرى',
+      'settings_security_delete_title': 'حذف الحساب',
+      'settings_security_delete_body':
+          '.سيؤدي ذلك إلى حذف حسابك وكشوفاتك وتفضيلاتك نهائياً. لا يمكن التراجع عن هذا الإجراء',
+      'settings_security_delete_confirm': 'حذف حسابي',
+      'settings_security_delete_failed':
+          '.تعذّر حذف الحساب. حاول مرة أخرى',
+      // ---------- الإعدادات → النسخ الاحتياطي ----------
+      'settings_backup_title': 'النسخ الاحتياطي والاستيراد',
+      'settings_backup_export_title': 'تصدير بياناتك',
+      'settings_backup_export_sub':
+          '.حمّل نسخة من كشوفاتك وتقاريرك وتفضيلاتك',
+      'settings_backup_export_action': 'تصدير البيانات',
+      'settings_backup_export_in_progress': '…جارٍ تجهيز التصدير',
+      'settings_backup_export_done': 'التصدير جاهز',
+      'settings_backup_export_failed':
+          '.تعذّر تجهيز التصدير. حاول مرة أخرى',
+      'settings_backup_cache_title': 'مسح البيانات المخزّنة',
+      'settings_backup_cache_sub':
+          '.إزالة الأخبار والرسوم وردود الذكاء الاصطناعي المخزّنة محلياً',
+      'settings_backup_cache_action': 'مسح المخزن',
+      'settings_backup_cache_done': '.تم مسح المخزن المحلي',
+      'settings_backup_cache_failed': '.تعذّر مسح المخزن',
+      // ---------- الإعدادات → الإشعارات ----------
+      'settings_notifications_title': 'الإشعارات',
+      'settings_notifications_push': 'الإشعارات الفورية',
+      'settings_notifications_push_sub':
+          '.استلام التنبيهات على هذا الجهاز',
+      'settings_notifications_email': 'تحديثات البريد الإلكتروني',
+      'settings_notifications_email_sub':
+          '.ملخصات أسبوعية وأخبار المنتج عبر البريد',
+      'settings_notifications_investigation':
+          'تنبيهات الكشوفات',
+      'settings_notifications_investigation_sub':
+          '.تنبيهك عند اكتمال أي تحقيق',
+      'settings_notifications_monitor':
+          'تنبيهات المراقبة',
+      'settings_notifications_monitor_sub':
+          '.تنبيهات عند رصد ارتفاع غير عادي لكيان تحت المراقبة',
+      'settings_notifications_saved': '.تم حفظ تفضيلات الإشعارات',
+      // ---------- الإعدادات → تفضيلات البحث ----------
+      'settings_search_title': 'تفضيلات البحث',
+      'settings_search_default_entity': 'نوع الجهة الافتراضي',
+      'settings_search_default_region': 'المنطقة الافتراضية',
+      'settings_search_safe': 'البحث الآمن',
+      'settings_search_safe_sub':
+          '.تصفية المحتوى الحساس من النتائج',
+      'settings_search_saved': '.تم حفظ تفضيلات البحث',
+      'settings_region_global': 'العالم',
+      'settings_region_gulf': 'منطقة الخليج',
+      'settings_region_europe': 'أوروبا',
+      'settings_region_na': 'أمريكا الشمالية',
+      // ---------- الإعدادات → المساعدة ----------
+      'settings_help_title': 'مركز المساعدة',
+      'settings_help_subtitle':
+          '.إجابات سريعة على الأسئلة الشائعة حول كاشف لايت',
+      'settings_help_contact_action': 'تواصل مع الدعم',
+      'settings_help_q1': '؟كيف أبدأ تحقيقاً جديداً',
+      'settings_help_a1':
+          '."اضغط على زر "+" الذهبي في الشريط السفلي، وأدخل استعلاماً أو ارفع أدلة، ثم اضغط ابدأ التحقيق',
+      'settings_help_q2': '؟أين تقاريري المحفوظة',
+      'settings_help_a2':
+          '."افتح تبويب التقارير في أسفل التطبيق. يمكنك التصفية حسب المفضلة أو المشتركة أو الأرشيف',
+      'settings_help_q3': '؟كيف أغيّر اللغة',
+      'settings_help_a3':
+          '."اذهب إلى الإعدادات ← اللغة واختر العربية أو الإنجليزية. يطبّق التطبيق التغيير فوراً',
+      'settings_help_q4': '؟كيف تُحمى بياناتي',
+      'settings_help_a4':
+          '.تُؤمّن الحسابات عبر Firebase Authentication. تبقى كشوفاتك في حسابك ولا تتم مشاركتها إلا باختيارك',
+      'settings_help_q5':
+          '؟كيف أتنقل بين الوضع الداكن والفاتح والسمة الرئيسية للعلامة',
+      'settings_help_a5':
+          '."افتح الإعدادات ← المظهر لاختيار الداكن أو الفاتح أو سمة العلامة الرئيسية. يُحفظ اختيارك للجلسة القادمة',
+      // ---------- الإعدادات → الدعم المباشر ----------
+      'settings_support_title': 'تواصل مع الدعم',
+      'settings_support_subtitle':
+          '.أرسل لنا رسالة وسنردّ عليك عبر البريد الإلكتروني',
+      'settings_support_name': 'اسمك',
+      'settings_support_email': 'بريدك الإلكتروني',
+      'settings_support_subject': 'الموضوع',
+      'settings_support_message': '؟كيف يمكننا المساعدة',
+      'settings_support_send': 'إرسال الرسالة',
+      'settings_support_sending': '…جارٍ الإرسال',
+      'settings_support_send_no_email_app':
+          '.لا يوجد تطبيق بريد مثبّت. فتحنا مسوّدة بدلاً من ذلك — اضغط إرسال',
+      'settings_support_send_done':
+          '!شكراً لك! تم إرسال رسالتك — سنردّ عليك قريباً',
+      'settings_support_send_failed':
+          '.تعذّر إرسال رسالتك. حاول مجدداً أو راسلنا مباشرة',
+      'settings_support_email_direct': 'راسلنا مباشرة',
+      'settings_support_validation_required':
+          '.الرجاء إدخال اسمك وبريدك الإلكتروني والرسالة',
+      'settings_support_validation_email':
+          '.الرجاء إدخال عنوان بريد إلكتروني صالح',
+      // ---------- الإعدادات → الملاحظات ----------
+      'settings_feedback_title': 'إرسال ملاحظات',
+      'settings_feedback_subtitle':
+          '.أخبرنا بما تحبّه أو بما يمكننا تحسينه',
+      'settings_feedback_category': 'الفئة',
+      'settings_feedback_cat_bug': 'الإبلاغ عن خطأ',
+      'settings_feedback_cat_idea': 'اقتراح',
+      'settings_feedback_cat_other': 'أخرى',
+      'settings_feedback_message': 'ملاحظاتك',
+      'settings_feedback_send': 'إرسال الملاحظات',
+      'settings_feedback_sending': '…جارٍ الإرسال',
+      'settings_feedback_sent':
+          '!شكراً على ملاحظاتك — نقرأ كل رسالة',
+      'settings_feedback_failed':
+          '.تعذّر إرسال ملاحظاتك. حاول مرة أخرى',
+      'settings_feedback_validation':
+          '.الرجاء كتابة رسالة قصيرة قبل الإرسال',
+      // ---------- الإعدادات → حول التطبيق ----------
+      'settings_about_title': 'عن كاشف لايت',
+      'settings_about_version_label': 'الإصدار',
+      'settings_about_build_label': 'البناء',
+      'settings_about_company_label': 'من تطوير',
+      'settings_about_company_value': 'مختبر كاشف',
+      'settings_about_website': 'الموقع الإلكتروني',
+      'settings_about_visit_website': 'زيارة الموقع',
+      'settings_about_contact': 'التواصل',
+      'settings_about_privacy': 'سياسة الخصوصية',
+      'settings_about_terms': 'شروط الخدمة',
+      'settings_about_open_source': 'تراخيص المصادر المفتوحة',
+      'settings_about_open_source_action': 'عرض التراخيص',
+      'settings_about_view': 'عرض',
+      // ---------- الإعدادات → جرس الإشعارات ----------
+      'settings_bell_title': 'الإشعارات',
+      'settings_bell_empty':
+          '.أنت على اطّلاع بكل جديد. ستظهر التنبيهات هنا',
+      'settings_bell_mark_all': 'تحديد الكل كمقروء',
+      'settings_bell_marked': '.تم تحديد كل الإشعارات كمقروءة',
+      // ---------- المستندات القانونية ----------
+      'legal_close': 'إغلاق',
+      'legal_text_scale': 'حجم النص',
+      'legal_last_updated': 'آخر تحديث',
+      'legal_privacy_intro':
+          '".تحترم كاشف لايت ("نحن"، "خاصتنا") خصوصيتك. توضّح سياسة الخصوصية هذه المعلومات التي نجمعها، وكيفية استخدامها، والخيارات المتاحة لك',
+      'legal_privacy_section1_title': '1. المعلومات التي نجمعها',
+      'legal_privacy_section1_body':
+          '.معلومات الحساب (البريد، اسم العرض) عند التسجيل. رموز المصادقة التي يديرها Firebase Authentication. استعلامات الكشوفات، الأدلة المرفقة، والملاحظات التي تختار حفظها. معلومات الجهاز (الطراز، اللغة، تفضيل السمة) لاستخدامها حصراً في تشغيل التطبيق على جهازك',
+      'legal_privacy_section2_title': '2. كيف نستخدم معلوماتك',
+      'legal_privacy_section2_body':
+          '.لتشغيل حسابك وتأمينه، ولتنفيذ كشوفات الذكاء الاصطناعي التي تطلبها، ولتذكّر تفضيلاتك (السمة، اللغة، الإشعارات). لا نبيع بياناتك لأي طرف ثالث',
+      'legal_privacy_section3_title': '3. معالجة الذكاء الاصطناعي',
+      'legal_privacy_section3_body':
+          ".تُرسل استعلامات الكشوفات والأدلة التي ترفقها إلى مزوّد الذكاء الاصطناعي (OpenRouter) فقط عند بدء تحقيق فعلياً. نُرسل الحد الأدنى من البيانات اللازمة ونعتمد على ضوابط الخصوصية والأمان لدى المزوّد",
+      'legal_privacy_section4_title': '4. تخزين البيانات والاحتفاظ بها',
+      'legal_privacy_section4_body':
+          '.تُخزَّن بيانات حسابك عبر Firebase (Google Cloud). يمكنك حذف حسابك في أي وقت من الإعدادات ← الأمان ← حذف الحساب. الحذف نهائي ويزيل بياناتك من أنظمتنا الإنتاجية خلال 30 يوماً',
+      'legal_privacy_section5_title': '5. حقوقك',
+      'legal_privacy_section5_body':
+          '.يمكنك طلب نسخة من بياناتك، أو تصحيحها، أو حذفها. راسلنا على العنوان الموجود في قسم التواصل وسنردّ خلال 30 يوماً',
+      'legal_privacy_section6_title': '6. التواصل',
+      'legal_privacy_section6_body':
+          '.لأي استفسار حول الخصوصية، راسلنا على Nawaff89@gmail.com. نردّ عادةً خلال يومي عمل',
+      'legal_terms_intro':
+          '".تحكم شروط الخدمة هذه ("الشروط") استخدامك لكاشف لايت. بإنشاء حساب أو استخدام التطبيق، فأنت توافق عليها',
+      'legal_terms_section1_title': '1. الخدمة',
+      'legal_terms_section1_body':
+          '.كاشف لايت مساحة بحث مدعومة بالذكاء الاصطناعي. يساعدك على التحقيق في العلامات والمنتجات والمؤثرين والأسواق عبر مزيج من المصادر المنسّقة وتحليل الذكاء الاصطناعي وأدلتك الخاصة',
+      'legal_terms_section2_title': '2. حسابك',
+      'legal_terms_section2_body':
+          '.أنت مسؤول عن الحفاظ على أمان كلمة المرور وعن أي نشاط يحدث تحت حسابك. أخبرنا فوراً عند الشك في أي دخول غير مصرّح به',
+      'legal_terms_section3_title': '3. الاستخدام المقبول',
+      'legal_terms_section3_body':
+          '.لا تستخدم كاشف لايت للمضايقة أو التشهير أو المراقبة غير المشروعة للأشخاص. لا تحاول تعطيل الخدمة أو إجراء هندسة عكسية لنماذج الذكاء الاصطناعي. يجوز لنا تعليق الحسابات التي تنتهك هذه القواعد',
+      'legal_terms_section4_title': '4. المحتوى المُنشأ بالذكاء الاصطناعي',
+      'legal_terms_section4_body':
+          '.تُقدَّم الرؤى والملخصات الناتجة عن الذكاء الاصطناعي لأغراض بحثية، وقد تكون غير دقيقة. تحقّق دائماً من النتائج المهمة عبر المصادر المدرجة قبل التصرف بناءً عليها',
+      'legal_terms_section5_title': '5. الخطط والتغييرات',
+      'legal_terms_section5_body':
+          '.قد نضيف ميزات أو نغيّرها أو نزيلها مع الوقت. في حال أثّر تغيير جوهري على حقوقك، سنخطرك عبر البريد الإلكتروني قبل 14 يوماً على الأقل',
+      'legal_terms_section6_title': '6. إنهاء الخدمة',
+      'legal_terms_section6_body':
+          '.يمكنك حذف حسابك في أي وقت من الإعدادات ← الأمان ← حذف الحساب. يجوز لنا تعليق أو إنهاء الحسابات التي تنتهك هذه الشروط',
+      'legal_terms_section7_title': '7. التواصل',
+      'legal_terms_section7_body':
+          '.استفساراتك حول هذه الشروط؟ راسلنا على Nawaff89@gmail.com',
+      'settings_privacy_legal': 'الخصوصية والشروط',
+      'settings_privacy_legal_sub':
+          '.اطّلع على سياسة الخصوصية وشروط الخدمة',
+      'settings_privacy_legal_action_view': 'عرض',
+      'settings_privacy_action_terms': 'شروط الخدمة',
+      'settings_privacy_action_privacy': 'سياسة الخصوصية',
+      'settings_privacy_action_view_doc': 'عرض',
       'entity_company': 'الشركات',
       'entity_brand': 'العلامات',
       'entity_product': 'المنتجات',
@@ -1960,6 +2636,141 @@ class AppLocalizations {
       'settings_system_overview': 'نظرة عامة على النظام',
       'settings_system_overview_sub':
           'لوحة مؤشرات، استوديو المحتوى وإجراءات سريعة',
+      // ---------- Investigation flow (AR) ----------
+      'inv_validation_empty':
+          'أضف استعلاماً، أو وضعاً، أو دليلاً للمتابعة.',
+      'inv_url_hint': 'الصق رابطاً (https://…)',
+      'inv_url_add': 'إضافة',
+      'inv_url_invalid': 'الرجاء إدخال رابط صالح.',
+      'inv_action_seeded': 'تمت إضافة الاستعلام — اضغط ابدأ التحقيق.',
+      'inv_files_added': 'تمت إضافة الملفات بنجاح.',
+      'inv_files_error': 'تعذّر اختيار الملفات. حاول مجدداً.',
+      'inv_action_selected':
+          'تم اختيار الوضع — سيستخدم الذكاء الاصطناعي هذا العدسة للاستعلام.',
+      'inv_action_cleared': 'تم مسح الوضع.',
+      'ir_evidence_uploading': 'جاري رفع {name}',
+      'ir_evidence_reading_links': 'قراءة {n} رابط',
+      'ir_evidence_extracting': 'استخراج النص من {n} ملف',
+      'ir_error_config':
+          'الذكاء الاصطناعي غير مُهيّأ. أضف OPENROUTER_API_KEY إلى ملف .env.',
+      'ir_error_auth':
+          'فشل التحقق من الذكاء الاصطناعي. تحقق من مفتاح API.',
+      'ir_error_rate_limit':
+          'تم تجاوز حد الاستخدام. انتظر لحظة وحاول مجدداً.',
+      'ir_error_timeout': 'انتهت مهلة الطلب. حاول مرة أخرى.',
+      'ir_error_network':
+          'خطأ في الشبكة مع الذكاء الاصطناعي. تحقق من الاتصال.',
+      'ir_error_parse':
+          'تعذّر فهم رد الذكاء الاصطناعي. حاول مرة أخرى.',
+      'ir_error_server': 'خدمة الذكاء الاصطناعي غير متاحة مؤقتاً.',
+      'ir_error_unknown': 'حدث خطأ ما. حاول مرة أخرى.',
+      'inv_action_compare_query':
+          'قارن بين Nike و Adidas في سوق الخليج',
+      'inv_action_monitor_query':
+          'راقب ذِكر Dior Sauvage الأسبوعي على المنصات',
+      'inv_action_match_query':
+          'ابحث عن مطابقات هوية للصورة المرفقة',
+      'inv_action_campaign_query':
+          'حلل أداء حملة Adidas ربيعية في الخليج',
+      'inv_action_influencer_query':
+          'حلل أبرز مؤثر الجمال في الكويت',
+      'ir_screen_title': 'نتائج التحقيق',
+      'ir_processing_title': 'جاري تشغيل التحقيق',
+      'ir_processing_failed': 'فشل التحقيق — حاول مجدداً.',
+      'ir_processing_failed_title': 'فشل التحقيق',
+      'ir_processing_failed_hint': 'جاري الإغلاق — يمكنك المحاولة مجدداً.',
+      'ir_error_generic':
+          'تعذّر بدء التحقيق. حاول مرة أخرى.',
+      'ir_phase_draft': 'تجهيز',
+      'ir_phase_collecting': 'جمع الأدلة',
+      'ir_phase_processing': 'معالجة الأدلة',
+      'ir_phase_analyzing': 'تحليل السياق',
+      'ir_phase_completed': 'اكتمل',
+      'ir_phase_failed': 'فشل',
+      'ir_title_with_name': 'تحقيق · {name}',
+      'ir_subtitle':
+          'نظرة عامة، رؤى ومصادر لاستفسارك.',
+      'ir_hero_confidence': 'مستوى الثقة الإجمالي',
+      'ir_meta_sources': '{n} مصدر',
+      'ir_meta_items': '{n} نتيجة',
+      'ir_summary_placeholder_query':
+          'ملخص الذكاء الاصطناعي للاستعلام «{query}».',
+      'ir_summary_placeholder_entity':
+          'ملخص الذكاء الاصطناعي لقطاع {entity}.',
+      'ir_evidence_summary_files': '{files} ملف مرفق.',
+      'ir_evidence_summary_urls': '{urls} رابط مرفق.',
+      'ir_evidence_summary_both':
+          '{files} ملف و{urls} رابط مرفق.',
+      'ir_evidence_status_pending': 'بالانتظار',
+      'ir_evidence_status_uploading': 'جاري الرفع',
+      'ir_evidence_status_processing': 'قيد المعالجة',
+      'ir_evidence_status_processed': 'جاهز',
+      'ir_evidence_status_failed': 'فشل',
+      'ir_evidence_kind_pdf': 'مستند PDF — تم استخراج النص.',
+      'ir_evidence_kind_image': 'صورة — اكتمل التحليل البصري.',
+      'ir_evidence_kind_video': 'فيديو — تم تفريغ المشاهد والصوت.',
+      'ir_evidence_kind_url': 'صفحة ويب — تم جلب المحتوى.',
+      'ir_overview_summary_title': 'الملخص',
+      'ir_overview_evidence_title': 'تغطية الأدلة',
+      'ir_overview_confidence_title': 'مستوى الثقة',
+      'ir_overview_confidence_body':
+          'يقارن الذكاء الاصطناعي الأدلة المرفقة مع المصادر المباشرة لتقدير مدى موثوقية هذه النتيجة.',
+      'ir_metric_items': 'عنصر',
+      'ir_metric_confidence': 'ثقة',
+      'ir_section_overview_title': 'النظرة العامة',
+      'ir_section_overview_sub': 'ملخص أعلى مستوى لهذا التشغيل.',
+      'ir_section_evidence_title': 'الأدلة المرفقة',
+      'ir_section_evidence_sub':
+          'كل ملف أو رابط قمنا بمعالجته في هذا التحقيق.',
+      'ir_section_insights_title': 'الرؤى',
+      'ir_section_insights_sub':
+          'اتجاهات وفرص ومخاطر كشفها الذكاء الاصطناعي.',
+      'ir_section_sources_title': 'المصادر',
+      'ir_section_sources_sub': 'من أين جاءت النتائج.',
+      'ir_section_recs_title': 'التوصيات',
+      'ir_section_recs_sub':
+          'الإجراءات التالية التي يقترحها الذكاء الاصطناعي بناءً على هذا التشغيل.',
+      'ir_section_empty': 'لا يوجد شيء هنا بعد.',
+      'ir_ins_trend_title': 'أبرز اتجاه',
+      'ir_ins_trend_body':
+          'تستمر العطور الخشبية والعنبر في قيادة سوق العطور الخليجي.',
+      'ir_ins_metric_growth': 'نمو (٩٠ يوم)',
+      'ir_ins_opportunity_title': 'أفضل فرصة',
+      'ir_ins_opportunity_body':
+          'أطلق إصداراً محدوداً في الربع الثالث لاقتناص ذروة العودة إلى المدارس.',
+      'ir_ins_opportunity_body_with_evidence':
+          'الأدلة المرفقة تتوافق مع فرضية إطلاق الربع الثالث.',
+      'ir_ins_risk_title': 'مؤشر المخاطرة',
+      'ir_ins_risk_body':
+          'المشاعر مستقرة ومخاطر السمعة منخفضة هذا الأسبوع.',
+      'ir_ins_risk_metric': 'درجة المخاطرة',
+      'ir_src_news_title': 'ملخص أخبار القطاع',
+      'ir_src_news_sub': 'تغطية مجمعة من وسائل الإعلام الإقليمية.',
+      'ir_src_social_title': 'المحادثة الاجتماعية',
+      'ir_src_social_sub': 'أبرز المنشئين والهاشتاقات التي تذكر الموضوع.',
+      'ir_src_linked_sub': 'مصدر من المستخدم.',
+      'ir_rec_1_title': 'ضاعف الاستثمار في الاتجاه الأبرز',
+      'ir_rec_1_body':
+          'شغّل حملة لمدة 7 أيام حول عائلة العطر الرائدة بينما الزخم في ذروته.',
+      'ir_rec_2_title': 'راقب المنافسين أسبوعياً',
+      'ir_rec_2_body':
+          'اضبط مراقبة آلية لأبرز 3 منافسين لرصد الإشارات المبكرة.',
+      'ir_rec_3_title': 'أنشئ تقريراً معمّقاً',
+      'ir_rec_3_body':
+          'استخدم تبويب الرؤى كمدخل لتقرير تحقيق كامل.',
+      'ir_rec_badge_priority': 'أولوية',
+      'ir_badge_verified': 'موثّق',
+      'ir_tab_overview': 'النظرة العامة',
+      'ir_tab_evidence': 'الأدلة',
+      'ir_tab_insights': 'الرؤى',
+      'ir_tab_sources': 'المصادر',
+      'ir_tab_recommendations': 'الإجراءات',
+      'ir_action_export_pdf': 'تصدير',
+      'ir_action_monitor': 'مراقبة',
+      'ir_action_monitor_toast': 'تمت جدولة المراقبة.',
+      'ir_action_report': 'تقرير',
+      'ir_action_save': 'حفظ',
+      'ir_action_share': 'تم نسخ رابط المشاركة.',
     },
   };
 

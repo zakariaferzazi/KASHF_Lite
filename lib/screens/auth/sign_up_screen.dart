@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
-import 'sign_in_email_screen.dart';
+import '../../services/settings_scope.dart';
 import '../../theme.dart';
+import '../../widgets/country_picker.dart';
+import 'auth_social_block.dart';
+import 'sign_in_email_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -21,6 +24,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmCtrl = TextEditingController();
   final AuthService _auth = AuthService();
 
+  /// Selected country — required to create the account.
+  CountryInfo? _country;
+
   bool _showPassword = false;
   bool _showConfirmPassword = false;
   bool _agreedToTerms = false;
@@ -36,9 +42,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  Future<void> _pickCountry() async {
+    final selected = await showCountryPicker(
+      context,
+      currentDialCode: _country?.dial,
+    );
+    if (selected != null && mounted) {
+      setState(() => _country = selected);
+    }
+  }
+
   Future<void> _handleCreateAccount() async {
     final l = AppLocalizations.of(context);
+    final prefs = SettingsScope.of(context);
     if (_isLoading) return;
+
+    // Country is required — the app uses it across the board (search
+    // defaults, AI prompts, market data, monitoring alerts, …). Don't
+    // even attempt Firebase until we know where the user lives.
+    if (_country == null) {
+      _showError(l.t('auth_signup_country_required'));
+      return;
+    }
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -84,6 +109,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         displayName: _nameCtrl.text,
         language: l.language,
       );
+      // Persist the country so every AI feature (search, home,
+      // market, monitoring) picks it up automatically — no need for
+      // the user to revisit Settings → Search preferences.
+      await prefs.setUserCountry(_country!.dial);
       // Show the success popup on the root overlay while we navigate.
       // We don't await it so the redirect is never blocked by the
       // popup's animation lifecycle.
@@ -100,9 +129,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       navigateToHome(context);
     } on AuthException catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
       _showError(e.message);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showError(e.toString());
     }
   }
 
@@ -119,6 +151,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final palette = KashfPalette.active;
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -136,6 +169,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+        ),
+        SizedBox(height: AuthSpacing.gapBetweenItems),
+        // Country picker — required to create the account. We render
+        // it with the same look as the phone-code picker so the user
+        // gets a consistent UX across the auth flow.
+        _CountryField(
+          country: _country,
+          onTap: _pickCountry,
+          hint: l.t('auth_signup_country_hint'),
+          palette: palette,
         ),
         SizedBox(height: AuthSpacing.gapBetweenItems),
         CustomTextField(
@@ -157,7 +200,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _showPassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: KashfPalette.active.textSecondary,
+              color: palette.textSecondary,
             ),
             onPressed: () {
               setState(() => _showPassword = !_showPassword);
@@ -176,7 +219,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _showConfirmPassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: KashfPalette.active.textSecondary,
+              color: palette.textSecondary,
             ),
             onPressed: () {
               setState(() => _showConfirmPassword = !_showConfirmPassword);
@@ -193,9 +236,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 value: _agreedToTerms,
                 onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
                 activeColor: KashfColors.gold,
+                
                 checkColor: Colors.black,
                 side: BorderSide(
-                  color: KashfPalette.active.fieldBorder,
+                  color: Colors.white,
                   width: 2,
                 ),
                 shape: RoundedRectangleBorder(
@@ -215,7 +259,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 // visually distinct and tappable.
                 TextSpan(
                   style: TextStyle(
-                    color: KashfPalette.active.textSecondary,
+                    color: palette.textSecondary,
                     fontSize: 13,
                   ),
                   children: [
@@ -254,12 +298,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           loading: _isLoading,
         ),
         SizedBox(height: AuthSpacing.gapDividerApple),
-        const OrDivider(),
-        SizedBox(height: AuthSpacing.gapDividerApple),
-        AppleButton(
-          onTap: () => navigateToHome(context),
-          label: l.t('auth_welcome_body_apple'),
-        ),
+        const AuthSocialBlock(),
       ],
     );
 
@@ -281,13 +320,83 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
+/// Country picker field — same visual treatment as [CustomTextField]
+/// but renders the flag-less dial-code + country name when a
+/// [CountryInfo] is selected, and a placeholder hint otherwise.
+class _CountryField extends StatelessWidget {
+  const _CountryField({
+    required this.country,
+    required this.onTap,
+    required this.hint,
+    required this.palette,
+  });
+
+  final CountryInfo? country;
+  final VoidCallback onTap;
+  final String hint;
+  final KashfPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = country != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          decoration: BoxDecoration(
+            color: palette.fieldFill,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? palette.fieldBorder : KashfColors.gold
+                  .withValues(alpha: 0.6),
+              width: selected ? 1 : 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.public_rounded,
+                color: palette.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  selected
+                      ? '${country!.dial}  ${country!.name}'
+                      : hint,
+                  style: TextStyle(
+                    color: selected
+                        ? palette.textPrimary
+                        : palette.textSecondary,
+                    fontSize: 15,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: palette.textSecondary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Inline tappable link used inside [Text.rich] for the sign-up
 /// terms/privacy agreement. Rendered as a [WidgetSpan] so Flutter's
 /// bidi algorithm still handles the surrounding Arabic text
 /// correctly when this widget is mixed with regular [TextSpan]s.
 class _LinkSpan extends StatelessWidget {
   const _LinkSpan({required this.text, required this.onTap});
-
   final String text;
   final VoidCallback onTap;
 

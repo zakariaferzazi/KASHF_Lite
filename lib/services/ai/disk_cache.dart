@@ -62,4 +62,15 @@ class DiskCache {
   Future<void> remove(String key) async {
     await _prefs.remove(_k(key));
   }
+
+  /// Removes every key created by [DiskCache]. Other preferences
+  /// (theme, locale, auth) are untouched. Returns the number of
+  /// entries that were cleared.
+  Future<int> clearAll() async {
+    final keys = _prefs.getKeys().where((k) => k.startsWith(_prefix)).toList();
+    for (final k in keys) {
+      await _prefs.remove(k);
+    }
+    return keys.length;
+  }
 }

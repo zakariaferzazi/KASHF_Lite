@@ -42,8 +42,6 @@ class MarketScreen extends StatefulWidget {
 }
 
 class _MarketScreenState extends State<MarketScreen> {
-  final int _tabIndex = 0;
-
   /// ISO 3166-1 alpha-2 country code used by the Google News
   /// feed for the in-page events list.
   static const String _countryCode = 'KW';
@@ -330,72 +328,6 @@ class _LastUpdated extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ============================ Tab Bar ============================
-class _TabBar extends StatelessWidget {
-  const _TabBar({
-    required this.index,
-    required this.onChanged,
-    required this.l,
-  });
-  final int index;
-  final ValueChanged<int> onChanged;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    // Five tabs in the reference: overview, campaigns, brands, products,
-    // influencers. Active tab uses brand gold + underline indicator.
-    final labels = <String>[
-      l.t('mp_tab_overview'),
-      l.t('mp_tab_campaigns'),
-      l.t('mp_tab_brands'),
-      l.t('mp_tab_products'),
-      l.t('mp_tab_influencers'),
-    ];
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: labels.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 20),
-        itemBuilder: (_, i) {
-          final selected = i == index;
-          // Underline indicator width matches the label width.
-          return InkWell(
-            onTap: () => onChanged(i),
-            borderRadius: BorderRadius.circular(6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  labels[i],
-                  style: TextStyle(
-                    color: selected
-                        ? KashfColors.gold
-                        : KashfPalette.active.textSecondary,
-                    fontSize: 12,
-                    fontWeight:
-                        selected ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  height: 2,
-                  width: selected ? 22 : 0,
-                  decoration: BoxDecoration(
-                    color: KashfColors.gold,
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
@@ -1080,12 +1012,6 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter old) => old._segments != _segments;
-}
-
-class _DonutSegment {
-  const _DonutSegment(this.fraction, this.color);
-  final double fraction;
-  final Color color;
 }
 
 // ============================ Section Header ============================
@@ -1908,103 +1834,6 @@ class _EventCard extends StatelessWidget {
 //     );
 //   }
 // }
-
-class _OutlineActionButton extends StatelessWidget {
-  const _OutlineActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 36,
-        padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 0),
-        decoration: BoxDecoration(
-          color: KashfPalette.active.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: KashfPalette.active.cardBorder),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: KashfPalette.active.textPrimary,
-              size: 14,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: KashfPalette.active.textPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 36,
-        padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 0),
-        decoration: BoxDecoration(
-          color: KashfColors.gold,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.black, size: 14),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ============================ Reusable Sparkline ============================
 /// Tiny static smooth-curve sparkline backed by Syncfusion's

@@ -1,5 +1,8 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../settings_preferences.dart';
+import 'ai_model_options.dart';
+
 /// Centralised configuration for the OpenRouter AI integration.
 ///
 /// All sensitive values (API key, base URL, model) are sourced from a
@@ -82,12 +85,20 @@ class OpenRouterConfig {
     return _defaultBaseUrl;
   }
 
-  /// Model identifier used by the chat completion. Override-able
-  /// through the `OPENROUTER_MODEL` env var.
+  /// Model identifier used by the chat completion.
+  ///
+  /// Precedence:
+  ///   1. `OPENROUTER_MODEL` env var (used in CI / dev to pin a model).
+  ///   2. The user's saved pick in [SettingsPreferences] (Settings → AI model).
+  ///   3. The bundled default ([kDefaultAiModelId]).
   static String get model {
     final override = dotenv.maybeGet('OPENROUTER_MODEL');
     if (override != null && override.trim().isNotEmpty) {
       return override.trim();
+    }
+    final prefs = SettingsPreferences.instance;
+    if (prefs != null) {
+      return prefs.aiModelId;
     }
     return _defaultModel;
   }

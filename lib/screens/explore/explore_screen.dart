@@ -16,7 +16,7 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  NewsTopic? _selectedTopic;
+  NewsTopic _selectedTopic = NewsTopic.fragrances;
   int _trendingPage = 0;
   late final NewsDataController _newsController;
 
@@ -33,10 +33,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final l = AppLocalizations.of(context);
-      // Default to Brands on first load so the carousel shows
-      // brand-investigation-relevant articles from the start
-      // instead of generic regional news.
-      _selectedTopic ??= NewsTopic.influencers;
+      // Default to Fragrances on first load so the carousel
+      // immediately shows articles about the highest-priority
+      // vertical for the user's region. (Always set — there's no
+      // "Top" / general-news chip anymore.)
       await _newsController.bootstrap(
         language: l.language.code,
         country: _countryCode,
@@ -105,11 +105,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12),
                 sliver: SliverToBoxAdapter(
                   child: TrendingSectionHeader(
-                    title: _selectedTopic == null
-                        ? l.t('explore_trending_title')
-                        : (l.isRtl
-                            ? _selectedTopic!.labelAr
-                            : _selectedTopic!.label),
+                    title: l.isRtl
+                        ? _selectedTopic.labelAr
+                        : _selectedTopic.label,
                   ),
                 ),
               ),
@@ -326,14 +324,14 @@ class _DiscoverGridStatic extends StatelessWidget {
   final ValueChanged<NewsTopic> onTapTopic;
 
   /// Mirrors the topic chips in [_CategoryChipsRow] so the grid
-  /// acts as a second entry point into the same feeds.
+  /// acts as a second entry point into the same feeds. Limited
+  /// to the 4 curated topics (Fashion / Beauty / Influencers /
+  /// Fragrances) shared with the Home screen.
   static const List<NewsTopic> _topics = <NewsTopic>[
-    NewsTopic.companies,
-    NewsTopic.brands,
-    NewsTopic.products,
+    NewsTopic.fashion,
+    NewsTopic.beauty,
     NewsTopic.influencers,
-    NewsTopic.trends,
-    NewsTopic.businessProblems,
+    NewsTopic.fragrances,
   ];
 
   @override
@@ -379,26 +377,6 @@ class _DiscoverGridStatic extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _DiscoverTile(
-                topic: _topics[4],
-                onTap: () => onTapTopic(_topics[4]),
-                l: l,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _DiscoverTile(
-                topic: _topics[5],
-                onTap: () => onTapTopic(_topics[5]),
-                l: l,
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -422,18 +400,14 @@ class _DiscoverTile extends StatelessWidget {
 
   IconData _iconFor(NewsTopic t) {
     switch (t) {
-      case NewsTopic.companies:
-        return Icons.business_outlined;
-      case NewsTopic.brands:
-        return Icons.shopping_bag_outlined;
-      case NewsTopic.products:
-        return Icons.inventory_2_outlined;
+      case NewsTopic.fashion:
+        return Icons.checkroom_outlined;
+      case NewsTopic.beauty:
+        return Icons.face_retouching_natural_outlined;
       case NewsTopic.influencers:
         return Icons.person_outline;
-      case NewsTopic.trends:
-        return Icons.trending_up;
-      case NewsTopic.businessProblems:
-        return Icons.report_problem_outlined;
+      case NewsTopic.fragrances:
+        return Icons.local_florist_outlined;
     }
   }
 

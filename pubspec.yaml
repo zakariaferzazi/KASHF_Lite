@@ -42,6 +42,13 @@ dependencies:
   # Firebase backend (connected via FlutterFire CLI).
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
+  # cloud_firestore is NOT installed by default in this build
+  # environment, so the offline-only archive service in
+  # `lib/services/investigation_archive_service.dart` is what the
+  # app currently uses. To enable a real Firestore-backed
+  # archive, add `cloud_firestore: ^5.4.4` to this file and run
+  # `flutter pub get`; the wiring in `firestore_investigation_
+  # writer.dart` is already in place to take over.
 
   # OpenRouter AI integration. We use the built-in `http` client
   # (already shipped with Flutter) plus `flutter_dotenv` to source the
@@ -52,6 +59,27 @@ dependencies:
   # In-app article reader used by the Explore screen's trending
   # news carousel. Tapping a card opens a bottom-sheet WebView.
   webview_flutter: ^4.10.0
+
+  # Evidence upload — real file picking for the investigation flow.
+  file_picker: ^8.1.6
+  uuid: ^4.5.1
+
+  # Used by the Settings → Contact Support and Feedback flows to
+  # hand the user off to the device's mail client with a pre-filled
+  # message addressed to the support inbox.
+  url_launcher: ^6.3.1
+
+  # Used by the Settings → About screen to render the running
+  # version + build number pulled from the native bundle.
+  package_info_plus: ^8.0.2
+
+  # Used by the Welcome / Sign-in / Sign-up screens for the
+  # "Continue with Apple" button. On iOS/macOS it returns a real
+  # Apple credential; on every other platform it throws
+  # `SignInWithAppleNotSupportedException`, which the auth
+  # service catches and surfaces as a friendly snackbar instead of
+  # silently dropping the user into the home screen.
+  sign_in_with_apple: ^6.1.4
 
 dev_dependencies:
   flutter_test:

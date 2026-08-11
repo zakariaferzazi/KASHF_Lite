@@ -1,72 +1,65 @@
 import 'package:flutter/foundation.dart';
 
-/// High-level topical categories the Explore carousel can show.
-/// Each one maps to a Google News RSS search query that filters
-/// for articles relevant to brand-investigation use-cases.
+/// High-level topical categories the Home / Explore carousel can
+/// show. Each one maps to a Google News RSS search query — one
+/// for English and one for Arabic — so the feed stays relevant
+/// regardless of the user's selected language.
 enum NewsTopic {
-  companies(
-    label: 'Companies',
-    labelAr: 'الشركات',
-    // Tight, brand-focused queries. We use `-` (exclude) terms to
-    // drop regional war / weather / sports / entertainment noise.
-    query: '(brand OR company OR corporate OR startup OR firm) '
-        '(acquisition OR earnings OR merger OR IPO OR layoff OR '
-        'expansion OR partnership OR valuation OR antitrust OR '
-        'regulator OR investigation OR quarterly OR revenue OR '
-        'subsidiary OR factory OR supply chain) '
-        '-weather -storm -temperature -hurricane -election '
-        '-football -soccer -match -concert -festival -celebrity',
+  fashion(
+    label: 'Fashion',
+    labelAr: 'الموضة',
+    queryEn: '(fashion OR couture OR runway OR "fashion week" OR '
+        '"street style" OR collection OR lookbook OR designer OR '
+        '"fashion brand" OR "fashion show" OR model OR "ready to wear" OR '
+        'luxury OR apparel) '
+        '-weather -election -football -soccer -match -concert',
+    queryAr: '(الموضة OR الأزياء OR كوتور OR أسبوع_الموضة OR '
+        'تصميم_أزياء OR مجموعة_أزياء OR مصمم_أزياء OR دار_أزياء OR '
+        'عارضة OR فاشن OR ملابس OR أزياء_فاخرة) '
+        '-طقس -انتخابات -كرة_قدم -مباراة -حفل',
   ),
-  brands(
-    label: 'Brands',
-    labelAr: 'العلامات التجارية',
-    query: '(brand OR brands OR label OR trademark) '
-        '(campaign OR sponsorship OR ambassador OR endorsement OR '
-        'rebrand OR recall OR boycott OR controversy OR logo OR '
-        'collaboration OR launch OR partnership) '
-        '-weather -storm -election -football -soccer -celebrity',
-  ),
-  products(
-    label: 'Products',
-    labelAr: 'المنتجات',
-    query: '(product OR products OR gadget OR device) '
-        '(launch OR release OR unveiling OR debut OR rollout OR '
-        'recall OR discontinue OR announcement OR specs OR review OR '
-        'preorder OR shipping) '
-        '-weather -storm -election -football -celebrity',
+  beauty(
+    label: 'Beauty',
+    labelAr: 'الجمال',
+    queryEn: '(beauty OR makeup OR cosmetics OR skincare OR '
+        '"beauty brand" OR lipstick OR foundation OR serum OR mascara OR '
+        'fragrance OR "beauty launch" OR "beauty routine") '
+        '-weather -election -football -soccer -match -concert',
+    queryAr: '(الجمال OR مكياج OR مستحضرات_التجميل OR عناية_بالبشرة OR '
+        'أحمر_شفاه OR كريم_أساس OR سيروم OR ماسكارا OR إطلاق_جمالي OR '
+        'روتين_جمال OR علامة_جمالية) '
+        '-طقس -انتخابات -كرة_قدم -مباراة -حفل',
   ),
   influencers(
     label: 'Influencers',
-    labelAr: 'المؤثرون',
-    query: '(influencer OR creator OR YouTuber OR TikToker OR '
-        'streamer OR "content creator" OR "brand deal") '
-        '(sponsorship OR partnership OR campaign OR endorsement OR '
-        'controversy OR apology OR drama OR brand OR brand deal) '
+    labelAr: 'المؤثرين',
+    queryEn: '(influencer OR creator OR YouTuber OR TikToker OR '
+        'streamer OR "content creator" OR "brand deal" OR '
+        'sponsorship OR endorsement OR collaboration OR ambassador) '
         '-weather -storm -election -football -match -concert',
+    queryAr: '(مؤثر OR صانع_محتوى OR يوتيوبر OR تيك_توك OR '
+        'ستريمر OR مؤثرون OR ترويج OR رعاية OR تعاون_تجاري OR '
+        'سفير_علامة) '
+        '-طقس -عاصفة -انتخابات -كرة_قدم -مباراة -حفل',
   ),
-  trends(
-    label: 'Trends',
-    labelAr: 'المواضيع الرائجة',
-    query: '(trend OR viral OR trending OR buzz OR meme OR hashtag) '
-        '("social media" OR TikTok OR Instagram OR YouTube OR '
-        'Twitter OR X OR Reddit OR "going viral") '
-        '-weather -election -football -soccer -match',
-  ),
-  businessProblems(
-    label: 'Business problems',
-    labelAr: 'أزمات الشركات',
-    query: '(company OR business OR corporate OR brand OR firm) '
-        '(lawsuit OR scandal OR fraud OR boycott OR investigation OR '
-        'fine OR ban OR shortage OR "data breach" OR recall OR '
-        'controversy OR protest OR strike OR whistleblower OR '
-        'bankruptcy OR "class action") '
-        '-weather -storm -election -football -soccer -celebrity',
+  fragrances(
+    label: 'Fragrances',
+    labelAr: 'العطور',
+    queryEn: '(fragrance OR perfume OR parfum OR "eau de parfum" OR '
+        '"eau de toilette" OR cologne OR oud OR "perfume launch" OR '
+        '"new scent" OR "perfume brand" OR "niche perfume" OR attar) '
+        '-weather -election -football -soccer -match -concert',
+    queryAr: '(عطر OR عطور OR Parfum OR ماء_العطر OR كولونيا OR '
+        'عود OR إطلاق_عطر OR عطر_جديد OR دار_عطور OR عطر_فاخر OR '
+        'أتر OR عطور_فخمة) '
+        '-طقس -انتخابات -كرة_قدم -مباراة -حفل',
   );
 
   const NewsTopic({
     required this.label,
     required this.labelAr,
-    required this.query,
+    required this.queryEn,
+    required this.queryAr,
   });
 
   /// English label shown in the chip row.
@@ -75,11 +68,22 @@ enum NewsTopic {
   /// Arabic label for RTL layouts.
   final String labelAr;
 
-  /// Free-text query sent to Google News RSS search. We keep it
-  /// tight on purpose — overly broad queries return celebrity /
-  /// entertainment articles that aren't useful for brand
-  /// investigation.
-  final String query;
+  /// Free-text query sent to Google News RSS search for English
+  /// locales. We use `-` (exclude) terms to drop weather /
+  /// election / sports / entertainment noise.
+  final String queryEn;
+
+  /// Free-text query sent to Google News RSS search for Arabic
+  /// locales. Kept tight so it stays focused on the local beat.
+  final String queryAr;
+
+  /// Returns the right query string for [languageCode]. Defaults
+  /// to the English variant for unknown languages so we always
+  /// emit a valid query.
+  String queryFor(String languageCode) {
+    if (languageCode.toLowerCase().startsWith('ar')) return queryAr;
+    return queryEn;
+  }
 }
 
 /// A single trending news article pulled from Google News RSS.
@@ -153,7 +157,7 @@ class NewsFeed {
     final topicName = json['topic'] as String?;
     final topic = NewsTopic.values.firstWhere(
       (t) => t.name == topicName,
-      orElse: () => NewsTopic.companies,
+      orElse: () => NewsTopic.fashion,
     );
     return NewsFeed(articles: articles, topic: topic);
   }

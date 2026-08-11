@@ -17,6 +17,8 @@ import 'services/ai/ai_home_service.dart';
 import 'services/ai/disk_cache.dart';
 import 'services/ai/featured_brand_controller.dart';
 import 'services/news/news_service.dart';
+import 'services/settings_preferences.dart';
+import 'services/settings_scope.dart';
 import 'theme.dart';
 
 void main() async {
@@ -36,7 +38,20 @@ void main() async {
   NewsService.initDiskCache(diskCache);
   FeaturedBrandController.initDiskCache(diskCache);
   final localeController = await LocaleController.load();
-  runApp(KashfApp(localeController: localeController));
+  // Build a persisting theme controller so the very first frame
+  // already reflects the user's saved preference (no flash of the
+  // default mode on app launch).
+  final themeController = ThemeController.load();
+  final settingsPrefs = await SettingsPreferences.load();
+  // Expose the prefs globally so [OpenRouterConfig.model] (a static
+  // getter — can't reach into the widget tree) can read the user's
+  // chosen model without circular dependencies.
+  SettingsPreferences.instance = settingsPrefs;
+  runApp(KashfApp(
+    localeController: localeController,
+    themeController: themeController,
+    settingsPrefs: settingsPrefs,
+  ));
 }
 
 /// Loads `.env` if present. Silently no-ops if the file is missing
@@ -52,8 +67,15 @@ Future<void> _loadEnv() async {
 }
 
 class KashfApp extends StatefulWidget {
-  const KashfApp({super.key, required this.localeController});
+  const KashfApp({
+    super.key,
+    required this.localeController,
+    required this.themeController,
+    required this.settingsPrefs,
+  });
   final LocaleController localeController;
+  final ThemeController themeController;
+  final SettingsPreferences settingsPrefs;
 
   @override
   State<KashfApp> createState() => _KashfAppState();
@@ -61,11 +83,13 @@ class KashfApp extends StatefulWidget {
 
 class _KashfAppState extends State<KashfApp> {
   late final ThemeController _themeController;
+  late final SettingsPreferences _settingsPrefs;
 
   @override
   void initState() {
     super.initState();
-    _themeController = ThemeController();
+    _themeController = widget.themeController;
+    _settingsPrefs = widget.settingsPrefs;
     // Apply the initial palette so the very first frame is correct.
     _applyPalette(_themeController.mode);
   }
@@ -74,6 +98,7 @@ class _KashfAppState extends State<KashfApp> {
   void dispose() {
     widget.localeController.dispose();
     _themeController.dispose();
+    _settingsPrefs.dispose();
     super.dispose();
   }
 
@@ -97,11 +122,14 @@ class _KashfAppState extends State<KashfApp> {
       controller: widget.localeController,
       child: ThemeScope(
         controller: _themeController,
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            widget.localeController,
-            _themeController,
-          ]),
+        child: SettingsScope(
+          prefs: _settingsPrefs,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([
+              widget.localeController,
+              _themeController,
+              _settingsPrefs,
+            ]),
           builder: (context, _) {
             _applyPalette(_themeController.mode);
             final l = AppLocalizations(widget.localeController.language);
@@ -147,6 +175,7 @@ class _KashfAppState extends State<KashfApp> {
               home: const _AuthGate(),
             );
           },
+          ),
         ),
       ),
     );

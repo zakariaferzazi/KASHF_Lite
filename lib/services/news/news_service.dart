@@ -193,9 +193,11 @@ class NewsService {
   ///
   /// When [topic] is non-null we hit Google News' **search**
   /// endpoint with a curated query instead of the generic
-  /// top-stories feed. This is what powers the category-filtered
-  /// carousel (Companies / Brands / Products / Influencers /
-  /// Trends / Business problems).
+  /// top-stories feed. The query is selected per-language via
+  /// [NewsTopic.queryFor] so Arabic-locale users get Arabic
+  /// terms and English-locale users get English ones. This
+  /// powers the category-filtered carousel (Fashion / Beauty /
+  /// Influencers / Fragrances).
   Future<NewsFeed> fetchTrending({
     required String language,
     required String country,
@@ -227,7 +229,7 @@ class NewsService {
                 'https://news.google.com/rss?hl=$language&gl=${c.country}&ceid=${c.ceid}',
               )
             : _searchUrl(
-                query: topic.query,
+                query: topic.queryFor(language),
                 language: language,
                 ceid: c.ceid,
                 country: c.country,

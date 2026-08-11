@@ -41,11 +41,14 @@ class MarketEventsController extends ChangeNotifier {
   /// Fetched at least once this session.
   bool get hasFetched => _articles != null;
 
-  /// Topics we cycle through, top article each → 3 rows.
+  /// Topics we cycle through, top article each → 3 rows. Picked
+  /// from the 4 curated verticals used across Home / Explore so
+  /// the Market Pulse stays aligned with what the user can
+  /// already drill into elsewhere.
   static const List<NewsTopic> _topics = <NewsTopic>[
-    NewsTopic.companies,
-    NewsTopic.brands,
-    NewsTopic.influencers,
+    NewsTopic.fashion,
+    NewsTopic.beauty,
+    NewsTopic.fragrances,
   ];
 
   /// Picks a status badge for an article by sniffing the title

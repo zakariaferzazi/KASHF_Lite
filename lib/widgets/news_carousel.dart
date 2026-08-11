@@ -22,24 +22,24 @@ class CategoryChipsRow extends StatelessWidget {
     required this.l,
   });
 
-  /// The currently active topic. `null` means "Top stories".
-  final NewsTopic? selected;
-  final ValueChanged<NewsTopic?> onChanged;
+  /// The currently active topic. Always one of the 4 curated
+  /// verticals (Fashion / Beauty / Influencers / Fragrances).
+  final NewsTopic selected;
+  final ValueChanged<NewsTopic> onChanged;
   final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    // `null` first → "Top stories" / general news; then the
-    // 6 topic chips in the order requested by the user.
-    final ordered = <NewsTopic?>[
-      null,
-      NewsTopic.companies,
-      NewsTopic.brands,
-      NewsTopic.products,
+    // The 4 curated topic chips (Fashion / Beauty / Influencers /
+    // Fragrances) in a fixed order. Limiting to these four keeps
+    // both the home and explore carousels focused on the topics
+    // the user actually cares about — there's no generic "Top"
+    // chip anymore.
+    final ordered = <NewsTopic>[
+      NewsTopic.fashion,
+      NewsTopic.beauty,
       NewsTopic.influencers,
-      NewsTopic.businessProblems,
-      NewsTopic.trends,
-      
+      NewsTopic.fragrances,
     ];
     return SizedBox(
       height: 36,
@@ -63,27 +63,20 @@ class CategoryChipsRow extends StatelessWidget {
     );
   }
 
-  static IconData iconForTopic(NewsTopic? t) {
+  static IconData iconForTopic(NewsTopic t) {
     switch (t) {
-      case null:
-        return Icons.public;
-      case NewsTopic.companies:
-        return Icons.business_outlined;
-      case NewsTopic.brands:
-        return Icons.shopping_bag_outlined;
-      case NewsTopic.products:
-        return Icons.inventory_2_outlined;
+      case NewsTopic.fashion:
+        return Icons.checkroom_outlined;
+      case NewsTopic.beauty:
+        return Icons.face_retouching_natural_outlined;
       case NewsTopic.influencers:
         return Icons.person_outline;
-      case NewsTopic.trends:
-        return Icons.trending_up;
-      case NewsTopic.businessProblems:
-        return Icons.report_problem_outlined;
+      case NewsTopic.fragrances:
+        return Icons.local_florist_outlined;
     }
   }
 
-  static String labelForTopic(NewsTopic? t, AppLocalizations l) {
-    if (t == null) return l.isRtl ? 'الأبرز' : 'Top';
+  static String labelForTopic(NewsTopic t, AppLocalizations l) {
     return l.isRtl ? t.labelAr : t.label;
   }
 }
