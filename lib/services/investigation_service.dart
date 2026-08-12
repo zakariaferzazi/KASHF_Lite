@@ -9,7 +9,9 @@ import '../models/evidence.dart';
 import '../models/investigation.dart';
 import '../models/investigation_action.dart';
 import '../models/investigation_result.dart';
+import 'ai/investigation_thumbnail_resolver.dart';
 import 'ai/openrouter_client.dart';
+import 'ai/openrouter_config.dart';
 import 'investigation_prompt_builder.dart';
 
 /// Snapshot of a running investigation exposed to the UI. The
@@ -160,9 +162,30 @@ class InvestigationService {
 
       final request = OpenRouterRequest(
         messages: messages,
+        // Pin the model explicitly so the request can never
+        // accidentally pick up a stale value. [OpenRouterConfig.model]
+        // is a getter that reads the user's saved choice at request
+        // time — meaning a Settings → AI model switch is honoured by
+        // the very next investigation the user starts.
+        model: OpenRouterConfig.model,
         temperature: 0.4,
         maxTokens: 4000,
-        responseFormat: const {'type': 'json_object'},
+        // NOTE: do NOT set responseFormat here. With web search
+        // enabled, OpenRouter silently drops tool calls when
+        // `response_format: type=json_object` is present in the
+        // same request — the web search tool never fires and the
+        // model returns a guess from training data. We rely on
+        // the client wrapper to strip responseFormat whenever
+        // web search is on; leaving it null here makes the intent
+        // explicit at the call site.
+        // Enable OpenRouter's built-in web search tool for
+        // every investigation. The model's training data is
+        // outdated by definition for any real-world entity
+        // (handles, follower counts, brand collaborations,
+        // recent news, current prices all change constantly).
+        // Web search makes the report reflect the live state
+        // of the world rather than guessing from stale memory.
+        enableWebSearch: true,
       );
 
       final Map<String, dynamic> json;
@@ -179,14 +202,43 @@ class InvestigationService {
       }
 
       // Phase 4 — build the result from the model output.
-      final result = parseInvestigationResult(
+      final investigationId = 'inv-${DateTime.now().millisecondsSinceEpoch}';
+      final parsed = parseInvestigationResult(
         json: json,
-        investigationId: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+        investigationId: investigationId,
         query: query,
         evidence: evidence,
         entityType: entityType,
         l: l,
       );
+
+      // Resolve a verified thumbnail. The parser already picks the
+      // best candidate from the AI response, but the URL may be
+      // 404 / corrupted. The resolver probes each candidate (AI
+      // url → item/source image → Logo.dev → unavatar → picsum)
+      // and returns the first one that actually serves an image
+      // — so the result screen never renders a broken tile.
+      final verifiedUrl = await InvestigationThumbnailResolver.instance.resolve(
+        investigationId: investigationId,
+        aiThumbnailUrl: (json['thumbnail_url'] as String?)?.trim(),
+        subjectDomain: (json['subject_domain'] as String?)?.trim(),
+        entityTypeName: entityType.name,
+        subjectName: (json['subject_name'] as String?)?.trim(),
+        query: query,
+        moreCandidates: [
+          for (final s in parsed.sections)
+            for (final it in s.items)
+              if (it.imageUrl != null && it.imageUrl!.isNotEmpty)
+                it.imageUrl!,
+          for (final src in parsed.sources)
+            if (src.imageUrl != null && src.imageUrl!.isNotEmpty)
+              src.imageUrl!,
+        ],
+      );
+
+      final result = verifiedUrl != null && verifiedUrl != parsed.thumbnailUrl
+          ? parsed.copyWith(thumbnailUrl: verifiedUrl)
+          : parsed;
 
       _emit(
         l,
@@ -355,12 +407,24 @@ InvestigationResult parseInvestigationResult({
           {'name': query.isEmpty ? l.t(entityType.l10nKey) : query},
         );
 
-  final subtitle = (json['subtitle'] as String?)?.trim() ?? l.t('ir_subtitle');
+  // Subtitle fallback is per-entity-type so an influencer
+  // investigation never falls back to a generic corporate
+  // phrasing. The prompt already steers the model to return an
+  // entity-type-appropriate subtitle; this is the safety net.
+  final subjectForSubtitle =
+      ((json['subject_name'] as String?)?.trim().isNotEmpty ?? false)
+          ? (json['subject_name'] as String).trim()
+          : (query.isEmpty ? l.t(entityType.l10nKey) : query);
+  final subtitle = (json['subtitle'] as String?)?.trim() ??
+      l.tp(
+        'ir_subtitle_${entityType.name}',
+        {'name': subjectForSubtitle},
+      );
 
   final summary = (json['summary'] as String?)?.trim();
 
   final overallConfidence = _readConfidence(json['overall_confidence']) ??
-      (evidence.isNotEmpty ? 0.85 : 0.7);
+      (evidence.isNotEmpty ? 0.80 : 0.55);
 
   final sourcesJson = (json['sources'] as List?) ?? const [];
   final sources = sourcesJson
@@ -370,25 +434,26 @@ InvestigationResult parseInvestigationResult({
 
   final sectionsJson = (json['sections'] as List?) ?? const [];
 
-  // We always build 5 sections in the canonical order. If the
+  // We always build 7 sections in the canonical order. If the
   // model skipped one we still render an empty section so the UI
-  // tabs stay aligned.
+  // tabs stay aligned. The 7 sections are the entity-type
+  // blueprint: overview, evidence, keyFindings, activityTrends,
+  // competitors, opportunities, risks.
   const order = [
     InvestigationResultKind.overview,
     InvestigationResultKind.evidence,
-    InvestigationResultKind.insights,
-    InvestigationResultKind.sources,
-    InvestigationResultKind.recommendations,
+    InvestigationResultKind.keyFindings,
+    InvestigationResultKind.activityTrends,
+    InvestigationResultKind.competitors,
+    InvestigationResultKind.opportunities,
+    InvestigationResultKind.risks,
   ];
   final byKind = <InvestigationResultKind, Map<String, dynamic>>{};
   for (final raw in sectionsJson) {
     if (raw is Map<String, dynamic>) {
       final kStr = (raw['kind'] as String?) ?? '';
-      final k = InvestigationResultKind.values.firstWhere(
-        (kk) => kk.name == kStr,
-        orElse: () => InvestigationResultKind.overview,
-      );
-      byKind[k] = raw;
+      final kind = _kindFromString(kStr);
+      byKind[kind] = raw;
     }
   }
 
@@ -398,8 +463,8 @@ InvestigationResult parseInvestigationResult({
     if (raw == null) {
       sections.add(InvestigationResultSection(
         kind: kind,
-        headline: l.t('ir_section_${kind.name}_title'),
-        summary: l.t('ir_section_${kind.name}_sub'),
+        headline: l.t('ir_section_${_kindL10nSlug(kind)}_title'),
+        summary: l.t('ir_section_${_kindL10nSlug(kind)}_sub'),
         items: const [],
       ));
     } else {
@@ -466,10 +531,36 @@ InvestigationResult parseInvestigationResult({
             title: e.displayName,
             body: _evidenceLineFor(e, l),
             badge: l.t('ir_evidence_status_processed'),
+            imageUrl: e.url, // surface URL-evidence as the thumbnail
           );
         }).toList(),
       );
     }
+  }
+
+  // Resolve the top-level thumbnail. Order of preference:
+  //   1. Explicit top-level `thumbnail_url` from the AI.
+  //   2. Overview section's first item with an image.
+  //   3. Any other section's first image-bearing item.
+  //   4. First source that carries an image.
+  //   5. `null` — UI falls back to a neutral icon tile.
+  String? thumbnailUrl = (json['thumbnail_url'] as String?)?.trim();
+  if (thumbnailUrl == null || thumbnailUrl.isEmpty) {
+    for (final s in sections) {
+      for (final it in s.items) {
+        if (it.imageUrl != null && it.imageUrl!.isNotEmpty) {
+          thumbnailUrl = it.imageUrl;
+          break;
+        }
+      }
+      if (thumbnailUrl != null) break;
+    }
+  }
+  if (thumbnailUrl == null || thumbnailUrl.isEmpty) {
+    final withImage = sources
+        .where((s) => s.imageUrl != null && s.imageUrl!.isNotEmpty)
+        .toList();
+    if (withImage.isNotEmpty) thumbnailUrl = withImage.first.imageUrl;
   }
 
   return InvestigationResult(
@@ -481,6 +572,9 @@ InvestigationResult parseInvestigationResult({
     generatedAt: DateTime.now(),
     sources: sources,
     confidence: overallConfidence,
+    thumbnailUrl: (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
+        ? thumbnailUrl
+        : null,
   );
 }
 
@@ -512,6 +606,7 @@ InvestigationSource _parseSource(dynamic raw) {
     subtitle: (m['subtitle'] as String?) ?? '',
     kind: kind,
     url: m['url'] as String?,
+    imageUrl: m['image_url'] as String?,
   );
 }
 
@@ -527,6 +622,7 @@ InvestigationResultItem _parseItem(
     metric: m['metric'] as String?,
     metricLabel: m['metric_label'] as String?,
     badge: m['badge'] as String?,
+    imageUrl: m['image_url'] as String?,
   );
 }
 
@@ -536,16 +632,13 @@ InvestigationResultSection _parseSection(
   required AppLocalizations l,
 }) {
   final m = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
-  final kindStr = (m['kind'] as String?) ?? fallback.name;
-  final kind = InvestigationResultKind.values.firstWhere(
-    (k) => k.name == kindStr,
-    orElse: () => fallback,
-  );
+  final kindStr = (m['kind'] as String?) ?? '';
+  final kind = _kindFromString(kindStr, fallback: fallback);
   final itemsJson = (m['items'] as List?) ?? const [];
   final items = itemsJson
       .asMap()
       .entries
-      .map((e) => _parseItem(e.value, fallbackId: '${kind.name}-${e.key}'))
+      .map((e) => _parseItem(e.value, fallbackId: '${_kindL10nSlug(kind)}-${e.key}'))
       .where((it) => it.title.isNotEmpty || it.body.isNotEmpty)
       .toList();
 
@@ -553,11 +646,72 @@ InvestigationResultSection _parseSection(
     kind: kind,
     headline: (m['headline'] as String?)?.trim().isNotEmpty == true
         ? m['headline'] as String
-        : l.t('ir_section_${kind.name}_title'),
+        : l.t('ir_section_${_kindL10nSlug(kind)}_title'),
     summary: (m['summary'] as String?) ?? '',
     items: items,
     confidence: _readConfidence(m['confidence']),
+    imageUrl: m['image_url'] as String?,
   );
+}
+
+/// Maps the strings emitted by the AI model to the
+/// strongly-typed [InvestigationResultKind]. The model writes
+/// snake_case (`key_findings`, `activity_trends`) — these match
+/// the slug used in localization keys too.
+InvestigationResultKind _kindFromString(
+  String raw, {
+  InvestigationResultKind fallback = InvestigationResultKind.overview,
+}) {
+  switch (raw) {
+    case 'overview':
+      return InvestigationResultKind.overview;
+    case 'evidence':
+      return InvestigationResultKind.evidence;
+    case 'key_findings':
+    case 'insights':
+    case 'findings':
+      return InvestigationResultKind.keyFindings;
+    case 'activity_trends':
+    case 'activity':
+    case 'trends':
+      return InvestigationResultKind.activityTrends;
+    case 'competitors':
+    case 'competitor':
+      return InvestigationResultKind.competitors;
+    case 'opportunities':
+    case 'opportunity':
+      return InvestigationResultKind.opportunities;
+    case 'risks':
+    case 'risk':
+      return InvestigationResultKind.risks;
+  }
+  // Fallback: tolerate camelCase from older runs.
+  for (final k in InvestigationResultKind.values) {
+    if (k.name == raw) return k;
+  }
+  return fallback;
+}
+
+/// The slug used to build the localization key for a section.
+/// Mirrors the snake_case `kind` values the model emits:
+/// `key_findings` → `ir_section_key_findings_title`.
+String _kindL10nSlug(InvestigationResultKind k) {
+  switch (k) {
+    case InvestigationResultKind.overview:
+      return 'overview';
+    case InvestigationResultKind.evidence:
+      return 'evidence';
+    case InvestigationResultKind.keyFindings:
+      return 'key_findings';
+    case InvestigationResultKind.activityTrends:
+      return 'activity_trends';
+    case InvestigationResultKind.competitors:
+      return 'competitors';
+    case InvestigationResultKind.opportunities:
+      return 'opportunities';
+    case InvestigationResultKind.risks:
+      return 'risks';
+  }
 }
 
 String _evidenceLineFor(Evidence e, AppLocalizations l) {

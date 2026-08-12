@@ -42,13 +42,13 @@ dependencies:
   # Firebase backend (connected via FlutterFire CLI).
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
-  # cloud_firestore is NOT installed by default in this build
-  # environment, so the offline-only archive service in
-  # `lib/services/investigation_archive_service.dart` is what the
-  # app currently uses. To enable a real Firestore-backed
-  # archive, add `cloud_firestore: ^5.4.4` to this file and run
-  # `flutter pub get`; the wiring in `firestore_investigation_
-  # writer.dart` is already in place to take over.
+  # Firestore-backed persistence for completed investigations. The
+  # `FirestoreInvestigationWriter` writes one document per run under
+  # `users/{uid}/investigations/{docId}` so each signed-in user keeps
+  # their own private archive. The local SharedPreferences writer
+  # stays in the loop as a write-through cache so the home screen
+  # never blocks on the network.
+  cloud_firestore: ^5.4.4
 
   # OpenRouter AI integration. We use the built-in `http` client
   # (already shipped with Flutter) plus `flutter_dotenv` to source the
@@ -80,6 +80,7 @@ dependencies:
   # service catches and surfaces as a friendly snackbar instead of
   # silently dropping the user into the home screen.
   sign_in_with_apple: ^6.1.4
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:

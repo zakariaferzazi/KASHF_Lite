@@ -84,6 +84,49 @@ enum NewsTopic {
     if (languageCode.toLowerCase().startsWith('ar')) return queryAr;
     return queryEn;
   }
+
+  /// Enum name used for cache keys. Same as the implicit `name` getter
+  /// but explicit so it works on older Dart versions.
+  String get name {
+    switch (this) {
+      case NewsTopic.fashion:
+        return 'fashion';
+      case NewsTopic.beauty:
+        return 'beauty';
+      case NewsTopic.influencers:
+        return 'influencers';
+      case NewsTopic.fragrances:
+        return 'fragrances';
+    }
+  }
+}
+
+/// User-defined news topic. Carries the same surface as [NewsTopic]
+/// (label / labelAr / queryEn / queryAr + [queryFor]) but is a
+/// regular class because Dart enhanced enums can't be instantiated
+/// outside their own body.
+@immutable
+class CustomNewsTopic {
+  const CustomNewsTopic({
+    required this.label,
+    required this.labelAr,
+    required this.queryEn,
+    required this.queryAr,
+  });
+
+  /// Stable identifier used for cache keys.
+  String get name => 'custom_${label.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+
+  final String label;
+  final String labelAr;
+  final String queryEn;
+  final String queryAr;
+
+  /// Mirrors [NewsTopic.queryFor].
+  String queryFor(String languageCode) {
+    if (languageCode.toLowerCase().startsWith('ar')) return queryAr;
+    return queryEn;
+  }
 }
 
 /// A single trending news article pulled from Google News RSS.
@@ -134,16 +177,32 @@ class NewsArticle {
 /// Top-level payload returned by the news service.
 @immutable
 class NewsFeed {
-  const NewsFeed({required this.articles, this.topic});
+  const NewsFeed({required this.articles, this.topic, this.fetchedAt});
 
   final List<NewsArticle> articles;
 
   /// The topic the feed was fetched for (if any).
-  final NewsTopic? topic;
+  /// Can be a built-in [NewsTopic] or a user [CustomNewsTopic].
+  final dynamic topic;
+
+  /// When the feed was last successfully fetched. Drives the
+  /// 24-hour refresh window. `null` (or epoch) means the feed is
+  /// stale and must be re-fetched by the controller.
+  final DateTime? fetchedAt;
+
+  /// Returns a copy with [fetchedAt] replaced. Used by
+  /// `NewsContentRepository.writeFeed` to stamp the payload with
+  /// the time of the latest successful scrape.
+  NewsFeed stamp(DateTime at) => NewsFeed(
+        articles: articles,
+        topic: topic,
+        fetchedAt: at,
+      );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'topic': topic?.name,
         'articles': articles.map((a) => a.toJson()).toList(),
+        'fetchedAt': fetchedAt?.millisecondsSinceEpoch,
       };
 
   static NewsFeed fromJson(Map<String, dynamic> json) {
@@ -159,6 +218,48 @@ class NewsFeed {
       (t) => t.name == topicName,
       orElse: () => NewsTopic.fashion,
     );
-    return NewsFeed(articles: articles, topic: topic);
+    final fetchedAtMs = json['fetchedAt'];
+    final fetchedAt = fetchedAtMs is num
+        ? DateTime.fromMillisecondsSinceEpoch(fetchedAtMs.toInt())
+        : null;
+    return NewsFeed(articles: articles, topic: topic, fetchedAt: fetchedAt);
+  }
+
+  // ------------------------------------------------------------------
+  // Disk cache payload (SharedPreferences). Wraps [toJson] with the
+  // `_at` / `data` envelope that `DiskCache.readJson` expects.
+  // ------------------------------------------------------------------
+  Map<String, dynamic> toCacheJson() => toJson();
+  static NewsFeed fromCacheJson(Map<String, dynamic> json) => fromJson(json);
+
+  // ------------------------------------------------------------------
+  // Firestore payload. Same as the disk shape but with explicit
+  // `articles` + `updatedAt` server fields so a Cloud Function can
+  // overwrite them in one shot.
+  // ------------------------------------------------------------------
+  Map<String, dynamic> toFirestoreJson() => <String, dynamic>{
+        'articles': articles.map((a) => a.toJson()).toList(),
+        'topic': topic?.name,
+        'updatedAt': fetchedAt?.millisecondsSinceEpoch,
+      };
+
+  static NewsFeed fromFirestoreJson(Map<String, dynamic> data) {
+    final articlesRaw = data['articles'];
+    final articles = articlesRaw is List
+        ? articlesRaw
+            .whereType<Map<String, dynamic>>()
+            .map(NewsArticle.fromJson)
+            .toList()
+        : <NewsArticle>[];
+    final topicName = data['topic'] as String?;
+    final topic = NewsTopic.values.firstWhere(
+      (t) => t.name == topicName,
+      orElse: () => NewsTopic.fashion,
+    );
+    final updatedAt = data['updatedAt'];
+    final fetchedAt = updatedAt is num
+        ? DateTime.fromMillisecondsSinceEpoch(updatedAt.toInt())
+        : null;
+    return NewsFeed(articles: articles, topic: topic, fetchedAt: fetchedAt);
   }
 }

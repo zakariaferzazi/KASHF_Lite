@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kashf_lite/screens/settings/settings_scaffold.dart';
 
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_strings.dart';
@@ -9,11 +10,11 @@ import '../../l10n/theme_scope.dart';
 import '../../main.dart';
 import '../../services/ai/ai_model_options.dart';
 import '../../services/auth_service.dart';
+import '../../services/news/news_models.dart';
 import '../../services/settings_preferences.dart';
 import '../../services/settings_scope.dart';
 import '../../theme.dart';
 import '../system_overview/system_overview_screen.dart';
-import 'about_screen.dart';
 import 'backup_screen.dart';
 import 'contact_support_screen.dart';
 import 'feedback_screen.dart';
@@ -22,7 +23,6 @@ import 'legal_document_dialog.dart';
 import 'notifications_bell_screen.dart';
 import 'notifications_screen.dart';
 import 'personal_profile_screen.dart';
-import 'search_preferences_screen.dart';
 import 'security_screen.dart';
 
 /// Settings hub. Every tile is wired up to a working screen or
@@ -142,57 +142,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         prefs.lastBellReadAt.isBefore(DateTime.now().subtract(
               const Duration(seconds: 30),
             ));
+    final isRtl = l.isRtl;
+    // For RTL: title on left, bell on right
+    // For LTR: bell on left, title on right
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: palette.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: palette.cardBorder),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Center(
-                child: IconButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsBellScreen(),
-                    ),
-                  ),
-                  icon: Icon(
-                    Icons.notifications_none_outlined,
-                    color: KashfColors.gold,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-              if (hasUnread)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: KashfColors.gold,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
+        if (isRtl) ...[
+          Expanded(
+            child: Text(
               l.t('settings_title'),
               style: TextStyle(
                 color: palette.textPrimary,
@@ -200,17 +158,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              l.t('settings_subtitle'),
+          ),
+          const SizedBox(width: 8),
+          _buildNotificationBell(palette, hasUnread),
+        ] else ...[
+          _buildNotificationBell(palette, hasUnread),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l.t('settings_title'),
+              textAlign: TextAlign.end,
               style: TextStyle(
-                color: palette.textSecondary,
-                fontSize: 12,
+                color: palette.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildNotificationBell(KashfPalette palette, bool hasUnread) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Center(
+            child: IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsBellScreen(),
+                ),
+              ),
+              icon: Icon(
+                Icons.notifications_none_outlined,
+                color: KashfColors.gold,
+                size: 20,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
+          if (hasUnread)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: KashfColors.gold,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -262,40 +274,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: palette.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: KashfColors.gold,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Lite',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -473,11 +460,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: const Color(0xFF4CAF50),
             title: l.t('settings_search_prefs'),
             subtitle: l.t('settings_search_prefs_sub'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const SearchPreferencesScreen(),
-              ),
+            trailing: _buildBadge(
+              '${NewsTopic.values.length + prefs.customTopics.length}',
+              KashfColors.gold,
             ),
+            onTap: () => _showSearchPrefsSheet(context),
           ),
           _buildDivider(palette),
           _buildTile(
@@ -531,7 +518,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: AnimatedBuilder(
             animation: prefs,
             builder: (context, _) {
-              return Padding(
+              return SingleChildScrollView(
                 padding:
                     const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 16),
                 child: Column(
@@ -577,6 +564,163 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  // ===================== News Topics Picker Sheet =====================
+  // Bottom sheet that lists every news topic the app fetches from.
+  // Built-in topics (Fashion / Beauty / Influencers / Fragrances) are
+  // read-only; user-added topics get a delete affordance. An "Add
+  // custom topic" tile at the bottom opens a small dialog.
+  void _showSearchPrefsSheet(BuildContext context) {
+    final prefs = SettingsScope.of(context);
+    final l = AppLocalizations.of(context);
+    final palette = KashfPalette.active;
+    final isRtl = l.isRtl;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: palette.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: AnimatedBuilder(
+            animation: prefs,
+            builder: (context, _) {
+              final builtIn = NewsTopic.values;
+              final custom = prefs.customTopics;
+              return Padding(
+                padding:
+                    const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.t('search_prefs_topics_header'),
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l.t('search_prefs_topics_sub'),
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight:
+                            MediaQuery.of(context).size.height * 0.55,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final topic in builtIn) ...[
+                              _TopicSheetTile(
+                                label: isRtl ? topic.labelAr : topic.label,
+                                subtitle: isRtl
+                                    ? topic.queryAr
+                                    : topic.queryEn,
+                                removable: false,
+                                palette: palette,
+                                onRemove: null,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            if (custom.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                l.t('search_prefs_topics_custom'),
+                                style: TextStyle(
+                                  color: palette.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              for (var i = 0; i < custom.length; i++) ...[
+                                _TopicSheetTile(
+                                  label: custom[i].label,
+                                  subtitle: isRtl
+                                      ? custom[i].queryAr
+                                      : custom[i].queryEn,
+                                  removable: true,
+                                  palette: palette,
+                                  onRemove: () =>
+                                      prefs.removeCustomTopicAt(i),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showAddTopicDialog(context),
+                        icon: const Icon(Icons.add,
+                            color: KashfColors.gold, size: 18),
+                        label: Text(
+                          l.t('search_prefs_add_topic'),
+                          style: const TextStyle(
+                            color: KashfColors.gold,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: KashfColors.gold),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // ===================== Add Topic Dialog =====================
+  Future<void> _showAddTopicDialog(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final palette = KashfPalette.active;
+    final result = await showDialog<_NewTopicFields>(
+      context: context,
+      builder: (ctx) => _AddTopicDialog(
+        palette: palette,
+        title: l.t('search_prefs_add_topic'),
+      ),
+    );
+    if (result == null) return;
+    if (!mounted) return;
+    final prefs = SettingsScope.of(context);
+    await prefs.addCustomTopic(
+      label: result.label,
+      queryEn: result.queryEn,
+      queryAr: result.queryAr,
+    );
+    if (!mounted) return;
+    showKashfSnackBar(context, l.t('search_prefs_topic_added'));
   }
 
   // ===================== Support Section =====================
@@ -628,19 +772,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           _buildDivider(palette),
-          _buildTile(
-            palette: palette,
-            icon: Icons.info_outline,
-            iconColor: palette.textSecondary,
-            title: l.t('settings_about'),
-            subtitle: l.t('settings_about_version'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const AboutScreen(),
-              ),
-            ),
-            showDivider: false,
-          ),
         ],
       ),
     );
@@ -1105,6 +1236,253 @@ class _ThemeOptionTile extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+// ===================== Topic Sheet Tile =====================
+class _TopicSheetTile extends StatelessWidget {
+  const _TopicSheetTile({
+    required this.label,
+    required this.subtitle,
+    required this.removable,
+    required this.palette,
+    required this.onRemove,
+  });
+  final String label;
+  final String subtitle;
+  final bool removable;
+  final KashfPalette palette;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: palette.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: palette.cardBorder),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.tag_outlined,
+              size: 16,
+              color: KashfColors.gold,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 10,
+                    height: 1.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (removable && onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline,
+                  color: Colors.redAccent, size: 18),
+              onPressed: onRemove,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================== Add Topic Dialog =====================
+class _NewTopicFields {
+  const _NewTopicFields({
+    required this.label,
+    required this.queryEn,
+    required this.queryAr,
+  });
+  final String label;
+  final String queryEn;
+  final String queryAr;
+}
+
+class _AddTopicDialog extends StatefulWidget {
+  const _AddTopicDialog({required this.palette, required this.title});
+  final KashfPalette palette;
+  final String title;
+
+  @override
+  State<_AddTopicDialog> createState() => _AddTopicDialogState();
+}
+
+class _AddTopicDialogState extends State<_AddTopicDialog> {
+  final _labelCtrl = TextEditingController();
+  final _enCtrl = TextEditingController();
+  final _arCtrl = TextEditingController();
+  String _error = '';
+
+  @override
+  void dispose() {
+    _labelCtrl.dispose();
+    _enCtrl.dispose();
+    _arCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final label = _labelCtrl.text.trim();
+    final en = _enCtrl.text.trim();
+    final ar = _arCtrl.text.trim();
+    if (label.isEmpty || en.isEmpty || ar.isEmpty) {
+      setState(() => _error = 'All fields are required');
+      return;
+    }
+    Navigator.pop(
+      context,
+      _NewTopicFields(label: label, queryEn: en, queryAr: ar),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+    return Dialog(
+      backgroundColor: palette.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: palette.cardBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.title,
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _DialogField(
+              controller: _labelCtrl,
+              hint: 'Label (e.g. Sneakers)',
+              palette: palette,
+            ),
+            const SizedBox(height: 10),
+            _DialogField(
+              controller: _enCtrl,
+              hint: 'English query (sneakers OR trainers)',
+              palette: palette,
+            ),
+            const SizedBox(height: 10),
+            _DialogField(
+              controller: _arCtrl,
+              hint: 'Arabic query (أحذية_رياضية OR سنيكرز)',
+              palette: palette,
+            ),
+            if (_error.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                _error,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: palette.textSecondary),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: KashfColors.gold,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogField extends StatelessWidget {
+  const _DialogField({
+    required this.controller,
+    required this.hint,
+    required this.palette,
+  });
+  final TextEditingController controller;
+  final String hint;
+  final KashfPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.fieldFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.fieldBorder),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: TextField(
+        controller: controller,
+        style: TextStyle(color: palette.textPrimary, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: palette.textSecondary, fontSize: 13),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );

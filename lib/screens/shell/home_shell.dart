@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
 import '../../theme.dart';
 import '../explore/explore_screen.dart';
 import '../home/home_screen.dart';
@@ -34,91 +35,95 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: KashfPalette.active.background,
-      body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-          color: Colors.transparent,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              // Bottom pill containing the four nav destinations.
-              Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: KashfPalette.active.surface,
-                  borderRadius: BorderRadius.circular(36),
-                  border: Border.all(color: KashfPalette.active.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    _Dest(
-                      icon: Icons.home_outlined,
-                      selectedIcon: Icons.home,
-                      label: l.t('nav_home_lbl'),
-                      selected: _index == 0,
-                      onTap: () => setState(() => _index = 0),
-                    ),
-                    _Dest(
-                      icon: Icons.explore_outlined,
-                      selectedIcon: Icons.explore,
-                      label: l.t('nav_explore_lbl'),
-                      selected: _index == 1,
-                      onTap: () => setState(() => _index = 1),
-                    ),
-                    // Spacer for the centered FAB.
-                    const SizedBox(width: 72),
-                    _Dest(
-                      icon: Icons.bar_chart_outlined,
-                      selectedIcon: Icons.bar_chart,
-                      label: l.t('nav_reports_lbl'),
-                      selected: _index == 2,
-                      onTap: () => setState(() => _index = 2),
-                    ),
-                    _Dest(
-                      icon: Icons.settings_outlined,
-                      selectedIcon: Icons.settings,
-                      label: l.t('nav_settings_lbl'),
-                      selected: _index == 3,
-                      onTap: () => setState(() => _index = 3),
-                    ),
-                  ],
-                ),
-              ),
-              // Centered gold "+" floating action button — opens the
-              // "New Investigation" workspace so users can start a new
-              // AI-powered investigation with smart search, evidence
-              // upload, and quick actions.
-              Positioned(
-                top: -14,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    kashfRoute(const InvestigationScreen()),
+    final themeCtrl = ThemeScope.of(context);
+    return AnimatedBuilder(
+      animation: themeCtrl,
+      builder: (context, _) => Scaffold(
+        backgroundColor: KashfPalette.active.background,
+        body: IndexedStack(index: _index, children: _pages),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+            color: Colors.transparent,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // Bottom pill containing the four nav destinations.
+                Container(
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: KashfPalette.active.surface,
+                    borderRadius: BorderRadius.circular(36),
+                    border: Border.all(color: KashfPalette.active.cardBorder),
                   ),
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: KashfColors.gold,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: KashfColors.gold.withValues(alpha: 0.35),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.add, color: Colors.black, size: 30),
+                  child: Row(
+                    children: [
+                      _Dest(
+                        icon: Icons.home_outlined,
+                        selectedIcon: Icons.home,
+                        label: l.t('nav_home_lbl'),
+                        selected: _index == 0,
+                        onTap: () => setState(() => _index = 0),
+                      ),
+                      _Dest(
+                        icon: Icons.explore_outlined,
+                        selectedIcon: Icons.explore,
+                        label: l.t('nav_explore_lbl'),
+                        selected: _index == 1,
+                        onTap: () => setState(() => _index = 1),
+                      ),
+                      // Spacer for the centered FAB.
+                      const SizedBox(width: 72),
+                      _Dest(
+                        icon: Icons.bar_chart_outlined,
+                        selectedIcon: Icons.bar_chart,
+                        label: l.t('nav_reports_lbl'),
+                        selected: _index == 2,
+                        onTap: () => setState(() => _index = 2),
+                      ),
+                      _Dest(
+                        icon: Icons.settings_outlined,
+                        selectedIcon: Icons.settings,
+                        label: l.t('nav_settings_lbl'),
+                        selected: _index == 3,
+                        onTap: () => setState(() => _index = 3),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                // Centered gold "+" floating action button — opens the
+                // "New Investigation" workspace so users can start a new
+                // AI-powered investigation with smart search, evidence
+                // upload, and quick actions.
+                Positioned(
+                  top: -14,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      kashfRoute(const InvestigationScreen()),
+                    ),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: KashfColors.gold,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: KashfColors.gold.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.add, color: Colors.black, size: 30),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

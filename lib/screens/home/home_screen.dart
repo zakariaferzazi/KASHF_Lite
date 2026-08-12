@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final NewsDataController _newsController;
   late final FeaturedBrandController _featuredBrand;
   late final LatestInvestigationsController _latestInvestigations;
-  NewsTopic _selectedTopic = NewsTopic.fashion;
+  dynamic _selectedTopic = NewsTopic.fashion;
   int _trendingPage = 0;
 
   /// ISO 3166-1 alpha-2 country code used for the home news feed.
@@ -69,12 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
       await _featuredBrand.bootstrap();
       // Default to Fashion so the home carousel surfaces what's
       // trending in the highest-priority vertical on first load.
+      //
+      // `bootstrap` is cache-first: it renders whatever is on
+      // disk/Firestore immediately and only schedules a network
+      // refresh if the cached payload is older than 24 hours.
+      // We deliberately do NOT call `refreshNow` here — that
+      // would defeat the 24-hour gate and re-trigger the
+      // expensive Google News pipeline every time the user
+      // opens the home tab.
       await _newsController.bootstrap(
-        language: l.language.code,
-        country: _countryCode,
-        topic: _selectedTopic,
-      );
-      _newsController.refreshNow(
         language: l.language.code,
         country: _countryCode,
         topic: _selectedTopic,
@@ -1726,6 +1729,7 @@ class _LatestInvestigationCard extends StatelessWidget {
     final bandColor = _bandColor(band);
     final pctText = '${item.confidencePercent}%';
     final tags = item.tags;
+    final thumbnail = item.thumbnailUrl;
 
     return Container(
       decoration: BoxDecoration(
@@ -1741,22 +1745,14 @@ class _LatestInvestigationCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: bandColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: bandColor.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  child: Icon(
-                    item.entityType.filledIcon,
-                    color: bandColor,
-                    size: 18,
-                  ),
+                // Visual identifier of the investigated subject.
+                // Renders the AI-provided thumbnail when available
+                // and falls back to the entity-type icon tile so
+                // the row never looks empty.
+                _LatestCardThumbnail(
+                  url: thumbnail,
+                  fallbackIcon: item.entityType.filledIcon,
+                  fallbackColor: bandColor,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1937,6 +1933,62 @@ class _LatestStatusChip extends StatelessWidget {
           color: color,
           fontSize: 9,
           fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+/// 40x40 thumbnail tile used in the Latest Investigations card row.
+/// Renders the AI-provided image when one was persisted to the
+/// archive; otherwise renders the entity-type icon so the slot
+/// never looks empty.
+class _LatestCardThumbnail extends StatelessWidget {
+  const _LatestCardThumbnail({
+    required this.url,
+    required this.fallbackIcon,
+    required this.fallbackColor,
+  });
+  final String? url;
+  final IconData fallbackIcon;
+  final Color fallbackColor;
+
+  static const double size = 40;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fallbackColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: fallbackColor.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Icon(fallbackIcon, color: fallbackColor, size: 18),
+    );
+    if (url == null || url!.isEmpty) return fallback;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Image.network(
+          url!,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              color: KashfPalette.active.fieldFill,
+              alignment: Alignment.center,
+              child: const InlineSpinner(size: 12),
+            );
+          },
+          errorBuilder: (_, _, _) => fallback,
         ),
       ),
     );

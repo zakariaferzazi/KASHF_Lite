@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 
 /// High-level output "section" we render on the results screen. The
 /// values drive the chip filter at the top of the screen.
+///
+/// Each kind is one of the 7 the AI model emits for an
+/// investigation. The renderer can collapse empty sections so a
+/// sparse-but-accurate report still feels complete.
 enum InvestigationResultKind {
   overview,
   evidence,
-  insights,
-  sources,
-  recommendations;
+  keyFindings,
+  activityTrends,
+  competitors,
+  opportunities,
+  risks;
 
   String get l10nKey {
     switch (this) {
@@ -15,12 +21,16 @@ enum InvestigationResultKind {
         return 'ir_tab_overview';
       case InvestigationResultKind.evidence:
         return 'ir_tab_evidence';
-      case InvestigationResultKind.insights:
-        return 'ir_tab_insights';
-      case InvestigationResultKind.sources:
-        return 'ir_tab_sources';
-      case InvestigationResultKind.recommendations:
-        return 'ir_tab_recommendations';
+      case InvestigationResultKind.keyFindings:
+        return 'ir_tab_key_findings';
+      case InvestigationResultKind.activityTrends:
+        return 'ir_tab_activity_trends';
+      case InvestigationResultKind.competitors:
+        return 'ir_tab_competitors';
+      case InvestigationResultKind.opportunities:
+        return 'ir_tab_opportunities';
+      case InvestigationResultKind.risks:
+        return 'ir_tab_risks';
     }
   }
 
@@ -30,12 +40,16 @@ enum InvestigationResultKind {
         return Icons.summarize_outlined;
       case InvestigationResultKind.evidence:
         return Icons.folder_open_outlined;
-      case InvestigationResultKind.insights:
+      case InvestigationResultKind.keyFindings:
         return Icons.lightbulb_outline;
-      case InvestigationResultKind.sources:
-        return Icons.link_outlined;
-      case InvestigationResultKind.recommendations:
-        return Icons.recommend_outlined;
+      case InvestigationResultKind.activityTrends:
+        return Icons.trending_up;
+      case InvestigationResultKind.competitors:
+        return Icons.compare_arrows;
+      case InvestigationResultKind.opportunities:
+        return Icons.auto_awesome;
+      case InvestigationResultKind.risks:
+        return Icons.warning_amber_outlined;
     }
   }
 }
@@ -52,6 +66,7 @@ class InvestigationResultItem {
     this.metric,
     this.metricLabel,
     this.badge,
+    this.imageUrl,
   });
 
   final String id;
@@ -66,6 +81,13 @@ class InvestigationResultItem {
 
   /// Optional small tag (e.g. "Verified", "Low confidence").
   final String? badge;
+
+  /// Optional image URL rendered as a thumbnail next to the item.
+  /// When the AI response (or the attached evidence) provides a
+  /// visual identifier for the investigated subject, the result
+  /// hero card surfaces it here so the user has an at-a-glance
+  /// picture of what they're looking at.
+  final String? imageUrl;
 }
 
 /// One tab/section in the results screen.
@@ -77,6 +99,7 @@ class InvestigationResultSection {
     required this.summary,
     required this.items,
     this.confidence,
+    this.imageUrl,
   });
 
   final InvestigationResultKind kind;
@@ -92,6 +115,11 @@ class InvestigationResultSection {
 
   /// 0..1 confidence score. `null` means the AI did not provide one.
   final double? confidence;
+
+  /// Optional section-level thumbnail. When the AI provides a
+  /// hero image for the report it is hoisted into the result
+  /// screen's hero card so the user sees it the moment they land.
+  final String? imageUrl;
 }
 
 /// Top-level result payload returned by [InvestigationService] when
@@ -107,6 +135,7 @@ class InvestigationResult {
     required this.generatedAt,
     required this.sources,
     this.confidence,
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -129,6 +158,35 @@ class InvestigationResult {
 
   /// Overall confidence (0..1). Drives the big percentage at the top.
   final double? confidence;
+
+  /// Top-level hero thumbnail for the investigation. Copied from
+  /// the most relevant section/item when the result is parsed and
+  /// re-used by [InvestigationArchiveService] when saving the
+  /// report so the Latest Investigations list can render the same
+  /// picture on every card.
+  final String? thumbnailUrl;
+
+  /// Returns a copy of this result with [thumbnailUrl] (and
+  /// optionally other fields) replaced. Used by the thumbnail
+  /// resolver service to swap in a verified image URL after the
+  /// AI response is parsed but before the result is handed to the
+  /// UI.
+  InvestigationResult copyWith({
+    String? thumbnailUrl,
+    double? confidence,
+  }) {
+    return InvestigationResult(
+      id: id,
+      investigationId: investigationId,
+      title: title,
+      subtitle: subtitle,
+      sections: sections,
+      generatedAt: generatedAt,
+      sources: sources,
+      confidence: confidence ?? this.confidence,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+    );
+  }
 }
 
 /// A source the AI cited (URL, article, social post, etc.).
@@ -140,6 +198,7 @@ class InvestigationSource {
     required this.subtitle,
     required this.kind,
     this.url,
+    this.imageUrl,
   });
 
   final String id;
@@ -150,6 +209,12 @@ class InvestigationSource {
   final InvestigationSourceKind kind;
 
   final String? url;
+
+  /// Optional thumbnail for the source (e.g. an article cover image).
+  /// When present, the latest-investigations archive uses the first
+  /// available image-bearing source as the card thumbnail so the
+  /// user can recognise the investigated subject at a glance.
+  final String? imageUrl;
 }
 
 enum InvestigationSourceKind {

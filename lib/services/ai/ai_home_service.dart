@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import '../news/news_content_repository.dart';
+import '../settings_preferences.dart';
 import 'ai_models.dart';
 import 'ai_parser.dart';
 import 'ai_prompts.dart';
@@ -48,12 +50,24 @@ class AiHomeService {
 
   MarketPulseData? _marketPulseCache;
   DateTime? _marketPulseCachedAt;
+  String? _marketPulseModelId;
   QuickActionsData? _quickActionsCache;
   DateTime? _quickActionsCachedAt;
+  String? _quickActionsModelId;
   MarketDetailData? _marketDetailCache;
   DateTime? _marketDetailCachedAt;
+  String? _marketDetailModelId;
   ExploreDetailData? _exploreDetailCache;
   DateTime? _exploreDetailCachedAt;
+  String? _exploreDetailModelId;
+
+  /// Subscribed to SettingsPreferences.modelChangedStream. When the
+  /// user picks a different model in Settings we immediately wipe
+  /// every in-memory cache + matching disk entry so the next fetch
+  /// goes to the new model. Without this listener, the 5-minute
+  /// in-memory TTL would keep showing responses produced by the
+  /// previous model.
+  StreamSubscription<String>? _modelSub;
 
   final StreamController<HomeAiData> _controller =
       StreamController<HomeAiData>.broadcast();
@@ -77,6 +91,43 @@ class AiHomeService {
     // existed; replace it so it sees the new dependency.
     // ignore: invalid_use_of_visible_for_testing_member
     instance._disk = cache;
+    // Also hook the model-change subscription on the same static
+    // instance so cache invalidation works regardless of which
+    // instance the controllers happen to use.
+    instance._subscribeToModelChanges();
+  }
+
+  /// Resolves the currently selected OpenRouter model id from the
+  /// shared [SettingsPreferences] singleton. Returns an empty string
+  /// when the prefs aren't initialised yet (e.g. early in a test)
+  /// so cache-key derivation never throws.
+  String _currentModelId() {
+    final prefs = SettingsPreferences.instance;
+    if (prefs == null) return '';
+    return prefs.aiModelId;
+  }
+
+  void _subscribeToModelChanges() {
+    _modelSub?.cancel();
+    final prefs = SettingsPreferences.instance;
+    if (prefs == null) return;
+    _modelSub = prefs.modelChangedStream.listen((_) {
+      // Clear everything cached under the OLD model so the next
+      // fetch hits the new model.
+      clearCache();
+      _invalidateDiskCache();
+      _emit();
+    });
+  }
+
+  Future<void> _invalidateDiskCache() async {
+    final disk = _disk;
+    if (disk == null) return;
+    // Drop every cached AI payload — the keys are model-scoped
+    // (see [_diskKey]) but clearing all is simpler and avoids
+    // leaking entries from the previous model when the disk cache
+    // is shared across the home / explore / market screens.
+    await disk.clearAll();
   }
 
   /// Fetches Market Pulse data. If a fresh-enough cache exists the
@@ -89,9 +140,11 @@ class AiHomeService {
     String region = 'Kuwait',
     bool forceRefresh = false,
   }) async {
+    final modelId = _currentModelId();
     if (!forceRefresh &&
         _marketPulseCache != null &&
         _marketPulseCachedAt != null &&
+        _marketPulseModelId == modelId &&
         DateTime.now().difference(_marketPulseCachedAt!) < _cacheTtl) {
       return _marketPulseCache!;
     }
@@ -106,16 +159,20 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
+          model: OpenRouterConfig.model,
           temperature: 0.7,
           maxTokens: 1800,
-          responseFormat: const {'type': 'json_object'},
+          // No responseFormat: web search is permanently on (see
+          // OpenRouterRequest default), and `response_format:
+          // json_object` would silently disable the tool call.
           extra: {'seed': nonce},
         ),
       );
       final data = AiParser.parseMarketPulse(json);
       _marketPulseCache = data;
       _marketPulseCachedAt = DateTime.now();
-      _persist('market_pulse', language, region, json);
+      _marketPulseModelId = modelId;
+      _persist('market_pulse', language, region, modelId, json);
       _emit();
       return data;
     } catch (e, st) {
@@ -126,6 +183,7 @@ class AiHomeService {
       final fallback = _buildFallbackMarketPulse(nonce: _newNonce());
       _marketPulseCache = fallback;
       _marketPulseCachedAt = DateTime.now(); // back-off until next refresh
+      _marketPulseModelId = modelId;
       _emit();
       return fallback;
     }
@@ -138,9 +196,11 @@ class AiHomeService {
     String region = 'Kuwait',
     bool forceRefresh = false,
   }) async {
+    final modelId = _currentModelId();
     if (!forceRefresh &&
         _quickActionsCache != null &&
         _quickActionsCachedAt != null &&
+        _quickActionsModelId == modelId &&
         DateTime.now().difference(_quickActionsCachedAt!) < _cacheTtl) {
       return _quickActionsCache!;
     }
@@ -155,16 +215,20 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
+          model: OpenRouterConfig.model,
           temperature: 0.8,
           maxTokens: 2500,
-          responseFormat: const {'type': 'json_object'},
+          // No responseFormat: web search is permanently on (see
+          // OpenRouterRequest default), and `response_format:
+          // json_object` would silently disable the tool call.
           extra: {'seed': nonce},
         ),
       );
       final data = AiParser.parseQuickActions(json);
       _quickActionsCache = data;
       _quickActionsCachedAt = DateTime.now();
-      _persist('quick_actions', language, region, json);
+      _quickActionsModelId = modelId;
+      _persist('quick_actions', language, region, modelId, json);
       _emit();
       return data;
     } catch (e, st) {
@@ -175,6 +239,7 @@ class AiHomeService {
       final fallback = _buildFallbackQuickActions(nonce: _newNonce());
       _quickActionsCache = fallback;
       _quickActionsCachedAt = DateTime.now();
+      _quickActionsModelId = modelId;
       _emit();
       return fallback;
     }
@@ -194,9 +259,11 @@ class AiHomeService {
     String region = 'Kuwait',
     bool forceRefresh = false,
   }) async {
+    final modelId = _currentModelId();
     if (!forceRefresh &&
         _marketDetailCache != null &&
         _marketDetailCachedAt != null &&
+        _marketDetailModelId == modelId &&
         DateTime.now().difference(_marketDetailCachedAt!) < _cacheTtl) {
       return _marketDetailCache!;
     }
@@ -211,9 +278,12 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
+          model: OpenRouterConfig.model,
           temperature: 0.7,
           maxTokens: 3000,
-          responseFormat: const {'type': 'json_object'},
+          // No responseFormat: web search is permanently on (see
+          // OpenRouterRequest default), and `response_format:
+          // json_object` would silently disable the tool call.
           extra: {'seed': nonce},
         ),
       );
@@ -234,7 +304,8 @@ class AiHomeService {
       final data = MarketParser.parse(json);
       _marketDetailCache = data;
       _marketDetailCachedAt = DateTime.now();
-      _persist('market_detail', language, region, json);
+      _marketDetailModelId = modelId;
+      _persist('market_detail', language, region, modelId, json);
       return data;
     } catch (e, st) {
       if (kDebugMode) {
@@ -244,6 +315,7 @@ class AiHomeService {
       final fallback = _buildFallbackMarketDetail(nonce: _newNonce());
       _marketDetailCache = fallback;
       _marketDetailCachedAt = DateTime.now();
+      _marketDetailModelId = modelId;
       return fallback;
     }
   }
@@ -255,9 +327,11 @@ class AiHomeService {
     String region = 'Kuwait',
     bool forceRefresh = false,
   }) async {
+    final modelId = _currentModelId();
     if (!forceRefresh &&
         _exploreDetailCache != null &&
         _exploreDetailCachedAt != null &&
+        _exploreDetailModelId == modelId &&
         DateTime.now().difference(_exploreDetailCachedAt!) < _cacheTtl) {
       return _exploreDetailCache!;
     }
@@ -272,16 +346,20 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
+          model: OpenRouterConfig.model,
           temperature: 0.7,
           maxTokens: 2500,
-          responseFormat: const {'type': 'json_object'},
+          // No responseFormat: web search is permanently on (see
+          // OpenRouterRequest default), and `response_format:
+          // json_object` would silently disable the tool call.
           extra: {'seed': nonce},
         ),
       );
       final data = ExploreParser.parse(json);
       _exploreDetailCache = data;
       _exploreDetailCachedAt = DateTime.now();
-      _persist('explore_detail', language, region, json);
+      _exploreDetailModelId = modelId;
+      _persist('explore_detail', language, region, modelId, json);
       return data;
     } catch (e, st) {
       if (kDebugMode) {
@@ -291,6 +369,7 @@ class AiHomeService {
       final fallback = _buildFallbackExploreDetail(nonce: _newNonce());
       _exploreDetailCache = fallback;
       _exploreDetailCachedAt = DateTime.now();
+      _exploreDetailModelId = modelId;
       return fallback;
     }
   }
@@ -317,19 +396,26 @@ class AiHomeService {
   }
 
   /// Clears both caches. Useful for tests or when the user signs
-  /// out.
+  /// out. Always clears the per-fetch model id too so the next
+  /// fetch can't accidentally return a stale payload from a
+  /// different model.
   void clearCache() {
     _marketPulseCache = null;
     _marketPulseCachedAt = null;
+    _marketPulseModelId = null;
     _quickActionsCache = null;
     _quickActionsCachedAt = null;
+    _quickActionsModelId = null;
     _marketDetailCache = null;
     _marketDetailCachedAt = null;
+    _marketDetailModelId = null;
     _exploreDetailCache = null;
     _exploreDetailCachedAt = null;
+    _exploreDetailModelId = null;
   }
 
   Future<void> dispose() async {
+    await _modelSub?.cancel();
     await _controller.close();
   }
 
@@ -343,27 +429,76 @@ class AiHomeService {
   // ---------- Disk persistence ----------
 
   /// Persist a successful AI response to disk so the same payload
-  /// can be replayed on the next app launch. Failures are silently
-  /// swallowed — disk writes must never break the user-visible flow.
+  /// can be replayed on the next app launch. The key is scoped to
+  /// the model that produced it so the user can't see data from a
+  /// previous model after switching in Settings.
+  ///
+  /// Also mirrors the payload into [NewsContentRepository], which
+  /// stores it in Firestore under the shared 24-hour refresh
+  /// window. The repository is the single source of truth that
+  /// prevents the AI pipeline from being invoked more than once
+  /// per 24 hours per (locale, region, screen) tuple.
   void _persist(
     String kind,
     String language,
     String region,
+    String modelId,
     Map<String, dynamic> json,
   ) {
     final disk = _disk;
     if (disk == null) return;
-    final key = '$kind|$language|${region.toLowerCase()}';
+    final key = _diskKey(kind, language, region, modelId);
     // Fire-and-forget; we never await this on the request path.
     // ignore: unawaited_futures
     disk.writeJson(key, json);
+    final aiKind = _aiKindFor(kind);
+    if (aiKind != null) {
+      // ignore: unawaited_futures
+      NewsContentRepository.instance.writeAiContent(
+        kind: aiKind,
+        language: language,
+        region: region,
+        payload: json,
+      );
+    }
+  }
+
+  /// Maps the legacy AI cache "kind" string to the
+  /// [AiContentKind] enum used by [NewsContentRepository]. Returns
+  /// `null` for kinds we do not mirror into Firestore (the older
+  /// "quick_actions" payload, for example, is local-only because
+  /// it is regenerated with demo data on the fly).
+  AiContentKind? _aiKindFor(String kind) {
+    switch (kind) {
+      case 'market_pulse':
+        return AiContentKind.homeMarketPulse;
+      case 'market_detail':
+        return AiContentKind.marketDetail;
+      case 'explore_detail':
+        return AiContentKind.exploreDetail;
+      default:
+        return null;
+    }
+  }
+
+  /// Builds the on-disk cache key for an AI payload. Includes the
+  /// model id so payloads from different models never collide.
+  String _diskKey(
+    String kind,
+    String language,
+    String region,
+    String modelId,
+  ) {
+    return '$kind|$language|${region.toLowerCase()}|$modelId';
   }
 
   /// Hydrate all four AI caches from disk on app startup. Called
   /// once during `HomeDataController.bootstrap` (and similarly by
   /// the Market / Explore controllers) so the user sees their
   /// recently-fetched data immediately after a restart, without
-  /// burning API tokens.
+  /// burning API tokens. Each cache entry is keyed on the model
+  /// that produced it so a model switch in Settings wipes the
+  /// visible cache automatically.
   Future<void> hydrateFromDisk({
     required String language,
     String region = 'Kuwait',
@@ -371,11 +506,13 @@ class AiHomeService {
     final disk = _disk;
     if (disk == null) return;
 
+    final modelId = _currentModelId();
+
     Future<void> tryHydrate(
       String kind,
       Future<void> Function(Map<String, dynamic>) apply,
     ) async {
-      final key = '$kind|$language|${region.toLowerCase()}';
+      final key = _diskKey(kind, language, region, modelId);
       final raw = await disk.readJson(key);
       if (raw == null) return;
       try {
@@ -391,18 +528,22 @@ class AiHomeService {
     await tryHydrate('market_pulse', (json) async {
       _marketPulseCache = AiParser.parseMarketPulse(json);
       _marketPulseCachedAt = DateTime.now();
+      _marketPulseModelId = modelId;
     });
     await tryHydrate('quick_actions', (json) async {
       _quickActionsCache = AiParser.parseQuickActions(json);
       _quickActionsCachedAt = DateTime.now();
+      _quickActionsModelId = modelId;
     });
     await tryHydrate('market_detail', (json) async {
       _marketDetailCache = MarketParser.parse(json);
       _marketDetailCachedAt = DateTime.now();
+      _marketDetailModelId = modelId;
     });
     await tryHydrate('explore_detail', (json) async {
       _exploreDetailCache = ExploreParser.parse(json);
       _exploreDetailCachedAt = DateTime.now();
+      _exploreDetailModelId = modelId;
     });
 
     _emit();

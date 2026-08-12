@@ -41,6 +41,15 @@ class InvestigationController extends ChangeNotifier {
   set entityType(EntityType v) {
     if (_entityType == v) return;
     _entityType = v;
+    // If the user explicitly picks an entity type that matches
+    // the action's implied entity type, keep the action. If it
+    // doesn't match, drop the action — running a "compare" action
+    // (a brand-action) on an Influencer entity type produces the
+    // same vocabulary mismatch we're trying to eliminate.
+    final current = _selectedAction;
+    if (current != null && current.entityType != v) {
+      _selectedAction = null;
+    }
     notifyListeners();
   }
 
@@ -53,12 +62,24 @@ class InvestigationController extends ChangeNotifier {
   /// action, or `null` if none.
   String? get selectedActionId => _selectedAction?.id;
 
-  /// Selects an action mode. Pass `null` to clear. This only
-  /// changes the "lens" applied to the prompt — it does NOT
-  /// mutate the user's search query.
+  /// Selects an action mode. Pass `null` to clear.
+  ///
+  /// Picking an action also pins the entity type that the action
+  /// implies (e.g. the "Influencer" action pins entity-type to
+  /// `EntityType.influencer`). This keeps the entity-type tile
+  /// and the action chip in sync so the prompt and the UI never
+  /// disagree — the #1 cause of "brand report about an influencer"
+  /// output we used to see.
+  ///
+  /// The user can still override the entity type explicitly after
+  /// picking an action; that re-pins the action if the new
+  /// entity type implies a different one.
   void selectAction(InvestigationAction? action) {
     if (_selectedAction == action) return;
     _selectedAction = action;
+    if (action != null) {
+      _entityType = action.entityType;
+    }
     notifyListeners();
   }
 

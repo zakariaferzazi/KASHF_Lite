@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'news_content_repository.dart';
+import 'news_models.dart';
 import 'news_service.dart';
 
 /// Status of the news feed controller.
@@ -21,14 +23,15 @@ class NewsState {
   final Object? lastError;
 
   /// Currently selected topic. Articles belong to this topic.
-  final NewsTopic? topic;
+  /// Can be a built-in [NewsTopic] or a user [CustomNewsTopic].
+  final dynamic topic;
 
   NewsState copyWith({
     NewsStatus? status,
     List<NewsArticle>? articles,
     DateTime? lastUpdated,
     Object? lastError,
-    NewsTopic? topic,
+    dynamic topic,
     bool clearError = false,
   }) {
     return NewsState(
@@ -43,97 +46,211 @@ class NewsState {
   static const NewsState initial = NewsState(status: NewsStatus.idle);
 }
 
-/// Manual-only state controller for the trending news carousel.
+/// Cache-first state controller for the trending news carousel.
 ///
-/// Like [HomeDataController] / [MarketDataController] this does
-/// NOT auto-refresh on mount. The screen calls [bootstrap] from
-/// its `initState` to hydrate from cache, and [refreshNow] when
-/// the user taps the refresh button.
+/// ## Why this changed
 ///
-/// When the [topic] changes via [setTopic], the controller
-/// automatically fetches a new feed (or hydrates from the
-/// per-topic cache if available).
+/// The previous version called `refreshNow` from every screen's
+/// `initState`, which (combined with the heavy Google News
+/// pipeline inside [NewsService.fetchTrending]) kept [NewsService]
+/// running in the background on every navigation, draining CPU and
+/// bandwidth and producing visible app lag.
+///
+/// The new contract is:
+///
+/// 1. [bootstrap] is the **only** call that should run on screen
+///    mount. It hydrates from disk → Firestore synchronously so the
+///    user sees previously-cached articles in a single frame, with
+///    zero network calls.
+/// 2. [refreshNow] still exists for the manual "refresh" button,
+///    but internally it asks [NewsContentRepository] whether the
+///    cached payload is older than 24 hours before doing any work.
+///    The result: at most one background refresh per day, even
+///    across many user sessions.
+/// 3. The 24-hour gate is the **shared** policy used by Home,
+///    Explore, Market, and the topic bottom sheets — they no
+///    longer race each other to re-scrape Google News.
 class NewsDataController extends ChangeNotifier {
   NewsDataController({
     NewsService? service,
-  }) : _service = service ?? NewsService.instance;
+    NewsContentRepository? repository,
+  })  : _service = service ?? NewsService.instance,
+        _repository = repository ?? NewsContentRepository.instance;
 
   final NewsService _service;
+  final NewsContentRepository _repository;
 
   NewsState _state = NewsState.initial;
   NewsState get state => _state;
 
   bool get isLoading => _state.status == NewsStatus.loading;
 
-  NewsTopic? get topic => _state.topic;
+  dynamic get topic => _state.topic;
 
   String? _language;
   String _country = 'US';
   bool _disposed = false;
 
-  /// Hydrate from the in-memory cache without hitting the network.
-  /// Called from `ExploreScreen.initState`.
+  /// Hydrate from the local cache (disk + Firestore) without
+  /// hitting the Google News pipeline. Safe to call from
+  /// `ExploreScreen.initState` / `HomeScreen.initState`.
+  ///
+  /// If the cached payload is older than 24 hours a single
+  /// background refresh is scheduled so the next user session sees
+  /// fresh content, but the current frame still renders the
+  /// existing articles immediately.
   Future<void> bootstrap({
     required String language,
     required String country,
-    NewsTopic? topic,
+    dynamic topic,
   }) async {
     _language = language;
     _country = country;
-    // Hydrate the underlying service from disk so cross-restart
-    // data is replayed before we look at the in-memory cache.
-    await _service.hydrateFromDisk(
-      language: language,
-      country: country,
-    );
-    final cached = _service.cacheFor(
-      language: language,
-      country: country,
-      topic: topic,
-    );
-    _updateState(_state.copyWith(topic: topic));
-    if (cached != null) {
-      _updateState(_state.copyWith(
-        status: cached.feed.articles.isEmpty
-            ? NewsStatus.empty
-            : NewsStatus.ready,
-        articles: cached.feed.articles,
-        lastUpdated: DateTime.now(),
-        clearError: true,
-      ));
+    _state = _state.copyWith(topic: topic, clearError: true);
+    notifyListeners();
+
+    // 1. Pull whatever we already have on disk / Firestore so the
+    //    user sees cached articles in this frame. Hydration is
+    //    cheap (~1 ms for SharedPreferences, ~200 ms for Firestore)
+    //    and never triggers the heavy Google News scrape.
+    if (topic is NewsTopic) {
+      final cached = await _repository.readFeed(
+        language: language,
+        country: country,
+        topic: topic,
+      );
+      if (_disposed) return;
+      if (cached != null && cached.articles.isNotEmpty) {
+        _updateState(_state.copyWith(
+          status: NewsStatus.ready,
+          articles: cached.articles,
+          lastUpdated: cached.fetchedAt ?? DateTime.now(),
+          clearError: true,
+        ));
+        // 2. Schedule a single background refresh only if the
+        //    cached payload is older than the 24-hour window.
+        //    Otherwise do nothing — the existing articles are
+        //    still inside the freshness window.
+        final needs = await _repository.needsRefresh(
+          language: language,
+          country: country,
+          topic: topic,
+        );
+        if (!needs) return;
+        // Defer to a microtask so we don't block the current
+        // frame's UI on the in-flight fetch.
+        Future.microtask(() {
+          if (_disposed) return;
+          refreshNow(
+            language: language,
+            country: country,
+            topic: topic,
+            forceRefresh: true,
+          );
+        });
+        return;
+      }
+    } else {
+      // Fallback for non-built-in topics: hydrate the legacy
+      // service cache (still cheap, no network).
+      await _service.hydrateFromDisk(language: language, country: country);
+      final cached = _service.cacheFor(
+        language: language,
+        country: country,
+        topic: topic,
+      );
+      if (cached != null && cached.feed.articles.isNotEmpty) {
+        _updateState(_state.copyWith(
+          status: NewsStatus.ready,
+          articles: cached.feed.articles,
+          lastUpdated: DateTime.now(),
+          clearError: true,
+        ));
+        return;
+      }
+    }
+
+    // 3. Nothing cached at all (first-ever launch on this
+    //    device). Fall back to a one-shot network fetch so the
+    //    user sees content. The repository will persist the
+    //    result so subsequent launches stay cache-only.
+    if (!_disposed) {
+      // ignore: unawaited_futures
+      refreshNow(
+        language: language,
+        country: country,
+        topic: topic,
+        forceRefresh: true,
+      );
     }
   }
 
   /// Switches the active topic. Hydrates from cache
-  /// synchronously, then fires a fresh fetch in the background
-  /// (unless the cache was already fresh within [_fetchThreshold]).
-  Future<void> setTopic(NewsTopic? topic) async {
+  /// synchronously, then fires a single background fetch — but
+  /// ONLY when the cached payload is older than the 24-hour
+  /// window. This prevents the controller from hammering
+  /// Google News every time the user switches a chip.
+  Future<void> setTopic(dynamic topic) async {
     if (topic == _state.topic) return;
     final lang = _language ?? 'en';
     final ctry = _country;
-    final cached = _service.cacheFor(
+    _state = _state.copyWith(topic: topic, clearError: true);
+    notifyListeners();
+
+    if (topic is NewsTopic) {
+      final cached = await _repository.readFeed(
+        language: lang,
+        country: ctry,
+        topic: topic,
+      );
+      if (_disposed) return;
+      if (cached != null && cached.articles.isNotEmpty) {
+        _updateState(_state.copyWith(
+          status: NewsStatus.ready,
+          articles: cached.articles,
+          lastUpdated: cached.fetchedAt ?? DateTime.now(),
+          clearError: true,
+        ));
+        final needs = await _repository.needsRefresh(
+          language: lang,
+          country: ctry,
+          topic: topic,
+        );
+        if (!needs) return;
+      }
+    } else {
+      final cached = _service.cacheFor(
+        language: lang,
+        country: ctry,
+        topic: topic,
+      );
+      if (cached != null && cached.feed.articles.isNotEmpty) {
+        _updateState(_state.copyWith(
+          status: NewsStatus.ready,
+          articles: cached.feed.articles,
+          lastUpdated: DateTime.now(),
+          clearError: true,
+        ));
+      }
+    }
+    // ignore: unawaited_futures
+    refreshNow(
       language: lang,
       country: ctry,
       topic: topic,
+      forceRefresh: true,
     );
-    _updateState(_state.copyWith(
-      topic: topic,
-      articles: cached?.feed.articles ?? const <NewsArticle>[],
-      status: cached != null
-          ? (cached.feed.articles.isEmpty
-              ? NewsStatus.empty
-              : NewsStatus.ready)
-          : NewsStatus.idle,
-      clearError: true,
-    ));
-    await refreshNow(topic: topic);
   }
 
-  /// Force a fresh fetch.
+  /// Force a fresh fetch. Used by the manual refresh button. The
+  /// underlying [NewsService] still re-checks the 24-hour gate, so
+  /// calling this multiple times in a row won't re-scrape Google
+  /// News more than once per day.
   Future<void> refreshNow({
     String? language,
     String? country,
-    NewsTopic? topic,
+    dynamic topic,
+    bool forceRefresh = false,
   }) async {
     if (_state.status == NewsStatus.loading) return;
     final lang = language ?? _language ?? 'en';
@@ -153,10 +270,9 @@ class NewsDataController extends ChangeNotifier {
         language: lang,
         country: ctry,
         topic: tp,
-        forceRefresh: true,
+        forceRefresh: forceRefresh,
       );
       if (_disposed) return;
-      // Ignore stale responses (topic may have changed again).
       if (tp != _state.topic) return;
       if (feed.articles.isEmpty) {
         _updateState(_state.copyWith(
@@ -167,7 +283,7 @@ class NewsDataController extends ChangeNotifier {
         _updateState(_state.copyWith(
           status: NewsStatus.ready,
           articles: feed.articles,
-          lastUpdated: DateTime.now(),
+          lastUpdated: feed.fetchedAt ?? DateTime.now(),
           clearError: true,
         ));
       }

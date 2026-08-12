@@ -16,7 +16,7 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  NewsTopic _selectedTopic = NewsTopic.fragrances;
+  dynamic _selectedTopic = NewsTopic.fragrances;
   int _trendingPage = 0;
   late final NewsDataController _newsController;
 
@@ -37,12 +37,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
       // immediately shows articles about the highest-priority
       // vertical for the user's region. (Always set — there's no
       // "Top" / general-news chip anymore.)
+      //
+      // `bootstrap` is cache-first: it renders whatever is on
+      // disk/Firestore immediately and only schedules a network
+      // refresh if the cached payload is older than 24 hours.
+      // We deliberately do NOT call `refreshNow` here — that
+      // would defeat the 24-hour gate and re-trigger the
+      // expensive Google News pipeline every time the user
+      // opens the Explore tab.
       await _newsController.bootstrap(
-        language: l.language.code,
-        country: _countryCode,
-        topic: _selectedTopic,
-      );
-      _newsController.refreshNow(
         language: l.language.code,
         country: _countryCode,
         topic: _selectedTopic,
@@ -67,7 +70,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: const Color(0xFF050608),
+        backgroundColor: KashfPalette.active.background,
         body: SafeArea(
           bottom: false,
           child: CustomScrollView(
@@ -541,23 +544,17 @@ class _TopicArticlesSheetState extends State<_TopicArticlesSheet> {
     super.initState();
     _controller = NewsDataController();
     _controller.addListener(_onChanged);
-    // Bootstrap (which now hydrates from disk) before kicking off
-    // the network refresh so the sheet shows the cached articles
-    // immediately, then re-fetches in the background.
-    _controller
-        .bootstrap(
-          language: widget.languageCode,
-          country: widget.countryCode,
-          topic: widget.topic,
-        )
-        .then((_) {
-          if (!mounted) return;
-          _controller.refreshNow(
-            language: widget.languageCode,
-            country: widget.countryCode,
-            topic: widget.topic,
-          );
-        });
+    // `bootstrap` is cache-first: it renders whatever is on
+    // disk/Firestore immediately and only schedules a network
+    // refresh if the cached payload is older than 24 hours.
+    // Calling `refreshNow` here used to re-trigger the Google
+    // News pipeline on every topic-bottom-sheet open, which was
+    // the biggest single source of background CPU usage.
+    _controller.bootstrap(
+      language: widget.languageCode,
+      country: widget.countryCode,
+      topic: widget.topic,
+    );
   }
 
   void _onChanged() {

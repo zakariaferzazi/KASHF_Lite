@@ -17,7 +17,7 @@ class LatestInvestigationsController extends ChangeNotifier {
   LatestInvestigationsController({
     InvestigationArchiveService? archive,
     int limit = InvestigationArchiveService.kLatestLimit,
-  })  : _archive = archive ?? InvestigationArchiveService(),
+  })  : _archive = archive ?? InvestigationArchiveService.instance,
         _limit = limit {
     _subscribe();
   }

@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../ai/disk_cache.dart';
+import 'news_content_repository.dart';
 import 'news_models.dart';
 
 export 'news_models.dart' show NewsArticle, NewsFeed, NewsTopic;
@@ -123,7 +124,7 @@ class NewsService {
   NewsCacheEntry? cacheFor({
     required String language,
     required String country,
-    NewsTopic? topic,
+    dynamic topic,
   }) {
     final key = topic == null
         ? '$language|${country.toUpperCase()}|top'
@@ -201,7 +202,7 @@ class NewsService {
   Future<NewsFeed> fetchTrending({
     required String language,
     required String country,
-    NewsTopic? topic,
+    dynamic topic,
     bool forceRefresh = false,
     /// When set, stops image-resolve early once we have at least
     /// [maxArticles] valid entries. The carousel defaults to the
@@ -218,6 +219,36 @@ class NewsService {
       // ignore: avoid_print
       print('[NewsService] Cache hit for $cacheKey (${cached.feed.articles.length} articles)');
       return cached.feed;
+    }
+
+    // 24-hour gate: when the repository already has a fresh
+    // payload (less than 24 h old), short-circuit and avoid the
+    // Google News scrape entirely. This is the core fix for the
+    // continuous-background-execution bug — every screen that
+    // boot-straps on launch hits this branch instead of pulling
+    // ~100 HTTP requests.
+    if (topic is NewsTopic) {
+      final repo = NewsContentRepository.instance;
+      final needs = await repo.needsRefresh(
+        language: language,
+        country: country,
+        topic: topic,
+      );
+      if (!forceRefresh && !needs) {
+        final cached24 = await repo.readFeed(
+          language: language,
+          country: country,
+          topic: topic,
+        );
+        if (cached24 != null && cached24.articles.isNotEmpty) {
+          _cache[cacheKey] = NewsCacheEntry(at: now, feed: cached24);
+          // ignore: avoid_print
+          print('[NewsService] 24h gate: served cached feed '
+              '(${cached24.articles.length} articles) for '
+              'topic=${topic.name}');
+          return cached24;
+        }
+      }
     }
 
     final candidates = _feedCandidates(language: language, country: country);
@@ -246,19 +277,23 @@ class NewsService {
           print('[NewsService]   RSS[${rssItems.indexOf(r)}] "${r.title}" (source=${r.source})');
         }
         final resolved = await _resolveArticles(rssItems, maxArticles: maxArticles);
-        final feed = NewsFeed(articles: resolved, topic: topic);
+        final stamped = NewsFeed(
+          articles: resolved,
+          topic: topic,
+          fetchedAt: now,
+        );
         final successAt = maxArticles ?? targetCount;
-        if (feed.articles.length >= successAt) {
+        if (stamped.articles.length >= successAt) {
           // ignore: avoid_print
-          print('[NewsService] Resolved ${feed.articles.length}/$targetCount articles for topic=${topic?.name ?? "top"}');
-          _cache[cacheKey] = NewsCacheEntry(at: now, feed: feed);
-          _persistFeed(cacheKey, feed);
-          return feed;
+          print('[NewsService] Resolved ${stamped.articles.length}/$targetCount articles for topic=${topic?.name ?? "top"}');
+          _cache[cacheKey] = NewsCacheEntry(at: now, feed: stamped);
+          _persistFeed(cacheKey, stamped, language, country, topic);
+          return stamped;
         }
         // Keep the best partial result so we can still return
         // something useful even if every fallback chain only
         // yields a handful of valid articles.
-        best ??= feed;
+        best ??= stamped;
       } catch (e, st) {
         if (kDebugMode) {
           developer.log('fetchTrending failed for ${c.ceid}: $e',
@@ -273,19 +308,38 @@ class NewsService {
     if (best != null) {
       // Only persist non-empty results so we never overwrite a
       // good on-disk feed with a transient empty fallback.
-      _persistFeed(cacheKey, empty);
+      _persistFeed(cacheKey, empty, language, country, topic);
     }
     return empty;
   }
 
-  /// Fire-and-forget disk write for a freshly fetched feed.
-  /// Failures are silent; the in-memory cache is already up to
-  /// date.
-  void _persistFeed(String key, NewsFeed feed) {
+  /// Fire-and-forget write for a freshly fetched feed. Goes
+  /// through [NewsContentRepository] so the timestamp + topic
+  /// metadata is preserved across disk and Firestore. Failures are
+  /// silent; the in-memory cache is already up to date.
+  void _persistFeed(
+    String key,
+    NewsFeed feed,
+    String language,
+    String country,
+    dynamic topic,
+  ) {
     final disk = _disk;
-    if (disk == null) return;
-    // ignore: unawaited_futures
-    disk.writeJson(key, feed.toJson());
+    // Always write the legacy per-key slot so old readers that
+    // expect `NewsCacheEntry`-shaped payloads keep working.
+    if (disk != null) {
+      // ignore: unawaited_futures
+      disk.writeJson(key, feed.toJson());
+    }
+    if (topic is NewsTopic) {
+      // ignore: unawaited_futures
+      NewsContentRepository.instance.writeFeed(
+        language: language,
+        country: country,
+        topic: topic,
+        feed: feed,
+      );
+    }
   }
 
   /// Builds the Google News search-RSS URL for a given free-text

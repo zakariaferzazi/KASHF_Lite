@@ -16,6 +16,9 @@ import 'screens/shell/home_shell.dart';
 import 'services/ai/ai_home_service.dart';
 import 'services/ai/disk_cache.dart';
 import 'services/ai/featured_brand_controller.dart';
+import 'services/archive/firestore_investigation_writer.dart';
+import 'services/investigation_archive_service.dart';
+import 'services/news/news_content_repository.dart';
 import 'services/news/news_service.dart';
 import 'services/settings_preferences.dart';
 import 'services/settings_scope.dart';
@@ -37,6 +40,20 @@ void main() async {
   AiHomeService.initDiskCache(diskCache);
   NewsService.initDiskCache(diskCache);
   FeaturedBrandController.initDiskCache(diskCache);
+  // Initialise the news content repository with the same
+  // disk-cache instance. This is the gatekeeper that ensures
+  // NewsService only ever runs the heavy Google News scrape
+  // once per 24 hours across every screen in the app.
+  NewsContentRepository.init(diskCache);
+  // Hook the archive service up to Firestore so completed
+  // investigations land under `users/{uid}/investigations/{docId}`
+  // and stay in sync across the user's devices. The archive
+  // service's auth-state listener re-attaches the writer every
+  // time the user signs in/out so each user only ever sees their
+  // own slice.
+  InvestigationArchiveService.instance.enableFirestore(
+    FirestoreInvestigationWriter(),
+  );
   final localeController = await LocaleController.load();
   // Build a persisting theme controller so the very first frame
   // already reflects the user's saved preference (no flash of the

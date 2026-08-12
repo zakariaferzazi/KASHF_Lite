@@ -38,7 +38,6 @@ shipped as `.env.example`:
 ```ini
 OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1       # optional
-OPENROUTER_MODEL=openai/gpt-4o-mini                    # optional
 OPENROUTER_REFERER=https://kashf-lite.app              # optional
 OPENROUTER_APP_TITLE=KASHF Lite                        # optional
 ```
@@ -148,7 +147,11 @@ Manual smoke test:
   schema in sync with `ai_models.dart`.
 * **New sections**: add a new prompt + parser + model, then plug
   the new section into `HomeDataController` and `HomeScreen`.
-* **Model swap**: change `OPENROUTER_MODEL` in `.env` or default
-  in `openrouter_config.dart`.
+* **Model swap**: the AI model is now chosen by the user from
+  Settings → AI model and persisted in SharedPreferences. To
+  change the bundled default, edit `kDefaultAiModelId` in
+  `ai_model_options.dart`. The app no longer reads
+  `OPENROUTER_MODEL` from `.env` — it always honoured the
+  user's last pick.
 * **Telemetry**: extend `OpenRouterAuditEntry` with new fields
   and push them to your analytics sink of choice.

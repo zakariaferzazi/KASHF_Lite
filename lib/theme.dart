@@ -31,28 +31,28 @@ class KashfPalette {
   final Brightness brightness;
 
   static const KashfPalette dark = KashfPalette(
-    background: Color(0xFF14151A),
-    surface: Color(0xFF1C1E2A),
-    surfaceLight: Color(0xFF252836),
-    cardBorder: Color(0xFF353848),
-    fieldFill: Color(0xFF1E2029),
-    fieldBorder: Color(0xFF3D4155),
-    textPrimary: Color(0xFFF5F5F5),
-    textSecondary: Color(0xFF9CA3AF),
-    divider: Color(0xFF353848),
+    background: Color(0xFF12131A),
+    surface: Color(0xFF1A1C26),
+    surfaceLight: Color(0xFF262B3A),
+    cardBorder: Color(0xFF3A4055),
+    fieldFill: Color(0xFF22263A),
+    fieldBorder: Color(0xFF3A4055),
+    textPrimary: Color(0xFFECEFF4),
+    textSecondary: Color(0xFF8B95A8),
+    divider: Color(0xFF2E3348),
     brightness: Brightness.dark,
   );
 
   static const KashfPalette main = KashfPalette(
-    background: Color(0xFF050608),
-    surface: Color(0xFF0C0D14),
-    surfaceLight: Color(0xFF13141C),
-    cardBorder: Color(0xFF22242F),
-    fieldFill: Color(0xFF0E0F17),
-    fieldBorder: Color(0xFF262833),
+    background: Color(0xFF0D0E14),
+    surface: Color(0xFF161822),
+    surfaceLight: Color(0xFF222633),
+    cardBorder: Color(0xFF32374D),
+    fieldFill: Color(0xFF1A1D28),
+    fieldBorder: Color(0xFF32374D),
     textPrimary: Color(0xFFF4E6C1),
-    textSecondary: Color(0xFF8A8273),
-    divider: Color(0xFF22242F),
+    textSecondary: Color(0xFF9A9283),
+    divider: Color(0xFF2A2E3D),
     brightness: Brightness.dark,
   );
 

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/news/news_models.dart';
 import 'ai/ai_model_options.dart';
 
 /// Persists user preferences that live outside of [ThemeController]
@@ -146,13 +149,92 @@ class SettingsPreferences extends ChangeNotifier {
 
   /// Persists the user's chosen model id. Unknown ids are normalized
   /// back to the default so a typo from an old version never wedges
-  /// the app.
+  /// the app. Emits the new id on [modelChangedStream] so AI
+  /// services can wipe their caches and immediately honour the
+  /// switch — without this, a user who picks a different model in
+  /// Settings keeps seeing results produced by the previous one
+  /// until the 5-minute in-memory TTL expires.
   Future<void> setAiModelId(String? id) async {
     final resolved = resolveAiModelOption(id).id;
+    if (resolved == aiModelId) {
+      // No change — skip the write + notification so subscribers
+      // don't needlessly wipe their caches.
+      return;
+    }
     await _prefs.setString(_kAiModelId, resolved);
     notifyListeners();
+    _modelChangedCtrl.add(resolved);
   }
 
   /// The resolved [AiModelOption] for [aiModelId].
   AiModelOption get aiModel => resolveAiModelOption(aiModelId);
+
+  /// Broadcast stream that fires the new model id every time the
+  /// user picks a different one in Settings. AI services subscribe
+  /// to this so they can flush cached payloads (in-memory + disk)
+  /// keyed on the old model. Replaces the old "wait 5 minutes for
+  /// the TTL" behaviour.
+  Stream<String> get modelChangedStream => _modelChangedCtrl.stream;
+
+  final StreamController<String> _modelChangedCtrl =
+      StreamController<String>.broadcast();
+
+  // --- Custom topics (Search preferences) -----------------------------
+
+  static const _kCustomTopics = 'custom_news_topics';
+
+  /// User-added custom topics. Each is a 3-key map (label / queryEn /
+  /// queryAr) so the same topic can render in both English and Arabic
+  /// chips.
+  List<CustomNewsTopic> get customTopics {
+    final raw = _prefs.getStringList(_kCustomTopics) ?? const <String>[];
+    final out = <CustomNewsTopic>[];
+    for (final entry in raw) {
+      final parts = entry.split('|');
+      if (parts.length != 3) continue;
+      final label = parts[0].trim();
+      final queryEn = parts[1].trim();
+      final queryAr = parts[2].trim();
+      if (label.isEmpty || queryEn.isEmpty || queryAr.isEmpty) continue;
+      out.add(CustomNewsTopic(
+        label: label,
+        labelAr: label,
+        queryEn: queryEn,
+        queryAr: queryAr,
+      ));
+    }
+    return out;
+  }
+
+  /// Every topic available — built-in (Fashion / Beauty / Influencers
+  /// / Fragrances) plus anything the user has added.
+  List<Object> get allNewsTopics => [
+        ...NewsTopic.values,
+        ...customTopics,
+      ];
+
+  Future<void> addCustomTopic({
+    required String label,
+    required String queryEn,
+    required String queryAr,
+  }) async {
+    final cleanedLabel = label.trim();
+    final cleanedEn = queryEn.trim();
+    final cleanedAr = queryAr.trim();
+    if (cleanedLabel.isEmpty || cleanedEn.isEmpty || cleanedAr.isEmpty) {
+      return;
+    }
+    final current = _prefs.getStringList(_kCustomTopics) ?? <String>[];
+    current.add('$cleanedLabel|$cleanedEn|$cleanedAr');
+    await _prefs.setStringList(_kCustomTopics, current);
+    notifyListeners();
+  }
+
+  Future<void> removeCustomTopicAt(int index) async {
+    final current = _prefs.getStringList(_kCustomTopics) ?? <String>[];
+    if (index < 0 || index >= current.length) return;
+    current.removeAt(index);
+    await _prefs.setStringList(_kCustomTopics, current);
+    notifyListeners();
+  }
 }

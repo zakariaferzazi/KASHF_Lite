@@ -40,8 +40,13 @@ class AiModelOption {
   int get hashCode => id.hashCode;
 }
 
-/// The default model used if the user has never picked one and the
-/// `OPENROUTER_MODEL` env var is not set.
+/// The default model used if the user has never picked one. The
+/// AI model is selected at runtime by the user from Settings →
+/// AI model and persisted in SharedPreferences; this constant is
+/// only consulted on first launch before the user has picked
+/// anything. The app no longer reads `OPENROUTER_MODEL` from
+/// `.env` — that env var used to silently pin every install to
+/// a fixed model and override the user's Settings choice.
 const String kDefaultAiModelId = 'inclusionai/ling-2.6-flash';
 
 /// Ordered list of models surfaced in the settings picker.
@@ -54,10 +59,10 @@ const List<AiModelOption> kAiModelOptions = <AiModelOption>[
     icon: Icons.auto_awesome,
   ),
   AiModelOption(
-    id: 'qwen/qwen3.5-flash-02-23',
-    label: 'Qwen',
-    provider: 'Alibaba',
-    subtitleL10nKey: 'ai_model_qwen_sub',
+    id: 'deepseek/deepseek-v4-flash-0731',
+    label: 'Deepseek V4.0.1',
+    provider: 'Deepseek',
+    subtitleL10nKey: 'ai_model_deepseek_sub',
     icon: Icons.bolt_outlined,
   ),
   AiModelOption(
@@ -66,6 +71,27 @@ const List<AiModelOption> kAiModelOptions = <AiModelOption>[
     provider: 'InclusionAI',
     subtitleL10nKey: 'ai_model_inclusion_sub',
     icon: Icons.psychology_outlined,
+  ),
+  AiModelOption(
+    id: 'poolside/laguna-s-2.1',
+    label: 'Laguna S 2.1',
+    provider: 'Poolside',
+    subtitleL10nKey: 'ai_model_deepseek_sub',
+    icon: Icons.layers_outlined,
+  ),
+  AiModelOption(
+    id: 'openai/gpt-oss-120b',
+    label: 'GPT-OSS',
+    provider: 'OpenAI',
+    subtitleL10nKey: 'ai_model_gptoss_sub',
+    icon: Icons.smart_toy_outlined,
+  ),
+  AiModelOption(
+    id: 'openai/gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    provider: 'OpenAI',
+    subtitleL10nKey: 'ai_model_gpt5nano_sub',
+    icon: Icons.flash_on_outlined,
   ),
 ];
 

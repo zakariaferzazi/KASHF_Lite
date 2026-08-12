@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_strings.dart';
 import '../services/news/news_data_controller.dart';
 import '../services/news/news_models.dart';
+import '../services/settings_scope.dart';
 import '../theme.dart';
 import 'article_reader_sheet.dart';
 import 'loading_overlay.dart';
@@ -14,7 +15,7 @@ import 'loading_overlay.dart';
 ///
 /// `null` represents the "Top stories" / general news chip which
 /// always renders first.
-class CategoryChipsRow extends StatelessWidget {
+class CategoryChipsRow extends StatefulWidget {
   const CategoryChipsRow({
     super.key,
     required this.selected,
@@ -22,44 +23,62 @@ class CategoryChipsRow extends StatelessWidget {
     required this.l,
   });
 
-  /// The currently active topic. Always one of the 4 curated
-  /// verticals (Fashion / Beauty / Influencers / Fragrances).
-  final NewsTopic selected;
-  final ValueChanged<NewsTopic> onChanged;
+  /// The currently active topic. Can be a built-in [NewsTopic]
+  /// or a user [CustomNewsTopic].
+  final dynamic selected;
+  final ValueChanged<dynamic> onChanged;
   final AppLocalizations l;
 
   @override
+  State<CategoryChipsRow> createState() => _CategoryChipsRowState();
+}
+
+class _CategoryChipsRowState extends State<CategoryChipsRow> {
+  @override
   Widget build(BuildContext context) {
-    // The 4 curated topic chips (Fashion / Beauty / Influencers /
-    // Fragrances) in a fixed order. Limiting to these four keeps
-    // both the home and explore carousels focused on the topics
-    // the user actually cares about — there's no generic "Top"
-    // chip anymore.
-    final ordered = <NewsTopic>[
-      NewsTopic.fashion,
-      NewsTopic.beauty,
-      NewsTopic.influencers,
-      NewsTopic.fragrances,
-    ];
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        reverse: l.isRtl,
-        padding: EdgeInsets.zero,
-        itemCount: ordered.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final t = ordered[i];
-          final picked = t == selected;
-          return CategoryChip(
-            icon: iconForTopic(t),
-            label: labelForTopic(t, l),
-            selected: picked,
-            onTap: () => onChanged(t),
-          );
-        },
-      ),
+    final prefs = SettingsScope.of(context);
+    return AnimatedBuilder(
+      animation: prefs,
+      builder: (context, _) {
+        // All topics: built-in (NewsTopic enum) + custom (CustomNewsTopic class)
+        final builtIn = NewsTopic.values;
+        final custom = prefs.customTopics;
+        final allCount = builtIn.length + custom.length;
+
+        return SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            reverse: widget.l.isRtl,
+            padding: EdgeInsets.zero,
+            itemCount: allCount,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              // Built-in topics first, then custom
+              if (i < builtIn.length) {
+                final t = builtIn[i];
+                final picked = t == widget.selected;
+                return CategoryChip(
+                  icon: iconForTopic(t),
+                  label: labelForTopic(t, widget.l),
+                  selected: picked,
+                  onTap: () => widget.onChanged(t),
+                );
+              } else {
+                final t = custom[i - builtIn.length];
+                // Custom topics are selectable but won't be the "selected" chip
+                // because we can't compare with NewsTopic enum
+                return CategoryChip(
+                  icon: Icons.tag_outlined,
+                  label: widget.l.isRtl ? t.labelAr : t.label,
+                  selected: false,
+                  onTap: () => widget.onChanged(t),
+                );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -73,6 +92,8 @@ class CategoryChipsRow extends StatelessWidget {
         return Icons.person_outline;
       case NewsTopic.fragrances:
         return Icons.local_florist_outlined;
+      default:
+        return Icons.tag_outlined;
     }
   }
 

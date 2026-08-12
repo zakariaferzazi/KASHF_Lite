@@ -39,6 +39,7 @@ class OpenRouterRequest {
     this.maxTokens = 800,
     this.responseFormat,
     this.extra = const <String, dynamic>{},
+    this.enableWebSearch = true,
   });
 
   final List<OpenRouterMessage> messages;
@@ -53,6 +54,22 @@ class OpenRouterRequest {
   /// Anything else we want to merge into the request body
   /// (e.g. tool calls, stop sequences).
   final Map<String, dynamic> extra;
+
+  /// When true, the client activates OpenRouter's `web` plugin
+  /// so the model can pull live data (real handles, follower
+  /// counts, recent news) instead of guessing from its training
+  /// data. This is essential for influencer investigations
+  /// where the model's general knowledge is outdated by
+  /// definition.
+  ///
+  /// Implementation per the official docs: we add
+  /// `plugins: [{ "id": "web" }]` to the request body and also
+  /// suffix the model slug with `:online` (a documented
+  /// shortcut for the same plugin).
+  ///
+  /// See https://openrouter.ai/docs/features/web-search for the
+  /// full payload shape.
+  final bool enableWebSearch;
 }
 
 /// Successful response payload.
@@ -290,18 +307,40 @@ class OpenRouterClient {
   /// Convenience wrapper that asks the model for JSON and returns
   /// the parsed map. Throws [OpenRouterException] with type
   /// [OpenRouterErrorType.parse] if the response is not valid JSON.
+  ///
+  /// **Important compatibility note:** Forcing
+  /// `response_format: type=json_object` on a request that also
+  /// enables the web plugin can prevent the plugin from injecting
+  /// search results cleanly into the model's context (the model
+  /// has to satisfy two output constraints simultaneously). To be
+  /// safe, when web search is on we strip `responseFormat` from
+  /// the outgoing body entirely and rely on the model returning
+  /// JSON as plain text — which our `_stripCodeFence` parser
+  /// still extracts correctly.
   Future<Map<String, dynamic>> chatCompletionJson(
     OpenRouterRequest req, {
     bool enforceJsonObject = true,
   }) async {
-    final request = enforceJsonObject
+    // Force JSON mode ONLY when web search is off. With the web
+    // plugin enabled, `response_format: type=json_object` can
+    // interfere with the model's ability to incorporate the
+    // injected search context (the model has to satisfy two
+    // output constraints at once). We strip `responseFormat`
+    // entirely when web search is on so the plugin context flows
+    // through cleanly and the model emits JSON as plain text.
+    final shouldForceJson = enforceJsonObject && !req.enableWebSearch;
+    final shouldStripResponseFormat = req.enableWebSearch && req.responseFormat != null;
+    final request = (shouldForceJson || shouldStripResponseFormat)
         ? OpenRouterRequest(
             messages: req.messages,
             model: req.model,
             temperature: req.temperature,
             maxTokens: req.maxTokens,
-            responseFormat: const {'type': 'json_object'},
+            responseFormat: shouldForceJson
+                ? const {'type': 'json_object'}
+                : null,
             extra: req.extra,
+            enableWebSearch: req.enableWebSearch,
           )
         : req;
 
@@ -376,15 +415,121 @@ class OpenRouterClient {
     }
   }
 
+  /// Prepares the `messages` array for the request body. When
+  /// web search is enabled, prepends a grounding reminder to
+  /// the system message so the model prioritises the live
+  /// web context that the OpenRouter `web` plugin will inject
+  /// (search-result citations appear as `annotations` on the
+  /// final assistant message) instead of falling back on stale
+  /// training data.
+  List<Map<String, dynamic>> _prepareMessages(OpenRouterRequest req) {
+    if (!req.enableWebSearch) {
+      return req.messages.map((m) => m.toJson()).toList();
+    }
+    const toolHint = '''
+LIVE WEB SEARCH — MANDATORY:
+  The OpenRouter web plugin is ENABLED for this request and
+  will inject up-to-date search results into the model's
+  context. You MUST ground any factual claim about a
+  real-world entity (handles, follower counts, recent
+  collaborations, current employment, recent news, current
+  prices) in those search results rather than your training
+  data. Cite each claim with the URL the plugin surfaces.
+  After grounding the facts, complete the report with the
+  verified information. The final answer must be the JSON
+  report specified by the system prompt.
+''';
+    final out = <Map<String, dynamic>>[];
+    var injected = false;
+    for (final m in req.messages) {
+      if (!injected && m.role == 'system') {
+        out.add({
+          'role': 'system',
+          'content': '$toolHint\n${m.content}',
+        });
+        injected = true;
+      } else {
+        out.add(m.toJson());
+      }
+    }
+    // No system message present — inject one as the first message.
+    if (!injected) {
+      out.insert(0, {
+        'role': 'system',
+        'content': toolHint.trim(),
+      });
+    }
+    return out;
+  }
+
   Map<String, dynamic> _buildBody(OpenRouterRequest req) {
+    // Treat empty / whitespace strings as missing so a stale
+    // request never goes out with `model: ""` (OpenRouter would
+    // reject it with a 400). Fall back to the live getter, which
+    // honours the user's Settings choice.
+    final override = req.model?.trim();
+    final model = (override != null && override.isNotEmpty)
+        ? override
+        : OpenRouterConfig.model;
+
+    // Web-search-enabled payload. Per the official OpenRouter docs
+    // (https://openrouter.ai/docs/features/web-search), the canonical
+    // way to request live web access on any model is the `web`
+    // plugin:
+    //
+    //   { "plugins": [{ "id": "web" }] }
+    //
+    // Appending `:online` to the model slug is a documented
+    // shortcut for the SAME thing (internally OpenRouter routes
+    // it to the web-plugin). We send BOTH so the routing is
+    // unambiguous regardless of which OpenRouter build is serving
+    // us, and we never send `tools` — the
+    // `{"type": "openrouter:web_search"}` schema is NOT a valid
+    // OpenAI tool definition and gets silently ignored by the
+    // upstream provider, which is exactly why the previous
+    // requests came back with `num_search_results: null` and
+    // `usage_web: null`.
+    var resolvedModel = model;
+    if (req.enableWebSearch && !resolvedModel.endsWith(':online')) {
+      resolvedModel = '$resolvedModel:online';
+    }
+
     final body = <String, dynamic>{
-      'model': req.model ?? OpenRouterConfig.model,
-      'messages': req.messages.map((m) => m.toJson()).toList(),
+      'model': resolvedModel,
+      'messages': _prepareMessages(req),
       'temperature': req.temperature,
       'max_tokens': req.maxTokens,
       if (req.responseFormat != null) 'response_format': req.responseFormat,
+      if (req.enableWebSearch)
+        'plugins': <Map<String, dynamic>>[
+          {'id': 'web'},
+        ],
+      // Disable reasoning across the board. Several models in
+      // our picker (notably Qwen3.7 Flash, the OpenAI o-series,
+      // Anthropic Claude with thinking, Gemini thinking variants)
+      // emit reasoning tokens BEFORE the final answer. Those
+      // tokens count toward `max_tokens`, so on a long prompt
+      // the model can exhaust the budget thinking and emit an
+      // empty `content` field — which then fails the JSON parse
+      // even though the call technically succeeded. The
+      // investigation flow expects the model to produce a
+      // JSON report directly; reasoning is not used. Models
+      // that don't support reasoning simply ignore this field.
+      // See https://openrouter.ai/docs/use-cases/reasoning-tokens
+      'reasoning': <String, dynamic>{
+        'enabled': false,
+      },
       ...req.extra,
     };
+
+    if (kDebugMode && req.enableWebSearch) {
+      debugPrint(
+        '[OpenRouter] web-search enabled → model=$resolvedModel, '
+        'plugins=${body['plugins']}, '
+        'response_format=${body['response_format']}, '
+        'max_tokens=${body['max_tokens']}',
+      );
+    }
     return body;
   }
 
@@ -420,9 +565,23 @@ class OpenRouterClient {
 
     final choices = json['choices'];
     if (choices is! List || choices.isEmpty) {
-      throw const OpenRouterException(
-        message: 'Response contains no choices.',
-        type: OpenRouterErrorType.parse,
+      // OpenRouter returns HTTP 200 with an empty `choices` array
+      // when its router rejects a request before forwarding it
+      // to the upstream provider (commonly: a parameter the
+      // provider doesn't support, or a model variant that
+      // doesn't accept the requested tool). Surface this as a
+      // server-side failure rather than a JSON parse error so
+      // the caller can show a meaningful message and we don't
+      // retry the same broken request up to 5 times.
+      final errField = json['error'];
+      final detail = errField is Map<String, dynamic> &&
+              errField['message'] is String
+          ? ' — ${errField['message']}'
+          : '';
+      throw OpenRouterException(
+        message: 'OpenRouter returned an empty response$detail.',
+        statusCode: 200,
+        type: OpenRouterErrorType.server,
       );
     }
 
@@ -439,6 +598,17 @@ class OpenRouterClient {
     if (message is Map<String, dynamic>) {
       final c = message['content'];
       if (c is String) content = c;
+      // Defensive fallback: if the upstream model only emitted
+      // reasoning tokens (despite our `reasoning.enabled=false`
+      // request) and left `content` empty, surface the reasoning
+      // text as the content so the JSON parser still has
+      // something to chew on. Without this, reasoning-capable
+      // models that ignore the disable flag produce empty
+      // responses that always fail parse.
+      if (content.isEmpty) {
+        final r = message['reasoning'];
+        if (r is String && r.isNotEmpty) content = r;
+      }
     }
     final model = (json['model'] as String?) ??
         OpenRouterConfig.model;

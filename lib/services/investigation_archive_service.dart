@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart';
 
 import '../models/entity_type.dart';
@@ -7,6 +8,8 @@ import '../models/investigation.dart';
 import '../models/investigation_result.dart';
 import '../models/saved_investigation.dart';
 import 'ai/openrouter_config.dart';
+import 'archive/composite_investigation_writer.dart';
+import 'archive/firestore_investigation_writer.dart';
 import 'archive/investigation_writer.dart';
 import 'archive/local_investigation_writer.dart';
 import 'auth_service.dart';
@@ -15,27 +18,48 @@ import 'auth_service.dart';
 /// feed to the Home screen's "Latest Investigations" section.
 ///
 /// Storage architecture:
-///   * Pluggable [InvestigationWriter] backend (defaults to the
-///     offline SharedPreferences implementation so the section
-///     works without any cloud setup).
-///   * When the cloud_firestore package is added to pubspec.yaml
-///     the `FirestoreInvestigationWriter` can be swapped in by
-///     calling [useFirestoreWriter] before [bootstrap] — the
-///     orchestration here is identical.
+///   * The default writer is a CompositeInvestigationWriter that
+///     fans every save out to BOTH a local SharedPreferences mirror
+///     AND a Firestore writer keyed on the signed-in user's uid.
+///   * If Firestore isn't available (no cloud_firestore package,
+///     no signed-in user, etc.) the service transparently falls back
+///     to the local-only writer so the home section never goes blank.
 ///
 /// Failure modes are non-fatal: every write also goes through the
-/// local writer first so the home section always has data to
-/// show, even on a brand-new install with no network.
+/// local writer first so the home section always has data to show,
+/// even on a brand-new install with no network.
 ///
-/// Storage layout (when Firestore is plugged in):
+/// Storage layout (Firestore, when active):
 ///   users / {uid} / investigations / {docId}
+/// This matches the security rules in `firestore.rules`:
+///   match /users/{uid} {
+///     allow read, write: if request.auth != null
+///                         && request.auth.uid == uid;
+///   }
 class InvestigationArchiveService {
-  InvestigationArchiveService({
+  InvestigationArchiveService._() : _auth = AuthService() {
+    _localWriter = LocalInvestigationWriter();
+    _writer = _localWriter;
+    _listenAuthChanges();
+  }
+
+  InvestigationArchiveService.forTesting({
     InvestigationWriter? writer,
     AuthService? authService,
   }) : _auth = authService ?? AuthService() {
-    _writer = writer ?? LocalInvestigationWriter();
+    _localWriter = LocalInvestigationWriter();
+    if (writer != null) {
+      _writer = writer;
+    } else {
+      _writer = _localWriter;
+    }
+    _listenAuthChanges();
   }
+
+  /// Shared singleton used by the home / settings screens. Tests
+  /// can still build their own instance via [forTesting].
+  static final InvestigationArchiveService instance =
+      InvestigationArchiveService._();
 
   /// Cap on how many documents we read at once for the latest list.
   /// Keeping it small keeps the home page snappy.
@@ -47,14 +71,44 @@ class InvestigationArchiveService {
   String get _currentUserId => _auth.currentUser?.uid ?? 'anonymous';
 
   late InvestigationWriter _writer;
+  late final LocalInvestigationWriter _localWriter;
+  FirestoreInvestigationWriter? _firestoreWriter;
+  StreamSubscription<fb.User?>? _authSub;
   final AuthService _auth;
 
-  /// Swaps in a Firestore-backed [InvestigationWriter]. Called
-  /// from `main.dart` after Firebase is initialised, gated on
-  /// `cloud_firestore` being present in pubspec.
-  @visibleForTesting
-  void useFirestoreWriter(InvestigationWriter writer) {
-    _writer = writer;
+  /// Wires the Firestore writer and swaps it in for the default
+  /// writer. Safe to call once after Firebase is initialised. The
+  /// Firestore writer will only ever write/read under the currently
+  /// signed-in user's uid; anonymous users keep using the local
+  /// mirror.
+  void enableFirestore(FirestoreInvestigationWriter firestore) {
+    _firestoreWriter = firestore;
+    _writer = CompositeInvestigationWriter(
+      local: _localWriter,
+      remote: firestore,
+    );
+    final uid = _currentUserId;
+    if (uid != 'anonymous') {
+      firestore.attach(uid);
+    }
+  }
+
+  /// Tears down Firestore listeners and the auth subscription.
+  Future<void> dispose() async {
+    await _authSub?.cancel();
+    await _firestoreWriter?.dispose();
+  }
+
+  /// Re-subscribes the Firestore writer whenever the auth state
+  /// flips, so each user only ever sees their own slice.
+  void _listenAuthChanges() {
+    _authSub = fb.FirebaseAuth.instance.authStateChanges().listen((user) {
+      final fw = _firestoreWriter;
+      if (fw == null) return;
+      if (user != null) {
+        fw.attach(user.uid);
+      }
+    });
   }
 
   InvestigationWriter get writer => _writer;
@@ -85,6 +139,21 @@ class InvestigationArchiveService {
     final confidence = (result.confidence ?? 0.6).clamp(0.0, 1.0);
     final pct = (confidence * 100).round();
 
+    // Thumbnail: prefer the top-level one resolved by the parser,
+    // otherwise the first evidence image, otherwise `null`.
+    String? thumbnailUrl = result.thumbnailUrl;
+    if (thumbnailUrl == null || thumbnailUrl.isEmpty) {
+      for (final s in sections) {
+        for (final it in s.items) {
+          if (it.imageUrl != null && it.imageUrl!.isNotEmpty) {
+            thumbnailUrl = it.imageUrl;
+            break;
+          }
+        }
+        if (thumbnailUrl != null) break;
+      }
+    }
+
     final saved = SavedInvestigation(
       id: result.investigationId,
       userId: uid,
@@ -100,6 +169,9 @@ class InvestigationArchiveService {
       createdAt: result.generatedAt,
       modelId: modelId,
       evidenceCount: evidenceCount ?? 0,
+      thumbnailUrl: (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
+          ? thumbnailUrl
+          : null,
     );
 
     try {

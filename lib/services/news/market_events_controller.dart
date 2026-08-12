@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'news_content_repository.dart';
 import 'news_service.dart';
 
 /// Drives the Market Pulse "important events" list. Cycles
@@ -9,20 +10,27 @@ import 'news_service.dart';
 /// article from each so the list always shows 3 distinct,
 /// currently-trending stories.
 ///
-/// Performance: the 3 topic fetches run in parallel (each caps
-/// image-resolve at 1 article via `maxArticles: 1`) so a refresh
-/// finishes in roughly the latency of a single topic fetch —
-/// not 3× sequential.
+/// ## Performance contract
 ///
-/// State persistence is implicit — every fetch goes through
-/// [NewsService.instance], which already caches its result on
-/// disk via `DiskCache`. So the same articles are restored on
-/// the next app launch even before any network call completes.
+/// The 3 topic fetches run in parallel (each caps image-resolve at
+/// 1 article via `maxArticles: 1`) so a refresh finishes in roughly
+/// the latency of a single topic fetch — not 3× sequential.
+///
+/// All fetches go through [NewsContentRepository], which gates
+/// writes behind a 24-hour window. The result: at most one
+/// background Google News scrape per day, regardless of how many
+/// times the user opens the market screen or navigates between
+/// tabs. Hydration from disk + Firestore keeps the screen instant
+/// on every launch.
 class MarketEventsController extends ChangeNotifier {
-  MarketEventsController({NewsService? service})
-      : _service = service ?? NewsService.instance;
+  MarketEventsController({
+    NewsService? service,
+    NewsContentRepository? repository,
+  })  : _service = service ?? NewsService.instance,
+        _repository = repository ?? NewsContentRepository.instance;
 
   final NewsService _service;
+  final NewsContentRepository _repository;
 
   /// `null` when nothing has been fetched yet; `true` during a
   /// fetch; `false` after the first response (success or fail)
@@ -78,8 +86,10 @@ class MarketEventsController extends ChangeNotifier {
     return 'green';
   }
 
-  /// Kick off the first fetch. Cheap to call multiple times —
-  /// concurrent calls are deduped.
+  /// Hydrate from cache first; schedule a single background
+  /// refresh only if the cached payload is older than 24 hours.
+  /// Cheap to call multiple times — concurrent calls are deduped
+  /// via [_loading].
   Future<void> bootstrap({
     required String language,
     required String country,
@@ -87,21 +97,28 @@ class MarketEventsController extends ChangeNotifier {
     _language = language;
     _country = country;
 
-    // Hydrate from disk first so the user sees the last
-    // successfully fetched articles immediately on launch. We
-    // don't need to gate this on `_articles` being null — it's
-    // already cheap (a few `SharedPreferences` reads).
-    await _service.hydrateFromDisk(language: language, country: country);
-
+    // 1. Hydrate from cache (disk + Firestore) so the user sees
+    //    the last successfully fetched articles immediately. No
+    //    network calls go to Google News from this branch.
     final prefill = <NewsArticle>[];
+    bool needsBackgroundRefresh = false;
     for (final t in _topics) {
-      final cached = _service.cacheFor(
+      final cached = await _repository.readFeed(
         language: language,
         country: country,
         topic: t,
       );
-      if (cached == null || cached.feed.articles.isEmpty) continue;
-      prefill.add(cached.feed.articles.first);
+      if (cached == null || cached.articles.isEmpty) {
+        needsBackgroundRefresh = true;
+        continue;
+      }
+      prefill.add(cached.articles.first);
+      final stale = await _repository.needsRefresh(
+        language: language,
+        country: country,
+        topic: t,
+      );
+      if (stale) needsBackgroundRefresh = true;
     }
     if (prefill.isNotEmpty) {
       _articles = prefill.take(3).toList(growable: false);
@@ -109,10 +126,16 @@ class MarketEventsController extends ChangeNotifier {
       notifyListeners();
     }
 
-    // If the cache already has all 3 slots filled, skip the
-    // network entirely.
-    if (_articles != null && _articles!.length >= 3) return;
-    await refresh();
+    // 2. If every cached slot was empty OR at least one is older
+    //    than 24 hours, run a single background refresh. Otherwise
+    //    do nothing — the cached payload is still inside the
+    //    freshness window.
+    if (!needsBackgroundRefresh && _articles != null && _articles!.length >= 3) {
+      return;
+    }
+    // Defer to a microtask so the existing cached UI can paint
+    // first.
+    Future.microtask(refresh);
   }
 
   /// Force a fresh fetch of all 3 topic feeds.
@@ -120,7 +143,10 @@ class MarketEventsController extends ChangeNotifier {
   /// All 3 fetches run concurrently. Each `fetchTrending` call
   /// caps image-resolve at 1 article (`maxArticles: 1`) so the
   /// whole refresh is bounded by the slowest single topic —
-  /// not 3× sequential.
+  /// not 3× sequential. The underlying [NewsService] still
+  /// respects the 24-hour gate, so calling this multiple times in
+  /// a row will not trigger more than one Google News scrape per
+  /// day.
   Future<void> refresh() async {
     if (_loading == true) return;
     _loading = true;

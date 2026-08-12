@@ -27,6 +27,7 @@ class SavedInvestigation {
     required this.createdAt,
     this.modelId,
     this.evidenceCount = 0,
+    this.thumbnailUrl,
   });
 
   /// Firestore document id. Locally-generated UUID for offline
@@ -72,6 +73,13 @@ class SavedInvestigation {
   /// Number of evidence items attached at the time of the run.
   final int evidenceCount;
 
+  /// URL of an image used as the card thumbnail. Sourced from the
+  /// AI result's first image-bearing source so the latest-investigations
+  /// list and the result hero card show a visual identifier of the
+  /// investigated subject. `null` means "no thumbnail available" —
+  /// the UI falls back to a neutral icon tile.
+  final String? thumbnailUrl;
+
   String get documentId => id;
 
   Map<String, dynamic> toFirestore() => <String, dynamic>{
@@ -86,6 +94,7 @@ class SavedInvestigation {
         'createdAt': createdAt.toUtc().toIso8601String(),
         'modelId': modelId,
         'evidenceCount': evidenceCount,
+        'thumbnailUrl': thumbnailUrl,
       };
 
   /// Hydrate from a Firestore document. Falls back to safe
@@ -124,6 +133,7 @@ class SavedInvestigation {
       createdAt: parseDate(doc['createdAt']),
       modelId: doc['modelId'] as String?,
       evidenceCount: ((doc['evidenceCount'] as num?) ?? 0).toInt(),
+      thumbnailUrl: doc['thumbnailUrl'] as String?,
     );
   }
 
@@ -142,6 +152,7 @@ class SavedInvestigation {
     int? evidenceCount,
     EntityType? entityType,
     InvestigationStatus? status,
+    String? thumbnailUrl,
   }) {
     return SavedInvestigation(
       id: id,
@@ -156,6 +167,7 @@ class SavedInvestigation {
       createdAt: createdAt,
       modelId: modelId ?? this.modelId,
       evidenceCount: evidenceCount ?? this.evidenceCount,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 }

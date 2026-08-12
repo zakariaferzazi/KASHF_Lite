@@ -69,7 +69,7 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _urlCtrl = TextEditingController();
   final InvestigationArchiveService _archive =
-      InvestigationArchiveService();
+      InvestigationArchiveService.instance;
 
   @override
   void initState() {
@@ -291,6 +291,13 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
                         l: l,
                         searchCtrl: _searchCtrl,
                         onQuickQuestion: _onQuickQuestion,
+                      ),
+                      const SizedBox(height: 8),
+                      _EntityTypeCard(
+                        l: l,
+                        selected: _ctrl.entityType,
+                        onSelect: (type) =>
+                            setState(() => _ctrl.entityType = type),
                       ),
                       const SizedBox(height: 8),
                       _UploadEvidenceCard(
@@ -778,6 +785,258 @@ class _StartInvestigationButton extends StatelessWidget {
 }
 
 // ============================================================================
+// Entity-type card — lets the user pick what this investigation
+// is FOR (company / brand / product / influencer / market). The
+// selection drives the role + analysis dimensions injected into
+// the AI prompt, so an "influencer" investigation looks very
+// different from a "brand" investigation even with the same
+// free-text query.
+// ============================================================================
+class _EntityTypeCard extends StatelessWidget {
+  const _EntityTypeCard({
+    required this.l,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final AppLocalizations l;
+  final EntityType selected;
+  final ValueChanged<EntityType> onSelect;
+
+  static const blue = Color(0xFF3B82F6);
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = <_EntityTileData>[
+      _EntityTileData(
+        type: EntityType.company,
+        icon: EntityType.company.filledIcon,
+        label: l.t(EntityType.company.l10nKey),
+      ),
+      _EntityTileData(
+        type: EntityType.brand,
+        icon: EntityType.brand.filledIcon,
+        label: l.t(EntityType.brand.l10nKey),
+      ),
+      _EntityTileData(
+        type: EntityType.product,
+        icon: EntityType.product.filledIcon,
+        label: l.t(EntityType.product.l10nKey),
+      ),
+      _EntityTileData(
+        type: EntityType.influencer,
+        icon: EntityType.influencer.filledIcon,
+        label: l.t(EntityType.influencer.l10nKey),
+      ),
+      _EntityTileData(
+        type: EntityType.market,
+        icon: EntityType.market.filledIcon,
+        label: l.t(EntityType.market.l10nKey),
+      ),
+    ];
+    return _SectionCard(
+      borderColor: blue.withValues(alpha: 0.35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SectionHeader(
+            icon: Icons.category_outlined,
+            iconColor: blue,
+            title: l.t('inv_section_entity'),
+            subtitle: l.t('inv_section_entity_sub'),
+          ),
+          _EntityTypeRow(
+            tiles: tiles,
+            selected: selected,
+            onSelect: onSelect,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EntityTileData {
+  const _EntityTileData({
+    required this.type,
+    required this.icon,
+    required this.label,
+  });
+  final EntityType type;
+  final IconData icon;
+  final String label;
+}
+
+class _EntityTypeRow extends StatelessWidget {
+  const _EntityTypeRow({
+    required this.tiles,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<_EntityTileData> tiles;
+  final EntityType selected;
+  final ValueChanged<EntityType> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    // 5 tiles ⇒ first row has 3, second row has 2.
+    const blue = Color(0xFF3B82F6);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < 3; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: _EntityTypeTile(
+                  data: tiles[i],
+                  isSelected: tiles[i].type == selected,
+                  accent: blue,
+                  onSelect: onSelect,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (var i = 3; i < 5; i++) ...[
+              if (i > 3) const SizedBox(width: 6),
+              Expanded(
+                child: _EntityTypeTile(
+                  data: tiles[i],
+                  isSelected: tiles[i].type == selected,
+                  accent: blue,
+                  onSelect: onSelect,
+                ),
+              ),
+            ],
+            const Spacer(),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _EntityTypeTile extends StatelessWidget {
+  const _EntityTypeTile({
+    required this.data,
+    required this.isSelected,
+    required this.accent,
+    required this.onSelect,
+  });
+
+  final _EntityTileData data;
+  final bool isSelected;
+  final Color accent;
+  final ValueChanged<EntityType> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isSelected
+        ? accent
+        : KashfPalette.active.textSecondary.withValues(alpha: 0.35);
+    final borderWidth = isSelected ? 1.6 : 1.0;
+    final fillColor = isSelected
+        ? accent.withValues(alpha: 0.10)
+        : KashfPalette.active.textSecondary.withValues(alpha: 0.10);
+    final iconColor = isSelected
+        ? accent
+        : KashfPalette.active.textSecondary.withValues(alpha: 0.55);
+    final labelColor = isSelected
+        ? KashfPalette.active.textPrimary
+        : KashfPalette.active.textSecondary.withValues(alpha: 0.65);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => onSelect(data.type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: fillColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: borderWidth),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.18),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Stack(
+          children: [
+            if (isSelected)
+              const PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: _SelectedEntityDot(),
+              ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  data.icon,
+                  color: iconColor,
+                  size: 20,
+                ),
+                const SizedBox(height: 4),
+                Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Text(
+                    data.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedEntityDot extends StatelessWidget {
+  const _SelectedEntityDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B82F6),
+        shape: BoxShape.circle,
+        border: Border.all(color: KashfPalette.active.background, width: 1.4),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.check,
+        size: 10,
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
+// ============================================================================
 // Upload evidence card. Reduced from 6 tiles to 4 (PDF, image,
 // video, link). The link tile opens an inline text field instead
 // of a file picker so URL evidence doesn't need a third-party
@@ -1074,7 +1333,7 @@ class _EvidenceStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, label, showSpinner) = _styleFor(status, l);
+    final (color, label) = _styleFor(status, l);
     return Container(
       margin: const EdgeInsetsDirectional.only(start: 4),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1086,18 +1345,11 @@ class _EvidenceStatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showSpinner) ...[
-            SizedBox(
-              width: 9,
-              height: 9,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                valueColor: AlwaysStoppedAnimation(color),
-              ),
-            ),
-            const SizedBox(width: 4),
-          ] else
-            Icon(_iconFor(status), size: 9, color: color),
+          // Use a static icon for in-progress states instead of a
+          // second CircularProgressIndicator — the main overlay
+          // [_ProSpinner] already shows the only animated element,
+          // so a badge spinner would visually compete with it.
+          Icon(_iconFor(status), size: 9, color: color),
           const SizedBox(width: 3),
           Text(
             label,
@@ -1126,21 +1378,20 @@ class _EvidenceStatusBadge extends StatelessWidget {
     }
   }
 
-  (Color, String, bool) _styleFor(EvidenceStatus s, AppLocalizations l) {
+  (Color, String) _styleFor(EvidenceStatus s, AppLocalizations l) {
     switch (s) {
       case EvidenceStatus.processed:
-        return (Colors.green, l.t('ir_evidence_status_processed'), false);
+        return (Colors.green, l.t('ir_evidence_status_processed'));
       case EvidenceStatus.failed:
-        return (Colors.redAccent, l.t('ir_evidence_status_failed'), false);
+        return (Colors.redAccent, l.t('ir_evidence_status_failed'));
       case EvidenceStatus.uploading:
-        return (KashfColors.gold, l.t('ir_evidence_status_uploading'), true);
+        return (KashfColors.gold, l.t('ir_evidence_status_uploading'));
       case EvidenceStatus.processing:
-        return (KashfColors.gold, l.t('ir_evidence_status_processing'), true);
+        return (KashfColors.gold, l.t('ir_evidence_status_processing'));
       case EvidenceStatus.pending:
         return (
           KashfPalette.active.textSecondary,
           l.t('ir_evidence_status_pending'),
-          false,
         );
     }
   }
@@ -1542,22 +1793,21 @@ class _ProcessingOverlay extends StatefulWidget {
 
 class _ProcessingOverlayState extends State<_ProcessingOverlay>
     with TickerProviderStateMixin {
-  late final AnimationController _spinCtrl;
   late final AnimationController _pulseCtrl;
   late final AnimationController _exitCtrl;
   late final AnimationController _barCtrl;
   Timer? _autoDismissTimer;
+  Timer? _randomWalkTimer;
+
+  /// The phase that was active when the random walk last started.
+  /// Used to detect phase changes and restart the walk.
+  InvestigationPhase? _walkPhase;
 
   @override
   void initState() {
     super.initState();
-    // Continuous spin for the outer ring.
-    _spinCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-    // Subtle pulse for the inner ring + soft halo (not strictly
-    // required, makes the spinner feel alive without being loud).
+    // Subtle pulse for the soft halo (not strictly required, makes
+    // the ring feel alive without being distracting).
     _pulseCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
@@ -1568,12 +1818,88 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
       duration: const Duration(milliseconds: 320),
       value: 1,
     );
-    // Smoothly eases the value used in the progress bar so it does
-    // not jump between phases.
+    // Drives the determinate progress ring. Starts from the phase's
+    // base value and is then driven by the random walk below.
     _barCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 450),
-      value: widget.progress.percent.clamp(0.0, 1.0),
+      value: _basePercent(widget.progress.phase),
+    );
+    _startRandomWalk(widget.progress.phase);
+  }
+
+  /// The starting percentage for each phase. The random walk climbs
+  /// from here toward the cap.
+  static double _basePercent(InvestigationPhase phase) {
+    switch (phase) {
+      case InvestigationPhase.draft:
+        return 0.0;
+      case InvestigationPhase.evidenceCollecting:
+        return 0.0;
+      case InvestigationPhase.evidenceProcessing:
+        return 0.15;
+      case InvestigationPhase.analyzing:
+        return 0.45;
+      case InvestigationPhase.completed:
+        return 1.0;
+      case InvestigationPhase.failed:
+        return 0.0;
+    }
+  }
+
+  /// The cap the random walk will stop at before the phase changes.
+  /// The analyzing phase (AI call) is the longest so it gets the
+  /// highest cap — the walk stops somewhere between 0.88 and 0.95.
+  static double _capPercent(InvestigationPhase phase) {
+    switch (phase) {
+      case InvestigationPhase.draft:
+        return 0.10;
+      case InvestigationPhase.evidenceCollecting:
+        return 0.25;
+      case InvestigationPhase.evidenceProcessing:
+        return 0.45;
+      case InvestigationPhase.analyzing:
+        return 0.94; // AI call — longest phase, biggest cap
+      case InvestigationPhase.completed:
+        return 1.0;
+      case InvestigationPhase.failed:
+        return 0.0;
+    }
+  }
+
+  /// Starts the random-walk timer for [phase]. Each tick adds a
+  /// random 1–4% to the bar and stops automatically once the cap
+  /// for that phase is reached. Safe to call on every phase change.
+  void _startRandomWalk(InvestigationPhase phase) {
+    _randomWalkTimer?.cancel();
+    // Completed / failed phases don't walk — they snap to 0 or 1.
+    if (phase == InvestigationPhase.completed ||
+        phase == InvestigationPhase.failed) return;
+    _walkPhase = phase;
+    final cap = _capPercent(phase);
+    _randomWalkTimer = Timer.periodic(
+      const Duration(milliseconds: 900),
+      (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        // Re-read the phase from the latest progress — if it changed
+        // the caller already started a new walk.
+        if (_walkPhase != phase) {
+          timer.cancel();
+          return;
+        }
+        final current = _barCtrl.value;
+        if (current >= cap) {
+          timer.cancel();
+          return;
+        }
+        // Random step: 0.008 – 0.040 per tick (≈1–5% per 900ms).
+        final step = 0.008 + (current.hashCode % 33) * 0.001;
+        final next = (current + step).clamp(0.0, cap);
+        _barCtrl.value = next;
+      },
     );
   }
 
@@ -1583,14 +1909,20 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
     final wasFailed = old.progress.phase == InvestigationPhase.failed;
     final isFailed = widget.progress.phase == InvestigationPhase.failed;
     final isDone = widget.progress.phase == InvestigationPhase.completed;
+    final phaseChanged = old.progress.phase != widget.progress.phase;
 
-    // Smoothly chase the reported progress value.
-    if (_barCtrl.value != widget.progress.percent.clamp(0.0, 1.0)) {
-      _barCtrl.animateTo(
-        widget.progress.percent.clamp(0.0, 1.0),
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic,
-      );
+    // Restart the random walk whenever the phase changes.
+    if (phaseChanged) {
+      _startRandomWalk(widget.progress.phase);
+
+      // Snap to base for the new phase (the walk takes over from here).
+      final base = _basePercent(widget.progress.phase);
+      _barCtrl.value = base;
+
+      // On completed: animate to 100%.
+      if (isDone) {
+        _barCtrl.animateTo(1.0, duration: const Duration(milliseconds: 350));
+      }
     }
 
     // Trigger the auto-dismiss + fade when we transition into the
@@ -1603,10 +1935,6 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
           if (!mounted) return;
           await _exitCtrl.reverse();
           if (!mounted) return;
-          // Hand control back to the screen so it can collapse the
-          // overlay out of the Stack. Skip when completed (the
-          // screen already called `acknowledgeCompletion()` which
-          // navigated us away).
           if (isFailed) {
             widget.onFailedDismissed();
           }
@@ -1626,7 +1954,7 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
   @override
   void dispose() {
     _autoDismissTimer?.cancel();
-    _spinCtrl.dispose();
+    _randomWalkTimer?.cancel();
     _pulseCtrl.dispose();
     _exitCtrl.dispose();
     _barCtrl.dispose();
@@ -1679,9 +2007,10 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _ProSpinner(
-                              spin: _spinCtrl,
                               pulse: _pulseCtrl,
+                              percent: _barCtrl,
                               isFailed: isFailed,
+                              palette: palette,
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -1712,11 +2041,6 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            _AnimatedProgressBar(
-                              value: _barCtrl.value.clamp(0.0, 1.0),
-                              failed: isFailed,
-                            ),
                             if (isFailed) ...[
                               const SizedBox(height: 12),
                               _RetryHint(text: l.t('ir_processing_failed_hint')),
@@ -1736,36 +2060,63 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
   }
 }
 
-/// A custom-painted double-ring spinner with a soft pulsing halo.
-/// Drives a smooth, professional loading feel instead of the
-/// default Material indeterminate spinner.
+/// A custom-painted spinner that doubles as a determinate progress
+/// ring. The outer arc fills as the investigation advances and the
+/// percentage (rounded to the nearest integer) is rendered in the
+/// middle of the circle so the user can read the precise progress
+/// at a glance — no separate linear progress bar needed.
 class _ProSpinner extends StatelessWidget {
   const _ProSpinner({
-    required this.spin,
     required this.pulse,
+    required this.percent,
     required this.isFailed,
+    required this.palette,
   });
 
-  final Animation<double> spin;
   final Animation<double> pulse;
+  final Animation<double> percent;
   final bool isFailed;
+  final KashfPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 72,
-      height: 72,
+      width: 96,
+      height: 96,
       child: AnimatedBuilder(
-        animation: Listenable.merge([spin, pulse]),
+        animation: Listenable.merge([pulse, percent]),
         builder: (context, _) {
-          return CustomPaint(
-            painter: _SpinnerPainter(
-              rotation: spin.value,
-              pulse: pulse.value,
-              failed: isFailed,
-              accent: isFailed ? Colors.redAccent : KashfColors.gold,
-            ),
-            size: const Size(72, 72),
+          final p = percent.value.clamp(0.0, 1.0);
+          final pct = (p * 100).round();
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              CustomPaint(
+                painter: _SpinnerPainter(
+                  pulse: pulse.value,
+                  progress: p,
+                  failed: isFailed,
+                  accent: isFailed ? Colors.redAccent : KashfColors.gold,
+                ),
+                size: const Size(96, 96),
+              ),
+              // Center percentage label.
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$pct%',
+                    style: TextStyle(
+                      color:
+                          isFailed ? Colors.redAccent : KashfColors.gold,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           );
         },
       ),
@@ -1775,17 +2126,17 @@ class _ProSpinner extends StatelessWidget {
 
 class _SpinnerPainter extends CustomPainter {
   _SpinnerPainter({
-    required this.rotation,
     required this.pulse,
+    required this.progress,
     required this.failed,
     required this.accent,
   });
 
-  /// 0..1, drives the outer ring's rotation.
-  final double rotation;
-
   /// 0..1, drives the halo + inner ring scale / opacity.
   final double pulse;
+
+  /// 0..1, determinate progress filling the outer arc.
+  final double progress;
 
   final bool failed;
   final Color accent;
@@ -1801,100 +2152,38 @@ class _SpinnerPainter extends CustomPainter {
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + 4 * pulse);
     canvas.drawCircle(center, radius * (0.55 + 0.10 * pulse), haloPaint);
 
+    final outerRadius = radius * 0.78;
+
     // --- Static track ring (background)
     final trackPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
+      ..strokeWidth = 5
       ..color = accent.withValues(alpha: 0.18);
-    canvas.drawCircle(center, radius * 0.78, trackPaint);
+    canvas.drawCircle(center, outerRadius, trackPaint);
 
-    // --- Rotating arc (the spinning bit)
-    final arcPaint = Paint()
+    // --- Determinate progress arc. Starts at 12 o'clock and fills
+    // clockwise as the investigation advances.
+    final progressSweep = (progress.clamp(0.0, 1.0)) * 6.28318;
+    final progressPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 4
+      ..strokeWidth = 5
       ..color = accent;
-    final arcRect = Rect.fromCircle(center: center, radius: radius * 0.78);
-    final start = rotation * 6.28318; // 0..2π
     canvas.drawArc(
-      arcRect,
-      start,
-      1.4, // ~80° arc length — feels lively without being busy
+      Rect.fromCircle(center: center, radius: outerRadius),
+      -1.5708, // 12 o'clock
+      progressSweep,
       false,
-      arcPaint,
-    );
-
-    // --- Inner counter-rotating arc (subtle second motion)
-    final innerPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 3
-      ..color = accent.withValues(alpha: 0.55);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius * 0.52),
-      -start * 1.2 + 3.14,
-      1.0,
-      false,
-      innerPaint,
-    );
-
-    // --- Center dot (scaled by the pulse)
-    final dotPaint = Paint()..color = accent;
-    canvas.drawCircle(
-      center,
-      3 + 1.5 * pulse,
-      dotPaint,
+      progressPaint,
     );
   }
 
   @override
   bool shouldRepaint(covariant _SpinnerPainter old) =>
-      old.rotation != rotation ||
       old.pulse != pulse ||
+      old.progress != progress ||
       old.failed != failed ||
       old.accent != accent;
-}
-
-/// A progress bar whose [value] is driven by an [AnimationController]
-/// so transitions between phases look smooth instead of snapping.
-class _AnimatedProgressBar extends StatelessWidget {
-  const _AnimatedProgressBar({required this.value, required this.failed});
-
-  final double value;
-  final bool failed;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = KashfPalette.active;
-    final accent = failed ? Colors.redAccent : KashfColors.gold;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: SizedBox(
-        height: 8,
-        child: Stack(
-          children: [
-            // Track
-            Container(color: palette.fieldFill),
-            // Animated fill
-            FractionallySizedBox(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: value.clamp(0.0, 1.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      accent.withValues(alpha: 0.65),
-                      accent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// Small "Tap to retry" hint shown briefly while the failed-state

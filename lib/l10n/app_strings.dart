@@ -687,6 +687,9 @@ class AppLocalizations {
       'ai_model_gemini_sub': 'Google · Fast and lightweight',
       'ai_model_qwen_sub': 'Alibaba · Strong reasoning',
       'ai_model_inclusion_sub': 'InclusionAI · Optimized for JSON',
+      'ai_model_deepseek_sub': 'DeepSeek · Long-context reasoning',
+      'ai_model_gptoss_sub': 'OpenAI · Open-source 120B',
+      'ai_model_gpt5nano_sub': 'OpenAI · Cheap & fast',
       'settings_notifications': 'Notifications',
       'settings_notifications_sub': 'Alerts, updates, and reminders',
       'settings_support': 'Live support',
@@ -831,6 +834,14 @@ class AppLocalizations {
       'settings_region_gulf': 'Gulf region',
       'settings_region_europe': 'Europe',
       'settings_region_na': 'North America',
+      // ---------- Settings → Search preferences → Topics ----------
+      'search_prefs_topics_header': 'News topics',
+      'search_prefs_topics_sub':
+          'Google News topics the app fetches. Built-in topics are read-only.',
+      'search_prefs_topics_builtin': 'Built-in topics',
+      'search_prefs_topics_custom': 'Your custom topics',
+      'search_prefs_add_topic': 'Add custom topic',
+      'search_prefs_topic_added': 'Custom topic added.',
       // ---------- Settings → Help ----------
       'settings_help_title': 'Help center',
       'settings_help_subtitle':
@@ -1222,6 +1233,9 @@ class AppLocalizations {
       'inv_type_link': 'Link',
       'inv_type_link_sub': 'URL',
       'inv_drop_hint': 'Drop files here or tap to select',
+      'inv_section_entity': 'Investigation type',
+      'inv_section_entity_sub':
+          'Pick what this investigation is for — the AI uses a tailored lens for each',
       'inv_section_actions': 'Quick actions',
       'inv_section_actions_sub':
           'Choose a quick action to start your investigation',
@@ -1376,6 +1390,16 @@ class AppLocalizations {
       'ir_title_with_name': 'Investigation · {name}',
       'ir_subtitle':
           'Profile overview, insights and sources for your query.',
+      'ir_subtitle_company':
+          '{name} · ownership, financials and strategy',
+      'ir_subtitle_brand':
+          '{name} · positioning, awareness and recent moves',
+      'ir_subtitle_product':
+          '{name} · specs, price tier and alternatives',
+      'ir_subtitle_influencer':
+          '{name} · audience, engagement and brand-fit',
+      'ir_subtitle_market':
+          '{name} · size, growth, players and regulation',
       'ir_hero_confidence': 'Overall confidence',
       'ir_meta_sources': '{n} sources',
       'ir_meta_items': '{n} insights',
@@ -1411,6 +1435,21 @@ class AppLocalizations {
       'ir_section_insights_title': 'Insights',
       'ir_section_insights_sub':
           'Trends, opportunities and risks surfaced by the AI.',
+      'ir_section_key_findings_title': 'Key findings',
+      'ir_section_key_findings_sub':
+          'Concrete findings with metrics, specific to the subject.',
+      'ir_section_activity_trends_title': 'Activity & trends',
+      'ir_section_activity_trends_sub':
+          'Recent news, posts, launches or market movements.',
+      'ir_section_competitors_title': 'Competitors',
+      'ir_section_competitors_sub':
+          'Direct rivals or comparable entities in the same lane.',
+      'ir_section_opportunities_title': 'Opportunities',
+      'ir_section_opportunities_sub':
+          'Growth angles, gaps and underserved areas worth chasing.',
+      'ir_section_risks_title': 'Risks & issues',
+      'ir_section_risks_sub':
+          'Concerns, contradictions and things to verify further.',
       'ir_section_sources_title': 'Sources',
       'ir_section_sources_sub': 'Where the findings came from.',
       'ir_section_recs_title': 'Recommendations',
@@ -1449,6 +1488,11 @@ class AppLocalizations {
       'ir_tab_overview': 'Overview',
       'ir_tab_evidence': 'Evidence',
       'ir_tab_insights': 'Insights',
+      'ir_tab_key_findings': 'Key findings',
+      'ir_tab_activity_trends': 'Activity',
+      'ir_tab_competitors': 'Competitors',
+      'ir_tab_opportunities': 'Opportunities',
+      'ir_tab_risks': 'Risks',
       'ir_tab_sources': 'Sources',
       'ir_tab_recommendations': 'Actions',
       'ir_action_export_pdf': 'Export',
@@ -2110,6 +2154,9 @@ class AppLocalizations {
       'ai_model_gemini_sub': 'Google · سريع وخفيف',
       'ai_model_qwen_sub': 'Alibaba · منطق قوي',
       'ai_model_inclusion_sub': 'InclusionAI · محسّن للإخراج JSON',
+      'ai_model_deepseek_sub': 'DeepSeek · استدلال بسياق طويل',
+      'ai_model_gptoss_sub': 'OpenAI · مفتوح المصدر 120 مليار',
+      'ai_model_gpt5nano_sub': 'OpenAI · رخيص وسريع',
       'settings_notifications': 'الإشعارات',
       'settings_notifications_sub': 'تنبيهات، تحديثات، وتذكيرات',
       'settings_support': 'الدعم الفني',
@@ -2259,6 +2306,14 @@ class AppLocalizations {
       'settings_region_gulf': 'منطقة الخليج',
       'settings_region_europe': 'أوروبا',
       'settings_region_na': 'أمريكا الشمالية',
+      // ---------- الإعدادات → تفضيلات البحث → المواضيع ----------
+      'search_prefs_topics_header': 'مواضيع الأخبار',
+      'search_prefs_topics_sub':
+          '.مواضيع Google News. المواضيع المدمجة للقراءة فقط',
+      'search_prefs_topics_builtin': 'المواضيع المدمجة',
+      'search_prefs_topics_custom': 'مواضيعك المخصصة',
+      'search_prefs_add_topic': 'إضافة موضوع مخصص',
+      'search_prefs_topic_added': '.تمت إضافة الموضوع المخصص',
       // ---------- الإعدادات → المساعدة ----------
       'settings_help_title': 'مركز المساعدة',
       'settings_help_subtitle':
@@ -2542,6 +2597,9 @@ class AppLocalizations {
       'inv_type_link': 'رابط',
       'inv_type_link_sub': 'URL',
       'inv_drop_hint': 'اسحب الملفات هنا أو انقر للرفع',
+      'inv_section_entity': 'نوع التحقيق',
+      'inv_section_entity_sub':
+          'اختر ما هو هذا التحقيق — يستخدم الذكاء الاصطناعي عدسة مخصصة لكل نوع',
       'inv_section_actions': 'الإجراءات السريعة',
       'inv_section_actions_sub': 'اختر إجراءً سريعًا للبدء في تحقيقك',
       'inv_action_compare': 'مقارنة',
@@ -2690,6 +2748,16 @@ class AppLocalizations {
       'ir_title_with_name': 'تحقيق · {name}',
       'ir_subtitle':
           'نظرة عامة، رؤى ومصادر لاستفسارك.',
+      'ir_subtitle_company':
+          '{name} · الملكية والتمويل والاستراتيجية',
+      'ir_subtitle_brand':
+          '{name} · التموضع والانتشار والتحركات الأخيرة',
+      'ir_subtitle_product':
+          '{name} · المواصفات والسعر والبدائل',
+      'ir_subtitle_influencer':
+          '{name} · الجمهور والتفاعل وملاءمة العلامات',
+      'ir_subtitle_market':
+          '{name} · الحجم والنمو واللاعبون والتنظيم',
       'ir_hero_confidence': 'مستوى الثقة الإجمالي',
       'ir_meta_sources': '{n} مصدر',
       'ir_meta_items': '{n} نتيجة',
@@ -2725,6 +2793,21 @@ class AppLocalizations {
       'ir_section_insights_title': 'الرؤى',
       'ir_section_insights_sub':
           'اتجاهات وفرص ومخاطر كشفها الذكاء الاصطناعي.',
+      'ir_section_key_findings_title': 'النتائج الرئيسية',
+      'ir_section_key_findings_sub':
+          'نتائج ملموسة مع مقاييس، محددة للموضوع.',
+      'ir_section_activity_trends_title': 'النشاط والاتجاهات',
+      'ir_section_activity_trends_sub':
+          'أخبار ومنشورات وإطلاقات وتحركات سوقية حديثة.',
+      'ir_section_competitors_title': 'المنافسون',
+      'ir_section_competitors_sub':
+          'منافسون مباشرون أو كيانات مشابهة في المجال نفسه.',
+      'ir_section_opportunities_title': 'الفرص',
+      'ir_section_opportunities_sub':
+          'زوايا نمو وفجوات ومجالات غير مخدومة تستحق المتابعة.',
+      'ir_section_risks_title': 'المخاطر والقضايا',
+      'ir_section_risks_sub':
+          'مخاوف وتناقضات وأمور تستحق تحققاً إضافياً.',
       'ir_section_sources_title': 'المصادر',
       'ir_section_sources_sub': 'من أين جاءت النتائج.',
       'ir_section_recs_title': 'التوصيات',
@@ -2763,6 +2846,11 @@ class AppLocalizations {
       'ir_tab_overview': 'النظرة العامة',
       'ir_tab_evidence': 'الأدلة',
       'ir_tab_insights': 'الرؤى',
+      'ir_tab_key_findings': 'النتائج',
+      'ir_tab_activity_trends': 'النشاط',
+      'ir_tab_competitors': 'المنافسون',
+      'ir_tab_opportunities': 'الفرص',
+      'ir_tab_risks': 'المخاطر',
       'ir_tab_sources': 'المصادر',
       'ir_tab_recommendations': 'الإجراءات',
       'ir_action_export_pdf': 'تصدير',

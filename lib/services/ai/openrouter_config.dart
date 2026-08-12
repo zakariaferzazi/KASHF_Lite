@@ -22,15 +22,19 @@ class OpenRouterConfig {
   /// JSON output: `inclusionai/ling-2.6-flash`.
   static const String _defaultModel = 'inclusionai/ling-2.6-flash';
 
-  /// Hard timeout for a single HTTP request. Long enough to absorb
-  /// cold-starts on a 4o-mini, short enough that the UI can recover
-  /// quickly with a fallback.
-  static const Duration requestTimeout = Duration(seconds: 25);
+  /// Hard timeout for a single HTTP request. Models like
+  /// `qwen/qwen3.7-flash` can take 30–60s on the free tier when
+  /// the model is cold or rate-limited. Set generously so slower
+  /// models don't get killed mid-generation. Web-search-enabled
+  /// requests chain tool calls and can take 2-3x longer, so we
+  /// default to a high cap that works for both paths.
+  static const Duration requestTimeout = Duration(seconds: 150);
 
   /// How many times we retry a transient failure (network glitch,
-  /// 5xx, 429). 3 attempts is enough to absorb typical rate-limit
-  /// hiccups without making the user wait forever.
-  static const int maxRetries = 3;
+  /// 5xx, 429 timeout). 5 attempts gives slower models like
+  /// qwen/qwen3.7-flash enough room to recover from a cold start
+  /// on the free tier without making the user wait forever.
+  static const int maxRetries = 5;
 
   /// Base delay between retries. We use exponential backoff +
   /// jitter (see [OpenRouterClient]) so the actual delay grows.
@@ -88,20 +92,25 @@ class OpenRouterConfig {
   /// Model identifier used by the chat completion.
   ///
   /// Precedence:
-  ///   1. `OPENROUTER_MODEL` env var (used in CI / dev to pin a model).
-  ///   2. The user's saved pick in [SettingsPreferences] (Settings → AI model).
-  ///   3. The bundled default ([kDefaultAiModelId]).
+  ///   1. The user's saved pick in [SettingsPreferences]
+  ///      (Settings → AI model). This is the source of truth for
+  ///      every user — switching model in Settings MUST be honoured
+  ///      on the very next request.
+  ///   2. The bundled default ([kDefaultAiModelId]) when the user
+  ///      hasn't picked one yet.
+  ///
+  /// The `OPENROUTER_MODEL` env var used to be a hard override
+  /// here. It was removed: a stray `.env` file silently pinned
+  /// every install to the default model regardless of the user's
+  /// Settings choice, which made the Settings picker look broken.
   static String get model {
-    final override = dotenv.maybeGet('OPENROUTER_MODEL');
-    if (override != null && override.trim().isNotEmpty) {
-      return override.trim();
-    }
-    final prefs = SettingsPreferences.instance;
-    if (prefs != null) {
-      return prefs.aiModelId;
-    }
-    return _defaultModel;
+  final prefs = SettingsPreferences.instance;
+  final userPick = prefs?.aiModelId?.trim();
+  if (userPick != null && userPick.isNotEmpty) {
+    return userPick;
   }
+  return _defaultModel;
+}
 
   /// Referer header. Override-able through `OPENROUTER_REFERER`.
   static String get referer {
