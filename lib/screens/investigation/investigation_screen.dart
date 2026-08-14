@@ -1874,7 +1874,9 @@ class _ProcessingOverlayState extends State<_ProcessingOverlay>
     _randomWalkTimer?.cancel();
     // Completed / failed phases don't walk — they snap to 0 or 1.
     if (phase == InvestigationPhase.completed ||
-        phase == InvestigationPhase.failed) return;
+        phase == InvestigationPhase.failed) {
+      return;
+    }
     _walkPhase = phase;
     final cap = _capPercent(phase);
     _randomWalkTimer = Timer.periodic(

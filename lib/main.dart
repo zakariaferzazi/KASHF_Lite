@@ -107,8 +107,6 @@ class _KashfAppState extends State<KashfApp> {
     super.initState();
     _themeController = widget.themeController;
     _settingsPrefs = widget.settingsPrefs;
-    // Apply the initial palette so the very first frame is correct.
-    _applyPalette(_themeController.mode);
   }
 
   @override
@@ -117,20 +115,6 @@ class _KashfAppState extends State<KashfApp> {
     _themeController.dispose();
     _settingsPrefs.dispose();
     super.dispose();
-  }
-
-  void _applyPalette(AppThemeMode mode) {
-    switch (mode) {
-      case AppThemeMode.dark:
-        KashfPalette.setActive(KashfPalette.dark);
-        break;
-      case AppThemeMode.light:
-        KashfPalette.setActive(KashfPalette.light);
-        break;
-      case AppThemeMode.main:
-        KashfPalette.setActive(KashfPalette.main);
-        break;
-    }
   }
 
   @override
@@ -148,7 +132,11 @@ class _KashfAppState extends State<KashfApp> {
               _settingsPrefs,
             ]),
           builder: (context, _) {
-            _applyPalette(_themeController.mode);
+            // ThemeController now keeps KashfPalette.active in sync
+            // before notifying listeners, so we don't need to
+            // re-apply the palette here. The AnimatedBuilder is kept
+            // so MaterialApp rebuilds and Material picks up the new
+            // brightness / color scheme.
             final l = AppLocalizations(widget.localeController.language);
             // Use MaterialApp.builder (instead of wrapping MaterialApp
             // from outside) so the Directionality lives *inside* the

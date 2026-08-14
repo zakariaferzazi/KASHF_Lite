@@ -53,16 +53,16 @@ const String kDefaultAiModelId = 'inclusionai/ling-2.6-flash';
 const List<AiModelOption> kAiModelOptions = <AiModelOption>[
   AiModelOption(
     id: 'google/gemini-2.5-flash-lite',
-    label: 'Gemini',
+    label: 'Gemini 2.5',
     provider: 'Google',
     subtitleL10nKey: 'ai_model_gemini_sub',
     icon: Icons.auto_awesome,
   ),
   AiModelOption(
-    id: 'deepseek/deepseek-v4-flash-0731',
-    label: 'Deepseek V4.0.1',
-    provider: 'Deepseek',
-    subtitleL10nKey: 'ai_model_deepseek_sub',
+    id: 'google/gemini-3.1-flash-lite',
+    label: 'Gemini 3.1',
+    provider: 'Google',
+    subtitleL10nKey: 'ai_model_gemini_sub',
     icon: Icons.bolt_outlined,
   ),
   AiModelOption(
@@ -73,10 +73,10 @@ const List<AiModelOption> kAiModelOptions = <AiModelOption>[
     icon: Icons.psychology_outlined,
   ),
   AiModelOption(
-    id: 'poolside/laguna-s-2.1',
-    label: 'Laguna S 2.1',
-    provider: 'Poolside',
-    subtitleL10nKey: 'ai_model_deepseek_sub',
+    id: 'openai/gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    provider: 'OpenAI',
+    subtitleL10nKey: 'ai_model_gpt5nano_sub',
     icon: Icons.layers_outlined,
   ),
   AiModelOption(
@@ -86,13 +86,7 @@ const List<AiModelOption> kAiModelOptions = <AiModelOption>[
     subtitleL10nKey: 'ai_model_gptoss_sub',
     icon: Icons.smart_toy_outlined,
   ),
-  AiModelOption(
-    id: 'openai/gpt-5.6-luna',
-    label: 'GPT-5.6 Luna',
-    provider: 'OpenAI',
-    subtitleL10nKey: 'ai_model_gpt5nano_sub',
-    icon: Icons.flash_on_outlined,
-  ),
+
 ];
 
 /// Returns the [AiModelOption] for [id], falling back to the

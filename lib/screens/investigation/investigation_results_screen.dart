@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kashf_lite/widgets/loading_overlay.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_strings.dart';
@@ -83,6 +84,10 @@ class _InvestigationResultsScreenState
                     ],
                     if (section.items.isEmpty)
                       _EmptyState(l: l),
+                    if (widget.result.sources.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      _SourcesPanel(sources: widget.result.sources, l: l),
+                    ],
                   ],
                 ),
               ),
@@ -228,52 +233,43 @@ class _HeroCard extends StatelessWidget {
             children: [
               _StatusEyebrow(l: l),
               const Spacer(),
-              if (generatedAt != null)
-                Text(
-                  _formatTimestamp(generatedAt),
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
+              Text(
+                _formatTimestamp(generatedAt),
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           autoDirection(
             result.title,
-            Text(
-              result.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: isRtlText(result.title)
-                  ? TextAlign.right
-                  : TextAlign.left,
-              style: TextStyle(
+            _InlineLinkText(
+              text: result.title,
+              baseStyle: TextStyle(
                 color: palette.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 height: 1.2,
                 letterSpacing: -0.2,
               ),
+              maxLines: 2,
             ),
           ),
           const SizedBox(height: 6),
           autoDirection(
             result.subtitle,
-            Text(
-              result.subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: isRtlText(result.subtitle)
-                  ? TextAlign.right
-                  : TextAlign.left,
-              style: TextStyle(
+            _InlineLinkText(
+              text: result.subtitle,
+              baseStyle: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 12,
                 height: 1.35,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 2,
             ),
           ),
 
@@ -753,12 +749,9 @@ class _SectionHeader extends StatelessWidget {
       children: [
         autoDirection(
           section.headline,
-          Text(
-            section.headline,
-            textAlign: isRtlText(section.headline)
-                ? TextAlign.right
-                : TextAlign.left,
-            style: TextStyle(
+          _InlineLinkText(
+            text: section.headline,
+            baseStyle: TextStyle(
               color: KashfPalette.active.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w800,
@@ -768,12 +761,9 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(height: 4),
         autoDirection(
           section.summary,
-          Text(
-            section.summary,
-            textAlign: isRtlText(section.summary)
-                ? TextAlign.right
-                : TextAlign.left,
-            style: TextStyle(
+          _InlineLinkText(
+            text: section.summary,
+            baseStyle: TextStyle(
               color: KashfPalette.active.textSecondary,
               fontSize: 12,
               height: 1.3,
@@ -812,18 +802,14 @@ class _ItemCard extends StatelessWidget {
               Expanded(
                 child: autoDirection(
                   item.title,
-                  Text(
-                    item.title,
-                    textAlign: isRtlText(item.title)
-                        ? TextAlign.right
-                        : TextAlign.left,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                  _InlineLinkText(
+                    text: item.title,
+                    baseStyle: TextStyle(
                       color: KashfPalette.active.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
+                    maxLines: 2,
                   ),
                 ),
               ),
@@ -840,17 +826,19 @@ class _ItemCard extends StatelessWidget {
           const SizedBox(height: 6),
           autoDirection(
             item.body,
-            Text(
-              item.body,
-              textAlign:
-                  isRtlText(item.body) ? TextAlign.right : TextAlign.left,
-              style: TextStyle(
+            _InlineLinkText(
+              text: item.body,
+              baseStyle: TextStyle(
                 color: KashfPalette.active.textPrimary,
                 fontSize: 12,
                 height: 1.45,
               ),
             ),
           ),
+          if (item.links.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _LinkButtons(links: item.links),
+          ],
         ],
       ),
     );
@@ -877,6 +865,421 @@ class _Badge extends StatelessWidget {
           fontSize: 9,
           fontWeight: FontWeight.w800,
         ),
+      ),
+    );
+  }
+}
+
+/// Matches a URL substring in a body of free text. Captures
+/// the full http(s) URL including path / query / fragment.
+/// Defined at top level (not as a class field) because a
+/// `static final RegExp` inside a `const`-constructible widget
+/// triggers "Field isn't final, but constructor is 'const'".
+/// `RegExp` has no const constructor; top-level `final`
+/// initializers are treated as compile-time constants by Dart
+/// when the right-hand side is itself a const expression, so
+/// this declaration is safe for the surrounding widget.
+///
+/// The regex itself is wrapped in a triple-quoted raw string so
+/// we can include a literal apostrophe inside the character
+/// class without escaping (raw strings don't process escapes,
+/// so `\'` inside `r'...'` is an unterminated string literal).
+final RegExp _kUrlPattern = RegExp(
+  r"""(https?://[^\s<>"'()]+)""",
+  caseSensitive: false,
+);
+
+/// URL detection + chip-button rendering shared by every place
+/// in the result screen that surfaces a link. Three callers
+/// consume the same widget:
+///   1. [_InlineLinkText] — replaces raw URLs in body / title /
+///      summary text with inline pill buttons so a sentence like
+///      "Visit https://www.instagram.com/x for updates" reads
+///      with the URL rendered as a tappable chip, not as
+///      underlined blue text.
+///   2. [_LinkButtons] — the explicit "links" array the AI emits
+///      per item.
+///   3. [_SourcesPanel] — the per-investigation source list.
+
+/// Maps a free-form label / hostname to a Material icon so the
+/// button reads as a platform-specific chip instead of a generic
+/// "open" link. Used for Instagram, TikTok, YouTube, X / Twitter,
+/// Snapchat, generic websites, news, and documents.
+IconData iconForLink(String labelOrUrl) {
+  final l = labelOrUrl.toLowerCase();
+  if (l.contains('instagram')) return Icons.camera_alt_outlined;
+  if (l.contains('tiktok')) return Icons.music_note_outlined;
+  if (l.contains('youtube') || l.contains('youtu.be')) {
+    return Icons.play_circle_outline;
+  }
+  if (l.contains('snap')) return Icons.snapchat_outlined;
+  if (l.contains('twitter') || l == 'x') return Icons.alternate_email;
+  if (l.contains('linkedin')) return Icons.work_outline;
+  if (l.contains('facebook')) return Icons.facebook_outlined;
+  if (l.contains('news') || l.contains('article')) {
+    return Icons.article_outlined;
+  }
+  if (l.contains('website') ||
+      l.contains('site') ||
+      l.contains('blog')) {
+    return Icons.language_outlined;
+  }
+  if (l.contains('pdf') || l.contains('doc')) {
+    return Icons.description_outlined;
+  }
+  return Icons.open_in_new;
+}
+
+/// Returns a short, human-readable label derived from a raw URL
+/// when no label is supplied. Strips the protocol, drops `www.`,
+/// and truncates the path to keep the chip compact.
+String shortLabelForUrl(String url) {
+  var s = url;
+  // Trim trailing punctuation that often leaks into natural-
+  // language sentences ("...see https://x.com/foo.").
+  while (s.isNotEmpty && '.,;:)]}'.contains(s.characters.last)) {
+    s = s.substring(0, s.length - 1);
+  }
+  s = s.replaceFirst(RegExp(r'^https?://'), '');
+  s = s.replaceFirst(RegExp(r'^www\.'), '');
+  final slash = s.indexOf('/');
+  if (slash == -1) return s;
+  final host = s.substring(0, slash);
+  final rest = s.substring(slash);
+  if (rest.length <= 10) return '$host$rest';
+  return '$host${rest.substring(0, 8)}…';
+}
+
+/// Opens a URL via the platform's default handler (browser,
+/// native app, etc.) and surfaces a SnackBar if launching fails.
+/// Defensive: only http(s) URLs are passed through.
+Future<void> openExternalUrl(BuildContext context, Uri uri) async {
+  try {
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open ${uri.toString()}')),
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open ${uri.toString()}')),
+      );
+    }
+  }
+}
+
+/// Shared chip-button widget. All link buttons in the result
+/// screen funnel through here so a URL looks the same whether it
+/// comes from an explicit `links` entry, an inline mention in
+/// body text, or the sources panel. Use [dense] for the
+/// inline-with-text variant (smaller padding / font so the chip
+/// sits flush with the surrounding text line).
+class _UrlChipButton extends StatelessWidget {
+  const _UrlChipButton({
+    required this.url,
+    required this.label,
+    this.dense = false,
+  });
+
+  final String url;
+  final String label;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Material(
+      color: palette.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: palette.cardBorder, width: 1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => openExternalUrl(context, Uri.parse(url)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: dense ? 8 : 12,
+            vertical: dense ? 4 : 8,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                iconForLink(label),
+                size: dense ? 12 : 14,
+                color: palette.textPrimary,
+              ),
+              SizedBox(width: dense ? 4 : 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: palette.textPrimary,
+                  fontSize: dense ? 11 : 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Row of tappable platform / source buttons rendered under an
+/// item card body. Used for the explicit "links" array the AI
+/// emits per item — typically influencer social-account URLs.
+class _LinkButtons extends StatelessWidget {
+  const _LinkButtons({required this.links});
+
+  final List<InvestigationResultLink> links;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final link in links)
+          _UrlChipButton(url: link.url, label: link.label),
+      ],
+    );
+  }
+}
+
+/// Inline text widget that scans [text] for URL substrings and
+/// replaces each one with a [_UrlChipButton]. The non-URL
+/// fragments are rendered as a single flowing [RichText]; each
+/// URL is rendered as a pill button that flows inline with the
+/// surrounding text. Used for the item title / body / section
+/// headline / summary and the hero-card title / subtitle — so a
+/// URL that appears anywhere in the natural-language output is
+/// rendered as a tappable pill, never as plain underlined blue
+/// text.
+///
+/// Implementation note: we use `Text.rich` + `WidgetSpan`.
+/// Flutter lays out `WidgetSpan` children inline with the
+/// surrounding text using their intrinsic size; the chip's
+/// intrinsic size is its preferred height (small) and its
+/// natural width. Word-boundary wrapping still works because
+/// the text engine treats each `WidgetSpan` as an opaque
+/// inline block of known width. `maxLines` + ellipsis is not
+/// supported by Flutter when `Text.rich` contains
+/// `WidgetSpan`s — we therefore drop the `maxLines` cap when
+/// the text contains any URLs and let the layout flow
+/// naturally. The caller is expected to size the parent
+/// container so the flow fits.
+class _InlineLinkText extends StatelessWidget {
+  const _InlineLinkText({
+    required this.text,
+    required this.baseStyle,
+    this.maxLines,
+  });
+
+  final String text;
+  final TextStyle baseStyle;
+  final int? maxLines;
+
+  /// Trailing punctuation that often clings to a URL in
+  /// natural text but isn't part of it. We trim it from the
+  /// URL when building the chip and re-emit it as plain text
+  /// so the sentence still reads naturally.
+  static const String _trailingPunct = '.,;:]}';
+
+  /// Splits [text] into alternating runs of plain text and
+  /// URLs, with trailing punctuation trimmed from each URL
+  /// and re-attached to the following text run.
+  List<_InlineRun> _splitIntoRuns() {
+    final runs = <_InlineRun>[];
+    var cursor = 0;
+    for (final match in _kUrlPattern.allMatches(text)) {
+      if (match.start > cursor) {
+        runs.add(_InlineRun.text(text.substring(cursor, match.start)));
+      }
+      var url = match.group(0)!;
+      var trimmed = '';
+      while (url.isNotEmpty &&
+          _trailingPunct.contains(url.characters.last)) {
+        trimmed = url.characters.last + trimmed;
+        url = url.substring(0, url.length - 1);
+      }
+      if (url.isNotEmpty) {
+        runs.add(_InlineRun.link(url));
+      } else {
+        runs.add(_InlineRun.text(match.group(0)!));
+      }
+      if (trimmed.isNotEmpty) {
+        runs.add(_InlineRun.text(trimmed));
+      }
+      cursor = match.end;
+    }
+    if (cursor < text.length) {
+      runs.add(_InlineRun.text(text.substring(cursor)));
+    }
+    if (runs.isEmpty) runs.add(_InlineRun.text(''));
+    return runs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.isEmpty) {
+      return Text('', style: baseStyle, maxLines: maxLines);
+    }
+    final runs = _splitIntoRuns();
+    final rtl = isRtlText(text);
+    final containsLink = runs.any((r) => !r.isText);
+
+    // Plain-text fast path: skip the rich-text pipeline when
+    // there are no URLs to embed. Honours `maxLines` +
+    // ellipsis correctly.
+    if (!containsLink) {
+      return Text(
+        text,
+        style: baseStyle,
+        maxLines: maxLines,
+        overflow:
+            maxLines != null ? TextOverflow.ellipsis : TextOverflow.clip,
+        textAlign: rtl ? TextAlign.right : TextAlign.left,
+        textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+      );
+    }
+
+    // URL-bearing path: render via Text.rich + WidgetSpan.
+    // Flutter cannot ellipsize rich text that contains
+    // WidgetSpan children, so we cap visual height by
+    // wrapping in a fixed-height container that the
+    // surrounding column then constrains. This keeps the
+    // layout stable even if the chip count grows.
+    final children = <InlineSpan>[];
+    for (final r in runs) {
+      if (r.isText) {
+        children.add(TextSpan(text: r.text, style: baseStyle));
+      } else {
+        children.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _UrlChipButton(
+            url: r.url!,
+            label: shortLabelForUrl(r.url!),
+            dense: true,
+          ),
+        ));
+      }
+    }
+    return Text.rich(
+      TextSpan(children: children),
+      textAlign: rtl ? TextAlign.right : TextAlign.left,
+      textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+    );
+  }
+}
+
+/// One run of either plain text or a URL inside
+/// [_InlineLinkText]. Built by splitting the source text on the
+/// URL regex.
+class _InlineRun {
+  _InlineRun.text(this.text) : url = null, _isText = true;
+  _InlineRun.link(this.url) : text = '', _isText = false;
+  final String text;
+  final String? url;
+  final bool _isText;
+  bool get isText => _isText;
+}
+
+/// Compact panel of source citations rendered below the items
+/// of the active section. Each entry is a [_UrlChipButton]
+/// keyed off the source title; the URL is the source's link.
+/// Sources without a URL are rendered as a non-clickable chip
+/// so the citation still appears.
+class _SourcesPanel extends StatelessWidget {
+  const _SourcesPanel({required this.sources, required this.l});
+
+  final List<InvestigationSource> sources;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: palette.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            l.t('ir_sources_title'),
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in sources)
+                if (s.url != null && s.url!.isNotEmpty)
+                  _UrlChipButton(
+                    url: s.url!,
+                    label: s.title.isNotEmpty ? s.title : shortLabelForUrl(s.url!),
+                  )
+                else
+                  _NonInteractiveChip(
+                    label: s.title,
+                    icon: iconForLink(s.title),
+                  ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Visually identical to [_UrlChipButton] but with no tap target.
+/// Used for citations that have no URL (the model surfaced a
+/// title but no link — we still show the chip so the citation
+/// reads consistently with the rest of the panel).
+class _NonInteractiveChip extends StatelessWidget {
+  const _NonInteractiveChip({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.cardBorder, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: palette.textPrimary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

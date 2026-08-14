@@ -105,7 +105,7 @@ class OpenRouterConfig {
   /// Settings choice, which made the Settings picker look broken.
   static String get model {
   final prefs = SettingsPreferences.instance;
-  final userPick = prefs?.aiModelId?.trim();
+  final userPick = prefs?.aiModelId.trim();
   if (userPick != null && userPick.isNotEmpty) {
     return userPick;
   }

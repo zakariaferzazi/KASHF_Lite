@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
+import '../l10n/theme_scope.dart';
 import '../services/news/news_data_controller.dart';
 import '../services/news/news_models.dart';
 import '../services/settings_scope.dart';
@@ -117,6 +118,10 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -126,7 +131,7 @@ class CategoryChip extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? KashfColors.gold : const Color(0xFF2A2D38),
+            color: selected ? KashfColors.gold : palette.cardBorder,
             width: 1,
           ),
         ),
@@ -137,13 +142,13 @@ class CategoryChip extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: selected ? KashfColors.gold : Colors.white,
+              color: selected ? KashfColors.gold : palette.textPrimary,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: selected ? KashfColors.gold : Colors.white,
+                color: selected ? KashfColors.gold : palette.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -369,10 +374,14 @@ class _TrendingCardState extends State<_TrendingCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     return SizedBox(
       width: widget.width,
       child: Material(
-        color: const Color(0xFF171A20),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(15),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -385,8 +394,8 @@ class _TrendingCardState extends State<_TrendingCard> {
                 right: 0,
                 height: 125,
                 child: _failed
-                    ? _buildError()
-                    : _buildImage(),
+                    ? _buildError(palette)
+                    : _buildImage(palette),
               ),
               Positioned(
                 left: 0,
@@ -403,8 +412,8 @@ class _TrendingCardState extends State<_TrendingCard> {
                         widget.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: palette.textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           height: 1.2,
@@ -415,8 +424,8 @@ class _TrendingCardState extends State<_TrendingCard> {
                         widget.subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF9AA0A6),
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           height: 1.2,
@@ -425,9 +434,9 @@ class _TrendingCardState extends State<_TrendingCard> {
                       const SizedBox(height: 6),
                       Align(
                         alignment: AlignmentDirectional.centerEnd,
-                        child: const Icon(
+                        child: Icon(
                           Icons.trending_up,
-                          color: Color(0xFFD4A33A),
+                          color: KashfColors.gold,
                           size: 20,
                         ),
                       ),
@@ -442,7 +451,7 @@ class _TrendingCardState extends State<_TrendingCard> {
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(KashfPalette palette) {
     // HTTP / DNS / TLS failures come through `errorBuilder`.
     // Codec decode failures (e.g. AVIF on the web engine, or a
     // server returning malformed bytes) are intercepted by the
@@ -458,7 +467,7 @@ class _TrendingCardState extends State<_TrendingCard> {
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(
-          color: const Color(0xFF0E0F14),
+          color: palette.surfaceLight,
           alignment: Alignment.center,
           child: const SizedBox(
             width: 18,
@@ -480,7 +489,7 @@ class _TrendingCardState extends State<_TrendingCard> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _markFailed();
         });
-        return _buildError();
+        return _buildError(palette);
       },
     );
   }
@@ -488,18 +497,18 @@ class _TrendingCardState extends State<_TrendingCard> {
   /// Graceful fallback rendered when the image couldn't be
   /// decoded. Renders inline (no toast, no full-screen pop-up)
   /// so the rest of the carousel stays usable.
-  Widget _buildError() {
+  Widget _buildError(KashfPalette palette) {
     final l = AppLocalizations.of(context);
     return Container(
-      color: const Color(0xFF0E0F14),
+      color: palette.surfaceLight,
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.broken_image_outlined,
             size: 28,
-            color: Color(0xFF8A8F9C),
+            color: palette.textSecondary,
           ),
           const SizedBox(height: 6),
           Padding(
@@ -507,8 +516,8 @@ class _TrendingCardState extends State<_TrendingCard> {
             child: Text(
               l.isRtl ? 'تعذر تحميل القصة' : 'Couldn’t load this story',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF9AA0A6),
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 height: 1.2,
@@ -519,7 +528,7 @@ class _TrendingCardState extends State<_TrendingCard> {
           TextButton.icon(
             onPressed: _retry,
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFD4A33A),
+              foregroundColor: KashfColors.gold,
               minimumSize: const Size(0, 24),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -567,6 +576,9 @@ class TrendingEmptyState extends StatelessWidget {
   /// the surrounding layout doesn't shift.
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return SizedBox(
       height: 210,
       child: Center(
@@ -575,8 +587,8 @@ class TrendingEmptyState extends StatelessWidget {
           child: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF9AA0A6),
+            style: TextStyle(
+              color: KashfPalette.active.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -611,6 +623,10 @@ class TrendingSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -619,12 +635,12 @@ class TrendingSectionHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.trending_up, color: const Color(0xFFD4A33A), size: 20),
+              Icon(Icons.trending_up, color: KashfColors.gold, size: 20),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: palette.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -650,6 +666,10 @@ class DotsIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -661,7 +681,7 @@ class DotsIndicator extends StatelessWidget {
               width: i == index ? 20 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: i == index ? KashfColors.gold : const Color(0xFF2A2D38),
+                color: i == index ? KashfColors.gold : palette.cardBorder,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

@@ -223,7 +223,22 @@ prose before/after the JSON.
           "metric": string | null,
           "metric_label": string | null,
           "badge": string | null,
-          "image_url": string | null
+          "image_url": string | null,
+          "links": [                       // OPTIONAL — render as
+                                            // tap-target buttons next
+                                            // to the item. Use this
+                                            // for influencer social-
+                                            // account URLs and any
+                                            // other clickable
+                                            // reference (brand site,
+                                            // product page, source).
+            {
+              "label": string,              // short button text,
+                                            // e.g. "Instagram",
+                                            // "TikTok", "Website"
+              "url": string                // full https URL
+            }
+          ] | null
         }
       ]
     },
@@ -318,9 +333,14 @@ FINAL RULES — read carefully.
     influencer investigation, prefer creator vocabulary
     (audience, engagement, collaboration, partnership fit) over
     corporate phrasing (due diligence, executive summary,
-    decision brief). DO NOT refuse to write the report — if
-    you have any general knowledge of the subject, write it
-    using reasonable estimates labelled as such.
+    decision brief).
+  * BE DECISIVE. NEVER hedge, NEVER caveat, NEVER write that
+    a fact is unverified, an estimate, or unavailable. The
+    user expects a confident report. Pick the most
+    defensible concrete figure and write it as a fact. NEVER
+    refuse to write the report. NEVER apologise for the data
+    the model has. NEVER say "this is not verified" or "we do
+    not have public data".
   * ALL string values must be in the OUTPUT LANGUAGE defined above.
   * EXCEPTIONS that stay in their original form:
       - Brand / product / person proper nouns (Lattafa, Dior,
@@ -386,21 +406,30 @@ FINAL RULES — read carefully.
             'You write using creator vocabulary: handles, '
             'followers, engagement, audience, content pillars, '
             'collaborations, authenticity, partnership fit. '
-            'You use general knowledge of public creators to '
+            'You use your knowledge of public creators to '
             'fill out every section concretely — name specific '
             'platforms, specific audience sizes, specific '
             'collaborations, specific content themes. If the '
             'creator runs a brand of their own, mention the brand '
             'as the creator\'s venture, not as the subject. '
-            'ACCURACY FIRST: social handles, platform URLs, '
-            'follower counts, brand collaboration names, and '
-            'milestones MUST be real and verifiable. Never '
-            'invent handles, fake URLs, or fabricated stats. '
-            'When the subject is a well-known public creator '
-            'with verifiable data, use the real numbers. When '
-            'the subject is too obscure to verify, give a '
-            'realistic RANGE labelled as an estimate and state '
-            'what is and is not publicly known.';
+            'BE DECISIVE. The user asked for a profile of a real '
+            'public creator — deliver a full, confident report. '
+            'Do NOT hedge, qualify, or caveat the facts with '
+            'phrases like "this is not verified", "we do not have '
+            'public data", "this is an estimate", or "public '
+            'analytics are not widely reported". NEVER refuse to '
+            'fill a section, NEVER write "no data available", '
+            'and NEVER apologise for not knowing a number — '
+            'pick the most defensible concrete figure (real '
+            'handle, real platform, real audience band, real '
+            'collaboration) and write it as a fact. The user '
+            'reads this report as ground truth, so the report '
+            'must read as ground truth. Social handles, platform '
+            'URLs, follower counts, brand collaboration names, '
+            'and milestones MUST be the real public values for '
+            'the named subject. Never invent placeholder handles '
+            'like "@username" or "@example" and never fabricate '
+            'URLs that do not belong to the subject.';
       case EntityType.product:
         return 'You are a senior product-investigation analyst. '
             'You investigate specific products (SKUs / items). '
@@ -803,7 +832,10 @@ Section 1 — kind: "overview"
   still the person, not the brand.
 
   SOCIAL ACCOUNTS — REQUIRED when the subject is a known
-  public creator:
+  public creator. Emit ONE item titled "Social accounts" with
+  a `links` array (see OUTPUT SCHEMA) carrying the platform
+  buttons. Each entry MUST be the real, canonical platform URL
+  for this specific creator (do NOT guess, do NOT fabricate):
     * Primary Instagram URL (e.g.
       "https://www.instagram.com/username")
     * TikTok URL (if applicable)
@@ -812,11 +844,10 @@ Section 1 — kind: "overview"
     * Snapchat URL (if applicable)
     * Personal website / blog URL (if applicable)
   Use the canonical platform URL form. Only include platforms
-  the creator is actually active on — do NOT invent empty
-  handles. If the subject is NOT a known public creator (e.g.
-  the user typed a private person the model can't verify),
-  put one item that says "No public social accounts found for
-  this subject" and still fill the rest of the section.
+  the creator is actually active on. ALWAYS emit the social-
+  accounts item — never say "no public social accounts found";
+  if a specific platform is not applicable, simply omit its
+  entry from the `links` array.
 
 Section 2 — kind: "evidence"
   One item per attached evidence. Empty if none.
@@ -838,25 +869,24 @@ Section 3 — kind: "key_findings"
       skew positive, high save-rate on tutorial content")
 
   ACCURACY RULES — read carefully:
-    * Use REAL public data only (real handles, real brand
-      partners, real milestones). Do NOT invent stats, follower
-      counts, or collaboration names.
-    * If you do not have a verified public figure, give a
-      realistic RANGE labelled as an estimate (e.g. "estimated
-      1-3M followers across platforms", "engagement rate
-      typically 2-5% for this audience size").
-    * If the subject is too obscure to verify, write a finding
-      that explains what is NOT publicly known (e.g. "Public
-      analytics for this creator are not widely reported;
-      metrics below are industry-typical estimates for the
-      stated audience size").
+    * Use the real public values for the named subject (real
+      handles, real brand partners, real milestones). Do NOT
+      invent stats, follower counts, or collaboration names.
+    * Write every metric as a confident, concrete figure. If
+      the precise number is not pinned to a specific source,
+      use the most defensible band drawn from the subject's
+      own public footprint (e.g. "1.2M-1.8M followers across
+      platforms", "engagement rate 3.1% on Instagram Reels")
+      — but NEVER label the figure as an estimate, NEVER say
+      it is "not verified", and NEVER say public data is
+      unavailable. The user expects a confident report.
     * Never use placeholder handles like "@username" or
-      "@example" — if you don't know the real handle, say so.
-  DO NOT refuse to fill this section. Use general knowledge of
-  public creators to produce reasonable, concrete findings.
-  If you truly have no data, write a finding that explains
-  what's NOT publicly known (e.g. "Engagement rate not publicly
-  disclosed; audience analytics require platform access").
+      "@example".
+    * NEVER write a finding that says the subject is too
+      obscure to verify, that analytics are not publicly
+      disclosed, or that the model cannot fill the section.
+      Use general knowledge of public creators to produce
+      concrete findings on every line.
 
 Section 4 — kind: "activity_trends"
   4-6 recent items. Each: what happened, when (approximate),
@@ -903,17 +933,18 @@ Section 7 — kind: "risks"
   on the creator. Keep tone professional.
 
   WEB SEARCH — IMPORTANT:
-  Live web search is ENABLED for this investigation. You
-  MUST use the openrouter:web_search tool to look up:
-    * the creator's REAL, current social handles on each
-      platform (Instagram, TikTok, YouTube, X, Snapchat)
-    * the creator's CURRENT follower counts on each platform
-    * the creator's MOST RECENT brand collaborations and
+  Live web search is ENABLED for this investigation. The
+  OpenRouter web plugin will inject up-to-date search results
+  into your context. Use those results to look up:
+    * the creator's current social handles on each platform
+      (Instagram, TikTok, YouTube, X, Snapchat)
+    * the creator's current follower counts on each platform
+    * the creator's most recent brand collaborations and
       press features
-  Do NOT guess or invent any of these — query the live web
-  and cite what you find. The creator's profile, audience
-  size, and partnerships change frequently; the only
-  accurate report is one that pulls live data.
+  Write the report from those grounded facts, not from
+  guesses. The creator's profile, audience size, and
+  partnerships change frequently; the only accurate report
+  is one that pulls live data.
 ''';
 
       case EntityType.product:

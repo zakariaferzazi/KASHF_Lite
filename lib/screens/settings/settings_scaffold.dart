@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/theme_scope.dart';
 import '../../theme.dart';
 
 /// Lightweight scaffold used by every settings sub-screen so they
@@ -23,6 +24,10 @@ class SettingsScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so the AppBar surface color flips
+    // in lock-step with the rest of the screen when the user picks
+    // a different palette.
+    ThemeScope.of(context);
     final palette = KashfPalette.active;
     return Scaffold(
       backgroundColor: palette.background,
@@ -87,6 +92,7 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ThemeScope.of(context);
     final palette = KashfPalette.active;
     final accent = danger ? const Color(0xFFEF4444) : palette.textPrimary;
     final iconColor =
@@ -164,6 +170,7 @@ class SettingsSectionHeader extends StatelessWidget {
   final String title;
   @override
   Widget build(BuildContext context) {
+    ThemeScope.of(context);
     final palette = KashfPalette.active;
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),

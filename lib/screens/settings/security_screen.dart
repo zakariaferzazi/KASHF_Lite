@@ -5,22 +5,14 @@ import '../../services/auth_service.dart';
 import '../../theme.dart';
 import 'settings_scaffold.dart';
 
-/// Hub for security-related actions: change password, sign out
-/// all other devices (handled by Firebase's refresh-token rotation
-/// after a password change), and delete the account permanently.
-///
-/// The "Active sessions" screen lists this device and any other
-/// devices recorded in `User.metadata`. Firebase's client SDK does
-/// not expose per-device revocation; rotating the password (or
-/// deleting the account) is the supported way to invalidate
-/// sessions, which we explain inline.
+/// Hub for security-related actions: change password and delete
+/// the account permanently.
 class SecurityScreen extends StatelessWidget {
   const SecurityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final palette = KashfPalette.active;
     return SettingsScaffold(
       title: l.t('settings_security_title'),
       child: ListView(
@@ -33,42 +25,6 @@ class SecurityScreen extends StatelessWidget {
             trailing: const _Chevron(),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SettingsTile(
-            icon: Icons.devices_other_rounded,
-            title: l.t('settings_security_sessions_title'),
-            subtitle: l.t('settings_security_sessions_sub'),
-            trailing: const _Chevron(),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const ActiveSessionsScreen(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SettingsTile(
-            icon: Icons.security_rounded,
-            title: l.t('settings_security_2fa_title'),
-            subtitle: l.t('settings_security_2fa_sub'),
-            trailing: Switch(
-              value: false,
-              onChanged: (v) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      v
-                          ? 'Two-step verification is not yet available.'
-                          : 'Two-step verification is not yet available.',
-                      style: TextStyle(color: palette.textPrimary),
-                    ),
-                    backgroundColor: palette.surface,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              activeThumbColor: KashfColors.gold,
             ),
           ),
           const SizedBox(height: 24),
@@ -390,115 +346,6 @@ class _Field extends StatelessWidget {
   }
 }
 
-/// Lists signed-in devices. Firebase's client SDK doesn't expose a
-/// per-device list, so we render this device with whatever metadata
-/// the SDK exposes, plus a hint that rotating the password (or
-/// deleting the account) is the supported way to sign out other
-/// devices.
-class ActiveSessionsScreen extends StatelessWidget {
-  const ActiveSessionsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final palette = KashfPalette.active;
-    final user = AuthService().currentUser;
-    final metadata = user?.metadata;
-    return SettingsScaffold(
-      title: l.t('settings_security_sessions_title_screen'),
-      child: ListView(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: palette.cardBorder),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: palette.surfaceLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: palette.cardBorder),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.smartphone_rounded,
-                    color: palette.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l.t('settings_security_sessions_this'),
-                        style: TextStyle(
-                          color: palette.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        metadata?.lastSignInTime != null
-                            ? 'Last sign-in ${metadata!.lastSignInTime!.toLocal()}'
-                                .replaceAll('.000', '')
-                            : '—',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: palette.surfaceLight,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: palette.cardBorder),
-            ),
-            child: Text(
-              l.t('settings_security_sessions_empty'),
-              style: TextStyle(
-                color: palette.textSecondary,
-                fontSize: 12.5,
-                height: 1.4,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ChangePasswordScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.logout_rounded, size: 18),
-            label: Text(l.t('settings_security_sessions_sign_out_all')),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: palette.textPrimary,
-              side: BorderSide(color: palette.cardBorder),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+/// (Active sessions list removed: Firebase's client SDK doesn't
+/// support per-device management, so we keep the screen out of
+/// the Settings hub entirely.)

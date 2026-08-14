@@ -4,14 +4,20 @@ import 'entity_type.dart';
 import 'investigation.dart';
 
 /// Slim, persistable summary of a completed investigation. We
-/// deliberately keep this as a flat document (no nested sections)
-/// so it can be stored cleanly in a single Firestore document
-/// AND rendered as a card on the Home screen without any joins.
+/// keep the card-rendering fields flat (title, subtitle,
+/// confidence, tags, thumbnail, timestamp) so a single Firestore
+/// document can hydrate the Latest Investigations card without
+/// any joins, AND we embed the full report JSON in the same
+/// document so a tap-through to the detail screen can re-open
+/// the original report from Firestore / SharedPreferences
+/// without re-running the investigation.
 ///
-/// Fields mirror what the [LatestInvestigationsCard] needs to
-/// render — title, badge label, confidence %, status, tags,
-/// timestamp — so the home screen reads straight from this model
-/// without going back to the full [InvestigationResult].
+/// Document size: a typical 7-section influencer report
+/// serialises to ~50–150 KB of JSON — well under Firestore's
+/// 1 MiB-per-document limit. If a report ever grows past that
+/// we'll move [reportJson] into a sibling sub-document; for
+/// now one document per investigation keeps reads and writes
+/// simple and atomic.
 @immutable
 class SavedInvestigation {
   const SavedInvestigation({
@@ -28,6 +34,7 @@ class SavedInvestigation {
     this.modelId,
     this.evidenceCount = 0,
     this.thumbnailUrl,
+    this.reportJson,
   });
 
   /// Firestore document id. Locally-generated UUID for offline
@@ -80,6 +87,18 @@ class SavedInvestigation {
   /// the UI falls back to a neutral icon tile.
   final String? thumbnailUrl;
 
+  /// Full report payload (sections / sources / hero / items /
+  /// links) serialised as a `Map<String, dynamic>`. Stored inside
+  /// the same Firestore document as the card fields so the home
+  /// screen can fetch the card metadata AND re-open the full
+  /// report from a single read.
+  ///
+  /// `null` for older documents written before this field
+  /// existed (see [InvestigationResult.fromJson] for the
+  /// reconstruction fallback that synthesises a minimal report
+  /// from the card fields).
+  final Map<String, dynamic>? reportJson;
+
   String get documentId => id;
 
   Map<String, dynamic> toFirestore() => <String, dynamic>{
@@ -95,6 +114,7 @@ class SavedInvestigation {
         'modelId': modelId,
         'evidenceCount': evidenceCount,
         'thumbnailUrl': thumbnailUrl,
+        if (reportJson != null) 'report': reportJson,
       };
 
   /// Hydrate from a Firestore document. Falls back to safe
@@ -134,6 +154,9 @@ class SavedInvestigation {
       modelId: doc['modelId'] as String?,
       evidenceCount: ((doc['evidenceCount'] as num?) ?? 0).toInt(),
       thumbnailUrl: doc['thumbnailUrl'] as String?,
+      reportJson: (doc['report'] is Map<String, dynamic>)
+          ? doc['report'] as Map<String, dynamic>
+          : null,
     );
   }
 
@@ -153,6 +176,7 @@ class SavedInvestigation {
     EntityType? entityType,
     InvestigationStatus? status,
     String? thumbnailUrl,
+    Map<String, dynamic>? reportJson,
   }) {
     return SavedInvestigation(
       id: id,
@@ -168,6 +192,7 @@ class SavedInvestigation {
       modelId: modelId ?? this.modelId,
       evidenceCount: evidenceCount ?? this.evidenceCount,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      reportJson: reportJson ?? this.reportJson,
     );
   }
 }

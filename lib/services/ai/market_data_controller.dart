@@ -65,8 +65,21 @@ class MarketDataController extends ChangeNotifier {
 
   bool get isLoading => _state.status == MarketDataStatus.loading;
 
-  /// Hydrate from in-memory cache without hitting the network.
-  /// Called once from `MarketScreen.initState`.
+  /// Hydrate from in-memory cache, and (when no cached payload
+  /// is available) trigger a fresh fetch so the screen never has
+  /// to fall back to demo data on first entry. Called once from
+  /// `MarketScreen.initState`.
+  ///
+  /// Behaviour:
+  ///   * Cache hit  → render cached data immediately, no spinner,
+  ///                  no network call (24-hour freshness gate
+  ///                  still applies, see [AiHomeService]).
+  ///   * Cache miss → enter loading state and dispatch
+  ///                  [refreshNow]; the page stays under the
+  ///                  [LoadingOverlay] until the real payload
+  ///                  arrives. On any error the controller keeps
+  ///                  `data == null` and the UI falls back to the
+  ///                  localized demo cards.
   Future<void> bootstrap({required String language, String? region}) async {
     _language = language;
     if (region != null) _region = region;
@@ -86,7 +99,12 @@ class MarketDataController extends ChangeNotifier {
         lastUpdated: DateTime.now(),
         clearError: true,
       ));
+      return;
     }
+
+    // No cached payload — fetch real data before letting the
+    // screen paint anything beyond the spinner.
+    await refreshNow(language: language, region: _region);
   }
 
   /// Force a fresh fetch. Safe to call from anywhere.

@@ -65,6 +65,13 @@ class InvestigationArchiveService {
   /// Keeping it small keeps the home page snappy.
   static const int kLatestLimit = 8;
 
+  /// Larger cap used by [loadResult] so a tap-through can find
+  /// older investigations that scrolled off the home feed. We
+  /// scan locally — Firestore returns the rows we already have
+  /// cached in `_latestByUser` without a fresh round-trip when
+  /// the id is recent.
+  static const int _kLatestLoadLimit = 60;
+
   /// Returns the authenticated user's uid, or `'anonymous'`
   /// when no one is signed in. The home section falls back to the
   /// local cache for anonymous users.
@@ -87,10 +94,17 @@ class InvestigationArchiveService {
       local: _localWriter,
       remote: firestore,
     );
-    final uid = _currentUserId;
-    if (uid != 'anonymous') {
-      firestore.attach(uid);
-    }
+    // The constructor's `_listenAuthChanges()` already has an
+    // authStateChanges subscription, but it ran before `_firestoreWriter`
+    // was set so its listener did `if (fw == null) return;` and
+    // never called `attach`. Cancel that dummy subscription and
+    // install a real one now that the writer is available.
+    _authSub?.cancel();
+    _authSub = fb.FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        firestore.attach(user.uid);
+      }
+    });
   }
 
   /// Tears down Firestore listeners and the auth subscription.
@@ -172,6 +186,12 @@ class InvestigationArchiveService {
       thumbnailUrl: (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
           ? thumbnailUrl
           : null,
+      // Embed the full report so a tap on the Latest Investigations
+      // card can re-open the original report without re-running the
+      // AI. Serialised once here; both the local mirror and the
+      // Firestore writer persist it as-is. Reconstruction logic
+      // lives on [InvestigationResult.fromJson].
+      reportJson: result.toJson(),
     );
 
     try {
@@ -194,6 +214,24 @@ class InvestigationArchiveService {
   }) =>
       _writer.watchLatest(_currentUserId, limit: limit);
 
+  /// Streams the user's investigations directly from Firestore,
+  /// bypassing the local mirror. Returns an empty stream when
+  /// the Firestore writer hasn't been enabled (e.g. Firebase
+  /// isn't initialised yet, or the user is anonymous with no
+  /// cloud access). The home screen's "Recent Updates" section
+  /// uses this so the user always sees their cloud-synced
+  /// archive and not transient local rows that haven't been
+  /// uploaded yet.
+  Stream<List<SavedInvestigation>> watchLatestFromFirestore({
+    int limit = kLatestLimit,
+  }) {
+    final remote = _firestoreWriter;
+    if (remote == null) {
+      return const Stream<List<SavedInvestigation>>.empty();
+    }
+    return remote.watchLatest(_currentUserId, limit: limit);
+  }
+
   /// One-shot read. Used on cold start when subscribing isn't
   /// appropriate yet.
   Future<List<SavedInvestigation>> fetchLatest({
@@ -215,6 +253,36 @@ class InvestigationArchiveService {
   /// authenticated user. Safe to call once after sign-in.
   Future<int> commitPending() =>
       _writer.commitPendingForUser(_currentUserId);
+
+  /// Hydrates the full [InvestigationResult] for a previously-
+  /// saved investigation by [id]. Returns `null` when no
+  /// matching record exists, when the record belongs to a
+  /// different user, or when the embedded report payload is
+  /// missing or malformed.
+  ///
+  /// The home screen calls this when a Latest Investigations
+  /// card is tapped so the detail screen can re-open the
+  /// original report without re-running the AI.
+  Future<InvestigationResult?> loadResult(String id) async {
+    try {
+      final matches = await _writer
+          .watchLatest(_currentUserId, limit: _kLatestLoadLimit)
+          .first;
+      for (final row in matches) {
+        if (row.id != id) continue;
+        final json = row.reportJson;
+        if (json == null) return null;
+        return InvestigationResult.fromJson(
+          json,
+          fallbackInvestigationId: row.id,
+        );
+      }
+      return null;
+    } catch (e, st) {
+      debugPrint('[InvestigationArchiveService] loadResult failed: $e\n$st');
+      return null;
+    }
+  }
 
   // ============================== Helpers =============================
 

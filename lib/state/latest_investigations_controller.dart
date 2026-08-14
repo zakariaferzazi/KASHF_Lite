@@ -6,13 +6,16 @@ import '../models/saved_investigation.dart';
 import '../services/investigation_archive_service.dart';
 
 /// Loads and exposes the most recent completed investigations for
-/// the current user so the home screen's "Latest Investigations"
-/// section always reflects the latest Firestore state.
+/// the current user so the home screen's "Recent Updates" section
+/// always reflects what's persisted in Firestore.
 ///
-/// Subscribes to [InvestigationArchiveService.watchLatest] on the
-/// first build and disposes the subscription when the host widget
-/// is torn down. The list is exposed read-only; rerender happens
-/// on every successful stream emission.
+/// Subscribes to [InvestigationArchiveService.watchLatestFromFirestore]
+/// on the first build (so the user only ever sees their
+/// cloud-synced archive — local-only rows that haven't been
+/// uploaded yet are intentionally hidden) and disposes the
+/// subscription when the host widget is torn down. The list is
+/// exposed read-only; rerender happens on every successful
+/// stream emission.
 class LatestInvestigationsController extends ChangeNotifier {
   LatestInvestigationsController({
     InvestigationArchiveService? archive,
@@ -41,7 +44,14 @@ class LatestInvestigationsController extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    _sub = _archive.watchLatest(limit: _limit).listen(
+    // Pull the list directly from Firestore so the home screen's
+    // "Recent Updates" section reflects the user's cloud-synced
+    // archive — not transient local rows that may not yet be
+    // uploaded. Returns an empty stream when the Firestore writer
+    // hasn't been enabled yet, in which case the section stays
+    // empty until Firebase boots.
+    final source = _archive.watchLatestFromFirestore(limit: _limit);
+    _sub = source.listen(
       (list) {
         _items = List<SavedInvestigation>.unmodifiable(list);
         _isLoading = false;

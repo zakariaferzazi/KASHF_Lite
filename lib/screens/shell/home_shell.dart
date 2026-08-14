@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../l10n/theme_scope.dart';
+import '../../services/home_tab_notifier.dart';
 import '../../theme.dart';
 import '../explore/explore_screen.dart';
 import '../home/home_screen.dart';
@@ -25,6 +26,12 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
+  /// Shared notifier so any descendant of the shell can ask us
+  /// to switch tabs without pushing a new route. The home
+  /// screen's avatar tap uses this to open settings *inside*
+  /// the shell, which preserves the bottom navbar.
+  final HomeTabNotifier _tabs = HomeTabNotifier();
+
   late final List<Widget> _pages = const [
     HomeScreen(),
     ExploreScreen(),
@@ -33,14 +40,34 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _tabs.addListener(_onTabRequest);
+  }
+
+  @override
+  void dispose() {
+    _tabs.removeListener(_onTabRequest);
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  void _onTabRequest() {
+    if (!mounted) return;
+    setState(() => _index = _tabs.index);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final themeCtrl = ThemeScope.of(context);
     return AnimatedBuilder(
       animation: themeCtrl,
-      builder: (context, _) => Scaffold(
-        backgroundColor: KashfPalette.active.background,
-        body: IndexedStack(index: _index, children: _pages),
+      builder: (context, _) => HomeTabScope(
+        notifier: _tabs,
+        child: Scaffold(
+          backgroundColor: KashfPalette.active.background,
+          body: IndexedStack(index: _index, children: _pages),
         bottomNavigationBar: SafeArea(
           top: false,
           child: Container(
@@ -127,6 +154,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -151,6 +179,11 @@ class _Dest extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so the rebuilt const-canonicalised
+    // _Dest widget actually re-runs build() when the user picks a
+    // different palette (otherwise the IndexedStack/builder parent
+    // passes an identical widget instance and build is skipped).
+    ThemeScope.of(context);
     final accent = selected
         ? KashfColors.gold
         : KashfPalette.active.textSecondary;
@@ -178,5 +211,28 @@ class _Dest extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Inherited widget that exposes the [HomeTabNotifier] to
+/// descendants of [HomeShell]. Widgets like the home screen's
+/// avatar tap use [HomeTabScope.of] to ask the shell to switch
+/// tabs without pushing a new route, so the bottom navbar stays
+/// visible.
+class HomeTabScope extends InheritedNotifier<HomeTabNotifier> {
+  const HomeTabScope({
+    super.key,
+    required HomeTabNotifier notifier,
+    required super.child,
+  }) : super(notifier: notifier);
+
+  /// Returns the active [HomeTabNotifier]. Throws if called
+  /// outside the home shell subtree.
+  static HomeTabNotifier of(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<HomeTabScope>();
+    assert(scope != null,
+        'HomeTabScope.of called outside the home shell subtree.');
+    return scope!.notifier!;
   }
 }

@@ -159,6 +159,7 @@ class AppLocalizations {
       'home_empty_investigations': 'No active investigations yet',
       'home_empty_investigations_hint':
           'Start a new investigation from Explore to see it here.',
+      'home_ai_loading': 'Loading AI data…',
       'home_active': 'Active',
       'home_paused': 'Paused',
       'home_completed': 'Completed',
@@ -307,6 +308,8 @@ class AppLocalizations {
       'home_update_yasmine_status': 'New update',
       'home_update_yasmine_time': '3 days ago',
       'home_update_yasmine_score': '45',
+      'home_update_placeholder_title': 'No recent investigations yet',
+      'home_update_placeholder_subtitle': 'Run an investigation to see live updates here.',
       'home_fab_new': 'New',
       'explore_title': 'Explore',
       'explore_subtitle':
@@ -389,6 +392,8 @@ class AppLocalizations {
       'explore_news_error': 'Couldn\'t load trending news. Tap refresh to retry.',
       'explore_news_tap_hint': 'Tap to see latest articles',
       'explore_recent_complete': 'Complete investigation',
+      'explore_recent_empty':
+          'No saved investigations yet. Run an investigation and it will appear here.',
       'explore_recent_add': 'Quick answer',
       'explore_recent1_title': 'Dior',
       'explore_recent1_sub': 'Brand performance analysis in 2024',
@@ -625,7 +630,18 @@ class AppLocalizations {
       'reports_status_completed': 'Completed',
       'reports_status_in_progress': 'In progress',
       'reports_status_review': 'Under review',
+      'reports_status_progress': 'In progress',
+      'reports_kpi_high': 'High confidence',
+      'reports_kpi_medium': 'Medium confidence',
+      'reports_empty_title': 'No reports yet',
+      'reports_empty_sub':
+          'Run an investigation and the report will appear here once saved.',
       'reports_sector_images': 'Images',
+      'reports_sector_company': 'Company',
+      'reports_sector_brand': 'Brand',
+      'reports_sector_product': 'Product',
+      'reports_sector_influencer': 'Influencer',
+      'reports_sector_market': 'Market',
       'reports_sector_perfume': 'Fragrance sector',
       'reports_sector_social': 'Social conversation',
       'reports_sector_perfume_h': 'New conversations about 3 perfumes today',
@@ -660,6 +676,12 @@ class AppLocalizations {
       'settings_subtitle': 'Manage your account and customize the app.',
       'app_title_root': 'KASHF',
       'settings_trusted_account': 'Trusted account',
+      'settings_account_verified': 'Verified',
+      'settings_account_unverified': 'Not verified',
+      'settings_change_country': 'Change country',
+      'settings_change_country_sub': 'Pick the region used across the app',
+      'settings_change_country_title': 'Change country',
+      'settings_change_country_done': 'Country updated',
       'settings_profile': 'Profile',
       'settings_profile_email': 'noor.alotaibi@example.com',
       'settings_section_account': 'Account',
@@ -668,15 +690,15 @@ class AppLocalizations {
       'settings_account_personal': 'Personal profile',
       'settings_account_personal_sub': 'Manage your personal info',
       'settings_security': 'Security & privacy',
-      'settings_security_sub': 'Password, two-step, login history',
+      'settings_security_sub': 'Password and account actions',
       'settings_backup': 'Backup & import',
       'settings_backup_sub': 'Protect your data and restore it anytime',
       'settings_appearance': 'Appearance',
       'settings_appearance_sub': 'Theme, font size, accent color',
       'settings_language': 'Language',
       'settings_language_sub': 'App interface language',
-      'settings_search_prefs': 'Search preferences',
-      'settings_search_prefs_sub': 'Sources, filters, results',
+      'settings_search_prefs': 'Subjects',
+      'settings_search_prefs_sub': 'Topics & interests',
       // ---------- AI model picker ----------
       'settings_ai_model_picker': 'AI model',
       'settings_ai_model_picker_sub':
@@ -1035,6 +1057,21 @@ class AppLocalizations {
       'li_sort_label': 'Newest first',
       'li_apply': 'Apply',
       'li_apply_count': 'Apply {n}',
+      'li_apply_filtered': 'Showing {shown} of {total}',
+      'li_sort_newest': 'Newest first',
+      'li_sort_oldest': 'Oldest first',
+      'li_sort_confidence': 'Highest confidence',
+      'li_search_title': 'Search investigations',
+      'li_search_hint': 'Search by title, subtitle or tag',
+      'li_search_clear': 'Clear',
+      'li_search_apply': 'Apply',
+      'li_filter_title': 'Filter by category',
+      'li_more_refresh': 'Refresh list',
+      'li_more_clear': 'Clear filters',
+      'li_more_refreshed': 'Investigations refreshed',
+      'li_no_filter_results_title': 'No matches',
+      'li_no_filter_results_sub':
+          'No investigations match your filters. Try clearing them.',
       'li_status_complete': 'Complete',
       'li_status_progress': 'Under analysis',
       'li_status_review': 'Under review',
@@ -1469,6 +1506,7 @@ class AppLocalizations {
       'ir_ins_risk_body':
           'Sentiment is stable and reputation risk is low this week.',
       'ir_ins_risk_metric': 'Risk score',
+      'ir_sources_title': 'Sources & references',
       'ir_src_news_title': 'Industry news roundup',
       'ir_src_news_sub': 'Aggregated coverage from regional outlets.',
       'ir_src_social_title': 'Social conversation',
@@ -1643,6 +1681,7 @@ class AppLocalizations {
       'home_empty_investigations': 'لا توجد كشوفات نشطة بعد',
       'home_empty_investigations_hint':
           'ابدأ كشفاً جديداً من استكشف ليظهر هنا.',
+      'home_ai_loading': 'جاري تحميل بيانات الذكاء الاصطناعي…',
       'home_active': 'نشط',
       'home_paused': 'متوقف',
       'home_completed': 'مكتمل',
@@ -1789,6 +1828,9 @@ class AppLocalizations {
       'home_update_yasmine_status': 'تحديث جديد',
       'home_update_yasmine_time': 'منذ 3 أيام',
       'home_update_yasmine_score': '45',
+      'home_update_placeholder_title': 'لا توجد تحقيقات حديثة بعد',
+      'home_update_placeholder_subtitle':
+          'شغّل تحقيقاً جديداً لترى التحديثات المباشرة هنا.',
       'home_fab_new': 'جديد',
       'explore_title': 'استكشاف',
       'explore_subtitle':
@@ -1868,6 +1910,8 @@ class AppLocalizations {
       'explore_news_error': 'تعذّر تحميل الأخبار. اضغط تحديث للمحاولة مجدداً.',
       'explore_news_tap_hint': 'اضغط لعرض أحدث المقالات',
       'explore_recent_complete': 'تحقيق كامل',
+      'explore_recent_empty':
+          'لا توجد تحقيقات محفوظة بعد. شغّل تحقيقاً وسيظهر هنا.',
       'explore_recent_add': 'إجابة سريعة',
       'explore_recent1_title': 'Dior',
       'explore_recent1_sub': 'تحليل أداء العلامة في 2024',
@@ -2092,8 +2136,19 @@ class AppLocalizations {
       'reports_sort_label': 'الأحدث أولاً',
       'reports_status_completed': 'مكتمل',
       'reports_status_in_progress': 'قيد التنفيذ',
-      'reports_status_review': 'قيد التعديل',
+      'reports_status_review': 'قيد المراجعة',
+      'reports_status_progress': 'قيد التقدم',
+      'reports_kpi_high': 'ثقة عالية',
+      'reports_kpi_medium': 'ثقة متوسطة',
+      'reports_empty_title': 'لا توجد تقارير بعد',
+      'reports_empty_sub':
+          'شغّل تحقيقاً وسيظهر التقرير هنا بمجرد حفظه.',
       'reports_sector_images': 'الصور',
+      'reports_sector_company': 'شركة',
+      'reports_sector_brand': 'علامة',
+      'reports_sector_product': 'منتج',
+      'reports_sector_influencer': 'مؤثر',
+      'reports_sector_market': 'سوق',
       'reports_sector_perfume': 'قطاع العطور',
       'reports_sector_social': 'محادثة سوشل',
       'reports_sector_perfume_h': 'محادثات جديدة لـ 3 عطور اليوم',
@@ -2127,6 +2182,12 @@ class AppLocalizations {
       'settings_subtitle': 'إدارة حسابك وتفضيلات التطبيق.',
       'app_title_root': 'KASHF',
       'settings_trusted_account': 'حساب موثوق',
+      'settings_account_verified': 'موثّق',
+      'settings_account_unverified': 'غير موثّق',
+      'settings_change_country': 'تغيير الدولة',
+      'settings_change_country_sub': 'اختر المنطقة المستخدمة في جميع أنحاء التطبيق',
+      'settings_change_country_title': 'تغيير الدولة',
+      'settings_change_country_done': 'تم تحديث الدولة',
       'settings_profile': 'الملف الشخصي',
       'settings_profile_email': 'noor.alotaibi@example.com',
       'settings_section_account': 'الحساب',
@@ -2135,15 +2196,15 @@ class AppLocalizations {
       'settings_account_personal': 'الملف الشخصي',
       'settings_account_personal_sub': 'إدارة معلوماتك الشخصية',
       'settings_security': 'الأمان والخصوصية',
-      'settings_security_sub': 'كلمة المرور، والتحقق الثنائي، وسجل الدخول',
+      'settings_security_sub': 'كلمة المرور وإجراءات الحساب',
       'settings_backup': 'النسخ الاحتياطي والاستيراد',
       'settings_backup_sub': 'احمِ بياناتك واستعدها متى شئت',
       'settings_appearance': 'المظهر',
       'settings_appearance_sub': 'السمة، حجم الخط، اللون الرئيسي',
       'settings_language': 'اللغة',
       'settings_language_sub': 'لغة واجهة التطبيق',
-      'settings_search_prefs': 'تفضيلات البحث',
-      'settings_search_prefs_sub': 'المصادر، الفلاتر، النتائج',
+      'settings_search_prefs': 'المواضيع',
+      'settings_search_prefs_sub': 'المواضيع والاهتمامات',
       // ---------- اختيار نموذج الذكاء الاصطناعي ----------
       'settings_ai_model_picker': 'نموذج الذكاء الاصطناعي',
       'settings_ai_model_picker_sub':
@@ -2319,22 +2380,26 @@ class AppLocalizations {
       'settings_help_subtitle':
           '.إجابات سريعة على الأسئلة الشائعة حول كاشف لايت',
       'settings_help_contact_action': 'تواصل مع الدعم',
-      'settings_help_q1': '؟كيف أبدأ تحقيقاً جديداً',
-      'settings_help_a1':
-          '."اضغط على زر "+" الذهبي في الشريط السفلي، وأدخل استعلاماً أو ارفع أدلة، ثم اضغط ابدأ التحقيق',
-      'settings_help_q2': '؟أين تقاريري المحفوظة',
-      'settings_help_a2':
-          '."افتح تبويب التقارير في أسفل التطبيق. يمكنك التصفية حسب المفضلة أو المشتركة أو الأرشيف',
-      'settings_help_q3': '؟كيف أغيّر اللغة',
-      'settings_help_a3':
-          '."اذهب إلى الإعدادات ← اللغة واختر العربية أو الإنجليزية. يطبّق التطبيق التغيير فوراً',
-      'settings_help_q4': '؟كيف تُحمى بياناتي',
-      'settings_help_a4':
-          '.تُؤمّن الحسابات عبر Firebase Authentication. تبقى كشوفاتك في حسابك ولا تتم مشاركتها إلا باختيارك',
-      'settings_help_q5':
-          '؟كيف أتنقل بين الوضع الداكن والفاتح والسمة الرئيسية للعلامة',
-      'settings_help_a5':
-          '."افتح الإعدادات ← المظهر لاختيار الداكن أو الفاتح أو سمة العلامة الرئيسية. يُحفظ اختيارك للجلسة القادمة',
+  'settings_help_q1': 'كيف أبدأ تحقيقًا جديدًا؟',
+'settings_help_a1':
+    'اضغط على زر "+" الذهبي في الشريط السفلي، وأدخل استعلامًا أو ارفع أدلة، ثم اضغط على "ابدأ التحقيق".',
+
+'settings_help_q2': 'أين تقاريري المحفوظة؟',
+'settings_help_a2':
+    'افتح تبويب "التقارير" في أسفل التطبيق. يمكنك التصفية حسب المفضلة أو المشتركة أو الأرشيف.',
+
+'settings_help_q3': 'كيف أغيّر اللغة؟',
+'settings_help_a3':
+    'اذهب إلى الإعدادات ← اللغة، واختر العربية أو الإنجليزية. يُطبّق التطبيق التغيير فورًا.',
+
+'settings_help_q4': 'كيف تُحمى بياناتي؟',
+'settings_help_a4':
+    'تُؤمَّن الحسابات عبر Firebase Authentication. تبقى تحقيقاتك في حسابك، ولا تتم مشاركتها إلا باختيارك.',
+
+'settings_help_q5':
+    'كيف أتنقل بين الوضع الداكن والفاتح وسمة العلامة الرئيسية؟',
+'settings_help_a5':
+    'افتح الإعدادات ← المظهر لاختيار الوضع الداكن أو الفاتح أو سمة العلامة الرئيسية. يُحفظ اختيارك للجلسة القادمة.',
       // ---------- الإعدادات → الدعم المباشر ----------
       'settings_support_title': 'تواصل مع الدعم',
       'settings_support_subtitle':
@@ -2506,6 +2571,21 @@ class AppLocalizations {
       'li_sort_label': 'الأحدث أولاً',
       'li_apply': 'تطبيق',
       'li_apply_count': 'تطبيق {n}',
+      'li_apply_filtered': 'عرض {shown} من {total}',
+      'li_sort_newest': 'الأحدث أولاً',
+      'li_sort_oldest': 'الأقدم أولاً',
+      'li_sort_confidence': 'الأعلى ثقة',
+      'li_search_title': 'البحث في التحقيقات',
+      'li_search_hint': 'ابحث بالعنوان أو الوصف أو وسم',
+      'li_search_clear': 'مسح',
+      'li_search_apply': 'تطبيق',
+      'li_filter_title': 'تصفية حسب الفئة',
+      'li_more_refresh': 'تحديث القائمة',
+      'li_more_clear': 'مسح التصفية',
+      'li_more_refreshed': 'تم تحديث التحقيقات',
+      'li_no_filter_results_title': 'لا توجد نتائج',
+      'li_no_filter_results_sub':
+          'لا توجد تحقيقات تطابق عوامل التصفية. حاول مسحها.',
       'li_status_complete': 'مكتمل',
       'li_status_progress': 'قيد التحليل',
       'li_status_review': 'قيد المراجعة',
@@ -2827,6 +2907,7 @@ class AppLocalizations {
       'ir_ins_risk_body':
           'المشاعر مستقرة ومخاطر السمعة منخفضة هذا الأسبوع.',
       'ir_ins_risk_metric': 'درجة المخاطرة',
+      'ir_sources_title': 'المصادر والمراجع',
       'ir_src_news_title': 'ملخص أخبار القطاع',
       'ir_src_news_sub': 'تغطية مجمعة من وسائل الإعلام الإقليمية.',
       'ir_src_social_title': 'المحادثة الاجتماعية',

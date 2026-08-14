@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme.dart';
+
 /// Three brightness choices the user can pick from in Settings.
 enum AppThemeMode { dark, light, main }
 
@@ -95,11 +97,35 @@ class ThemeController extends ChangeNotifier {
 
   /// Sets the new mode. Notifies listeners and persists the choice
   /// in the background so callers don't block on disk I/O.
+  ///
+  /// The static [KashfPalette.active] is updated *before* the
+  /// listeners fire so every screen that rebuilds in response to
+  /// the notification already reads the freshly-selected palette —
+  /// without this dance the rebuilt widgets would briefly read the
+  /// previous palette during the same frame.
   void setMode(AppThemeMode mode) {
     if (mode == _mode) return;
     _mode = mode;
+    _syncActivePalette();
     notifyListeners();
     _persist();
+  }
+
+  /// Mirrors the current mode into [KashfPalette.active]. Called
+  /// from [setMode] and on hydration so the static is always in
+  /// lock-step with [_mode].
+  void _syncActivePalette() {
+    switch (_mode) {
+      case AppThemeMode.dark:
+        KashfPalette.setActive(KashfPalette.dark);
+        break;
+      case AppThemeMode.light:
+        KashfPalette.setActive(KashfPalette.light);
+        break;
+      case AppThemeMode.main:
+        KashfPalette.setActive(KashfPalette.main);
+        break;
+    }
   }
 
   Future<void> _hydrate() async {
@@ -109,7 +135,13 @@ class ThemeController extends ChangeNotifier {
       final resolved = AppThemeModeX.fromKey(stored);
       if (resolved != _mode) {
         _mode = resolved;
+        _syncActivePalette();
         notifyListeners();
+      } else {
+        // Even when the persisted value matches, make sure the
+        // static palette reflects the active mode in case some
+        // other code path overrode it.
+        _syncActivePalette();
       }
     } catch (_) {
       // Storage unavailable — fall back to the in-memory default.

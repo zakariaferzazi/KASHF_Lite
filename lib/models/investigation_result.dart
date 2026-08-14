@@ -67,6 +67,7 @@ class InvestigationResultItem {
     this.metricLabel,
     this.badge,
     this.imageUrl,
+    this.links = const <InvestigationResultLink>[],
   });
 
   final String id;
@@ -88,6 +89,81 @@ class InvestigationResultItem {
   /// hero card surfaces it here so the user has an at-a-glance
   /// picture of what they're looking at.
   final String? imageUrl;
+
+  /// Optional list of clickable references rendered as buttons
+  /// under the item body. Used for influencer social-account URLs
+  /// (Instagram, TikTok, YouTube, X, Snapchat) and for any other
+  /// clickable reference (brand site, product page, source URL).
+  /// Each link is a [InvestigationResultLink] with a short label
+  /// (e.g. "Instagram") and a full https URL.
+  final List<InvestigationResultLink> links;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'title': title,
+        'body': body,
+        'metric': metric,
+        'metric_label': metricLabel,
+        'badge': badge,
+        'image_url': imageUrl,
+        'links': links.map((l) => l.toJson()).toList(),
+      };
+
+  factory InvestigationResultItem.fromJson(Map<String, dynamic> json) {
+    final linksRaw = json['links'];
+    final links = <InvestigationResultLink>[];
+    if (linksRaw is List) {
+      for (final raw in linksRaw) {
+        if (raw is Map<String, dynamic>) {
+          final link = InvestigationResultLink.fromJson(raw);
+          if (link != null) links.add(link);
+        }
+      }
+    }
+    return InvestigationResultItem(
+      id: (json['id'] as String?) ?? '',
+      title: (json['title'] as String?) ?? '',
+      body: (json['body'] as String?) ?? '',
+      metric: json['metric'] as String?,
+      metricLabel: json['metric_label'] as String?,
+      badge: json['badge'] as String?,
+      imageUrl: json['image_url'] as String?,
+      links: links,
+    );
+  }
+}
+
+/// One tappable link rendered as a button under a result item.
+/// See [InvestigationResultItem.links].
+@immutable
+class InvestigationResultLink {
+  const InvestigationResultLink({required this.label, required this.url});
+
+  /// Short button text (e.g. "Instagram", "TikTok", "Website").
+  final String label;
+
+  /// Full https URL the button opens.
+  final String url;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'label': label,
+        'url': url,
+      };
+
+  /// Reconstructs a link from JSON. Returns `null` when the
+  /// link is malformed (empty label, empty / non-http URL) so the
+  /// caller can drop it silently rather than show a button that
+  /// does nothing when tapped.
+  static InvestigationResultLink? fromJson(Map<String, dynamic> json) {
+    final label = (json['label'] as String?)?.trim();
+    final url = (json['url'] as String?)?.trim();
+    if (label == null || label.isEmpty) return null;
+    if (url == null || url.isEmpty) return null;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return null;
+    }
+    return InvestigationResultLink(label: label, url: url);
+  }
 }
 
 /// One tab/section in the results screen.
@@ -120,6 +196,44 @@ class InvestigationResultSection {
   /// hero image for the report it is hoisted into the result
   /// screen's hero card so the user sees it the moment they land.
   final String? imageUrl;
+
+  /// Serialises to JSON. Enums are stored by name so schema
+  /// changes that add new enum values don't crash the parser.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'kind': kind.name,
+        'headline': headline,
+        'summary': summary,
+        'items': items.map((it) => it.toJson()).toList(),
+        'confidence': confidence,
+        'imageUrl': imageUrl,
+      };
+
+  factory InvestigationResultSection.fromJson(Map<String, dynamic> json) {
+    final kindName = json['kind'] as String? ?? 'overview';
+    final kind = InvestigationResultKind.values.firstWhere(
+      (k) => k.name == kindName,
+      orElse: () => InvestigationResultKind.overview,
+    );
+    final itemsRaw = json['items'];
+    final items = <InvestigationResultItem>[];
+    if (itemsRaw is List) {
+      for (final raw in itemsRaw) {
+        if (raw is Map<String, dynamic>) {
+          items.add(InvestigationResultItem.fromJson(raw));
+        }
+      }
+    }
+    return InvestigationResultSection(
+      kind: kind,
+      headline: (json['headline'] as String?) ?? '',
+      summary: (json['summary'] as String?) ?? '',
+      items: items,
+      confidence: (json['confidence'] is num)
+          ? (json['confidence'] as num).toDouble()
+          : null,
+      imageUrl: json['imageUrl'] as String?,
+    );
+  }
 }
 
 /// Top-level result payload returned by [InvestigationService] when
@@ -187,6 +301,81 @@ class InvestigationResult {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
+
+  /// Serialises this result to a plain JSON-compatible map so it
+  /// can be persisted alongside the [SavedInvestigation] card
+  /// fields and re-hydrated later with [fromJson]. Used by the
+  /// archive layer so a tap on a Latest Investigations card can
+  /// re-open the full report without re-running the AI.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'investigationId': investigationId,
+        'title': title,
+        'subtitle': subtitle,
+        'sections': sections.map((s) => s.toJson()).toList(),
+        'sources': sources.map((s) => s.toJson()).toList(),
+        'generatedAt': generatedAt.toUtc().toIso8601String(),
+        'confidence': confidence,
+        'thumbnailUrl': thumbnailUrl,
+      };
+
+  /// Hydrates a result from the JSON map stored in
+  /// [SavedInvestigation.reportJson]. Defensive about field
+  /// shape — missing / unexpected fields fall back to safe
+  /// defaults so an older document written before a schema
+  /// change still renders.
+  ///
+  /// If [investigationId] / [id] are not present in the JSON we
+  /// derive them from [saved] so the reconstructed result links
+  /// back to the archive entry that owns it.
+  factory InvestigationResult.fromJson(
+    Map<String, dynamic> json, {
+    String? fallbackInvestigationId,
+  }) {
+    DateTime parseDate(Object? raw, DateTime fallback) {
+      if (raw is String) return DateTime.tryParse(raw) ?? fallback;
+      if (raw is int) {
+        return DateTime.fromMillisecondsSinceEpoch(raw);
+      }
+      return fallback;
+    }
+
+    final fallback = DateTime.now().toUtc();
+    final sections = <InvestigationResultSection>[];
+    final sectionsRaw = json['sections'];
+    if (sectionsRaw is List) {
+      for (final raw in sectionsRaw) {
+        if (raw is Map<String, dynamic>) {
+          sections.add(InvestigationResultSection.fromJson(raw));
+        }
+      }
+    }
+
+    final sources = <InvestigationSource>[];
+    final sourcesRaw = json['sources'];
+    if (sourcesRaw is List) {
+      for (final raw in sourcesRaw) {
+        if (raw is Map<String, dynamic>) {
+          sources.add(InvestigationSource.fromJson(raw));
+        }
+      }
+    }
+
+    return InvestigationResult(
+      id: (json['id'] as String?) ?? fallbackInvestigationId ?? '',
+      investigationId:
+          (json['investigationId'] as String?) ?? fallbackInvestigationId ?? '',
+      title: (json['title'] as String?) ?? '',
+      subtitle: (json['subtitle'] as String?) ?? '',
+      sections: sections,
+      sources: sources,
+      generatedAt: parseDate(json['generatedAt'], fallback),
+      confidence: (json['confidence'] is num)
+          ? (json['confidence'] as num).toDouble()
+          : null,
+      thumbnailUrl: json['thumbnailUrl'] as String?,
+    );
+  }
 }
 
 /// A source the AI cited (URL, article, social post, etc.).
@@ -215,6 +404,31 @@ class InvestigationSource {
   /// available image-bearing source as the card thumbnail so the
   /// user can recognise the investigated subject at a glance.
   final String? imageUrl;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'title': title,
+        'subtitle': subtitle,
+        'kind': kind.name,
+        'url': url,
+        'imageUrl': imageUrl,
+      };
+
+  factory InvestigationSource.fromJson(Map<String, dynamic> json) {
+    final kindName = json['kind'] as String? ?? 'other';
+    final kind = InvestigationSourceKind.values.firstWhere(
+      (k) => k.name == kindName,
+      orElse: () => InvestigationSourceKind.other,
+    );
+    return InvestigationSource(
+      id: (json['id'] as String?) ?? '',
+      title: (json['title'] as String?) ?? '',
+      subtitle: (json['subtitle'] as String?) ?? '',
+      kind: kind,
+      url: json['url'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+    );
+  }
 }
 
 enum InvestigationSourceKind {

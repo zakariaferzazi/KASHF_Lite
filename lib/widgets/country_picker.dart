@@ -101,6 +101,9 @@ Future<CountryInfo?> showCountryPicker(
   return showModalBottomSheet<CountryInfo>(
     context: context,
     backgroundColor: KashfPalette.active.surface,
+    // Let the sheet grow with the keyboard so the search field
+    // stays visible (and tappable) while the user is typing.
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -137,92 +140,108 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
                 c.name.toLowerCase().contains(_query.toLowerCase()) ||
                 c.arabicName.contains(_query))
         .toList();
+    // Constrain the sheet to a usable height so the search field
+    // and a healthy chunk of the country list stay on screen even
+    // when the soft keyboard is open. Without this the bottom sheet
+    // collapses around the keyboard and pushes the search input
+    // (and the user's typed text) out of view.
+    final media = MediaQuery.of(context);
+    final maxSheetHeight = media.size.height - media.viewInsets.top - 24;
+    final cappedHeight = maxSheetHeight.clamp(280.0, 560.0);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 4,
-              width: 36,
-              decoration: BoxDecoration(
-                color: palette.divider,
-                borderRadius: BorderRadius.circular(2),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          16,
+          12,
+          16,
+          12 + media.viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: cappedHeight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 4,
+                width: 36,
+                decoration: BoxDecoration(
+                  color: palette.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: palette.fieldFill,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: palette.fieldBorder),
-              ),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _query = v),
-                style: TextStyle(color: palette.textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: l.t('auth_country_search_hint'),
-                  hintStyle: TextStyle(color: palette.textSecondary),
-                  prefixIcon: Icon(Icons.search,
-                      color: palette.textSecondary, size: 18),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: palette.fieldFill,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.fieldBorder),
+                ),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _query = v),
+                  style: TextStyle(color: palette.textPrimary, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: l.t('auth_country_search_hint'),
+                    hintStyle: TextStyle(color: palette.textSecondary),
+                    prefixIcon: Icon(Icons.search,
+                        color: palette.textSecondary, size: 18),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: filtered.length,
-                itemBuilder: (ctx, i) {
-                  final c = filtered[i];
-                  final selected = c.dial == widget.currentDialCode;
-                  return InkWell(
-                    onTap: () => Navigator.of(ctx).pop(c),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 56,
-                            child: Text(
-                              c.dial,
-                              style: TextStyle(
-                                color: palette.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, i) {
+                    final c = filtered[i];
+                    final selected = c.dial == widget.currentDialCode;
+                    return InkWell(
+                      onTap: () => Navigator.of(ctx).pop(c),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                c.dial,
+                                style: TextStyle(
+                                  color: palette.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              c.name,
-                              style: TextStyle(
-                                color: palette.textPrimary,
-                                fontSize: 14,
+                            Expanded(
+                              child: Text(
+                                c.name,
+                                style: TextStyle(
+                                  color: palette.textPrimary,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
-                          if (selected)
-                            Icon(Icons.check_circle,
-                                color: KashfColors.gold, size: 18),
-                        ],
+                            if (selected)
+                              Icon(Icons.check_circle,
+                                  color: KashfColors.gold, size: 18),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

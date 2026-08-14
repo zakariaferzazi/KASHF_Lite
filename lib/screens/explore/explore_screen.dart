@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
+import '../../models/saved_investigation.dart';
+import '../../services/investigation_archive_service.dart';
 import '../../services/news/news_data_controller.dart';
 import '../../services/news/news_models.dart';
+import '../../state/latest_investigations_controller.dart';
 import '../../theme.dart';
 import '../../widgets/article_reader_sheet.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../widgets/news_carousel.dart';
+import '../investigation/investigation_results_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -19,6 +24,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   dynamic _selectedTopic = NewsTopic.fragrances;
   int _trendingPage = 0;
   late final NewsDataController _newsController;
+  late final LatestInvestigationsController _investigationsController;
 
   /// ISO 3166-1 alpha-2 country code used for the news feed.
   /// Maps the display name "Kuwait" → "KW". Add more entries as
@@ -30,6 +36,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
     super.initState();
     _newsController = NewsDataController();
     _newsController.addListener(_onNewsChanged);
+    _investigationsController = LatestInvestigationsController();
+    _investigationsController.addListener(_onInvestigationsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final l = AppLocalizations.of(context);
@@ -57,16 +65,84 @@ class _ExploreScreenState extends State<ExploreScreen> {
     if (mounted) setState(() {});
   }
 
+  void _onInvestigationsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Maps the Firestore-backed [LatestInvestigationsController]
+  /// snapshot into the visual row model used by
+  /// [_RecentInvestigationsList]. Caps the list at 4 entries
+  /// so the section stays compact. When the controller is still
+  /// loading and we have no data, we fall back to a small skeleton
+  /// surface — the `EmptyState` variant of the row.
+  List<_RecentInvestigationItem> _buildRecentItems(AppLocalizations l) {
+    final items = _investigationsController.items;
+    if (items.isEmpty &&
+        _investigationsController.isLoading) {
+      return const <_RecentInvestigationItem>[];
+    }
+    return items
+        .take(4)
+        .map((saved) => _RecentInvestigationItem.fromInvestigation(
+              saved: saved,
+              l: l,
+            ))
+        .toList();
+  }
+
+  /// Loads the full report for the tapped investigation and pushes
+  /// the detail screen. Same pattern as the home / latest
+  /// investigations screens.
+  Future<void> _openSavedReport(SavedInvestigation item) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final result = await InvestigationArchiveService.instance
+          .loadResult(item.id);
+      if (!mounted) return;
+      if (result == null) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This saved report cannot be opened — only its '
+              'summary is available. Re-run the investigation '
+              'to refresh.',
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      await navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => InvestigationResultsScreen(result: result),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('[ExploreScreen] openSavedReport failed: $e\n$st');
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open this report.')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _newsController.removeListener(_onNewsChanged);
     _newsController.dispose();
+    _investigationsController.removeListener(_onInvestigationsChanged);
+    _investigationsController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // Subscribe to theme changes so the IndexedStack container in
+    // [HomeShell] actually rebuilds us when the user picks a
+    // different palette.
+    ThemeScope.of(context);
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -168,24 +244,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 padding: EdgeInsetsDirectional.fromSTEB(12, 0, 12, 32),
                 sliver: SliverToBoxAdapter(
                   child: _RecentInvestigationsList(
-                    items: [
-                      _RecentInvestigationItem(
-                        brandAsset: 'assets/images/parfum.jpeg',
-                        title: l.t('explore_recent1_title'),
-                        subtitle: l.t('explore_recent1_sub'),
-                        time: l.t('explore_recent1_time'),
-                        statusLabel: l.t('explore_recent_complete'),
-                        statusStyle: _StatusStyle.completed,
-                      ),
-                      _RecentInvestigationItem(
-                        brandAsset: 'assets/images/sauvage.jpeg',
-                        title: l.t('explore_recent2_title'),
-                        subtitle: l.t('explore_recent2_sub'),
-                        time: l.t('explore_recent2_time'),
-                        statusLabel: l.t('explore_recent_add'),
-                        statusStyle: _StatusStyle.quickAnswer,
-                      ),
-                    ],
+                    items: _buildRecentItems(l),
+                    onTapItem: _openSavedReport,
                   ),
                 ),
               ),
@@ -288,6 +348,9 @@ class _DiscoverSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget actually
+    // re-runs build() when the user flips the palette.
+    ThemeScope.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -298,14 +361,14 @@ class _DiscoverSectionHeader extends StatelessWidget {
             children: [
               Icon(
                 Icons.auto_awesome_outlined,
-                color: const Color(0xFFD4A33A),
+                color: KashfColors.gold,
                 size: 20,
               ),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -395,12 +458,6 @@ class _DiscoverTile extends StatelessWidget {
   final VoidCallback onTap;
   final AppLocalizations l;
 
-  static const _cardFill = Color(0xFF171A20);
-  static const _cardBorder = Color(0xFF26282E);
-  static const _iconCircleFill = Color(0xFF1F2128);
-  static const _iconGold = Color(0xFFD4A33A);
-  static const _chevronColor = Color(0xFF6B6F76);
-
   IconData _iconFor(NewsTopic t) {
     switch (t) {
       case NewsTopic.fashion:
@@ -416,9 +473,13 @@ class _DiscoverTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget actually
+    // re-runs build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     final title = l.isRtl ? topic.labelAr : topic.label;
     return Material(
-      color: _cardFill,
+      color: palette.surface,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -428,7 +489,7 @@ class _DiscoverTile extends StatelessWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 10, 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _cardBorder, width: 1),
+            border: Border.all(color: palette.cardBorder, width: 1),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -437,12 +498,12 @@ class _DiscoverTile extends StatelessWidget {
               Container(
                 width: 38,
                 height: 38,
-                decoration: const BoxDecoration(
-                  color: _iconCircleFill,
+                decoration: BoxDecoration(
+                  color: palette.surfaceLight,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: Icon(_iconFor(topic), color: _iconGold, size: 24),
+                child: Icon(_iconFor(topic), color: KashfColors.gold, size: 24),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -456,8 +517,8 @@ class _DiscoverTile extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: palette.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
@@ -468,8 +529,8 @@ class _DiscoverTile extends StatelessWidget {
                       l.t('explore_news_tap_hint'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA0A6),
+                      style: TextStyle(
+                        color: palette.textSecondary,
                         fontSize: 10,
                         height: 1.35,
                         fontWeight: FontWeight.w500,
@@ -479,9 +540,13 @@ class _DiscoverTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Padding(
-                padding: EdgeInsetsDirectional.only(start: 2),
-                child: Icon(Icons.chevron_left, color: _chevronColor, size: 20),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 2),
+                child: Icon(
+                  Icons.chevron_left,
+                  color: palette.textSecondary,
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -711,8 +776,12 @@ class _TopicArticleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     return Material(
-      color: const Color(0xFF171A20),
+      color: palette.surface,
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -720,14 +789,14 @@ class _TopicArticleRow extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF26282E), width: 1),
+            border: Border.all(color: palette.cardBorder, width: 1),
           ),
           padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             textDirection: TextDirection.ltr,
             children: [
-              _buildThumb(),
+              _buildThumb(palette),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -738,8 +807,8 @@ class _TopicArticleRow extends StatelessWidget {
                       article.title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: palette.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
@@ -752,8 +821,8 @@ class _TopicArticleRow extends StatelessWidget {
                           : article.publishedAt,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA0A6),
+                      style: TextStyle(
+                        color: palette.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -762,8 +831,11 @@ class _TopicArticleRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(Icons.chevron_left,
-                  color: Color(0xFF6B6F76), size: 18),
+              Icon(
+                Icons.chevron_left,
+                color: palette.textSecondary,
+                size: 18,
+              ),
             ],
           ),
         ),
@@ -771,16 +843,16 @@ class _TopicArticleRow extends StatelessWidget {
     );
   }
 
-  Widget _buildThumb() {
+  Widget _buildThumb(KashfPalette palette) {
     final placeholder = Container(
       width: 64,
       height: 64,
-      decoration: const BoxDecoration(color: Color(0xFF0E0F14)),
+      decoration: BoxDecoration(color: palette.surfaceLight),
       alignment: Alignment.center,
-      child: const Icon(
+      child: Icon(
         Icons.image_outlined,
         size: 22,
-        color: Color(0xFF8A8F9C),
+        color: palette.textSecondary,
       ),
     );
     if (article.imageUrl.isEmpty) return placeholder;
@@ -795,14 +867,14 @@ class _TopicArticleRow extends StatelessWidget {
           loadingBuilder: (_, child, progress) {
             if (progress == null) return child;
             return Container(
-              color: const Color(0xFF0E0F14),
+              color: palette.surfaceLight,
               alignment: Alignment.center,
-              child: const SizedBox(
+              child: SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 1.6,
-                  valueColor: AlwaysStoppedAnimation(Color(0xFFD4A33A)),
+                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
                 ),
               ),
             );
@@ -824,6 +896,9 @@ class _RecentSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -834,14 +909,14 @@ class _RecentSectionHeader extends StatelessWidget {
             children: [
               Icon(
                 Icons.history_outlined,
-                color: const Color(0xFFD4A33A),
+                color: KashfColors.gold,
                 size: 16,
               ),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -869,43 +944,172 @@ class _StatusPalette {
 
 class _RecentInvestigationItem {
   const _RecentInvestigationItem({
-    this.brandAsset,
     required this.title,
     required this.subtitle,
     required this.time,
     required this.statusLabel,
     required this.statusStyle,
+    required this.saved,
   });
-  final String? brandAsset;
+
+  /// Builds a row model from a Firestore-saved investigation.
+  /// Field mappings:
+  ///   * title   → SavedInvestigation.title
+  ///   * subtitle → SavedInvestigation.subtitle (short blurb)
+  ///   * time    → "x ago" relative timestamp
+  ///   * status  → confidence-band-driven label + style
+  factory _RecentInvestigationItem.fromInvestigation({
+    required SavedInvestigation saved,
+    required AppLocalizations l,
+  }) {
+    return _RecentInvestigationItem(
+      title: saved.title,
+      subtitle: saved.subtitle,
+      time: _sinceLabel(saved.createdAt, l),
+      statusLabel: _statusLabelFor(saved, l),
+      statusStyle: _statusStyleFor(saved),
+      saved: saved,
+    );
+  }
+
   final String title;
   final String subtitle;
   final String time;
   final String statusLabel;
   final _StatusStyle statusStyle;
+
+  /// Backing Firestore record — supplied to the tap handler so
+  /// the row can re-open the saved investigation report.
+  final SavedInvestigation saved;
+
+  static _StatusStyle _statusStyleFor(SavedInvestigation saved) {
+    // Status column only differentiates "complete vs anything
+    // else" because every saved record in the archive is in
+    // fact completed — failed runs aren't persisted. Map high
+    // confidence → "complete" styling, medium / low → the
+    // analyzing / paused palettes so the visual still hints at
+    // the confidence band.
+    switch (saved.confidenceBand) {
+      case 'high':
+        return _StatusStyle.completed;
+      case 'low':
+        return _StatusStyle.paused;
+      default:
+        return _StatusStyle.analyzing;
+    }
+  }
+
+  static String _statusLabelFor(SavedInvestigation saved, AppLocalizations l) {
+    switch (saved.confidenceBand) {
+      case 'high':
+        return l.t('explore_recent_complete');
+      case 'low':
+        return l.t('home_latest_band_low');
+      default:
+        return l.t('home_latest_band_medium');
+    }
+  }
+
+  static String _sinceLabel(DateTime then, AppLocalizations l) {
+    final diff = DateTime.now().difference(then);
+    if (diff.inMinutes < 1) return l.t('home_latest_since_just_now');
+    if (diff.inMinutes < 60) {
+      return l
+          .t('home_latest_since_minutes')
+          .replaceAll('%{n}', diff.inMinutes.toString());
+    }
+    if (diff.inHours < 24) {
+      return l
+          .t('home_latest_since_hours')
+          .replaceAll('%{n}', diff.inHours.toString());
+    }
+    return l
+        .t('home_latest_since_days')
+        .replaceAll('%{n}', diff.inDays.toString());
+  }
 }
 
 class _RecentInvestigationsList extends StatelessWidget {
-  const _RecentInvestigationsList({required this.items});
+  const _RecentInvestigationsList({
+    required this.items,
+    required this.onTapItem,
+  });
   final List<_RecentInvestigationItem> items;
+
+  /// Tap handler invoked when the user taps one of the rows.
+  /// Provided by the screen so this widget stays stateless.
+  final void Function(SavedInvestigation item) onTapItem;
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
+    if (items.isEmpty) {
+      // Empty state mirrors the list's outer chrome so the
+      // section header doesn't collapse into thin air. Friendly
+      // copy nudges the user to run their first investigation.
+      final l = AppLocalizations.of(context);
+      return Container(
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: palette.cardBorder, width: 1),
+        ),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 18),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: palette.surfaceLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.search,
+                color: KashfColors.gold,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                l.t('explore_recent_empty'),
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171A20),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF26282E), width: 1),
+        border: Border.all(color: palette.cardBorder, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            _RecentInvestigationRow(item: items[i]),
+            _RecentInvestigationRow(
+              item: items[i],
+              onTap: () => onTapItem(items[i].saved),
+            ),
             if (i != items.length - 1)
-              const Padding(
-                padding: EdgeInsetsDirectional.only(start: 12, end: 12),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12, end: 12),
                 child: Divider(
-                  color: Color(0xFF26282E),
+                  color: palette.divider,
                   height: 1,
                   thickness: 1,
                 ),
@@ -918,14 +1122,23 @@ class _RecentInvestigationsList extends StatelessWidget {
 }
 
 class _RecentInvestigationRow extends StatelessWidget {
-  const _RecentInvestigationRow({required this.item});
+  const _RecentInvestigationRow({required this.item, required this.onTap});
   final _RecentInvestigationItem item;
+
+  /// Tap handler. When non-null the whole row becomes a tappable
+  /// area that opens the saved report (mirrors the home screen
+  /// / latest investigations screens).
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final appPalette = KashfPalette.active;
     final palette = _paletteFor(item.statusStyle);
 
-    return Directionality(
+    final row = Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
@@ -938,8 +1151,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                 item.time,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF9AA0A6),
+                style: TextStyle(
+                  color: appPalette.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   height: 1.2,
@@ -958,8 +1171,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                     item.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: appPalette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       height: 1.2,
@@ -970,8 +1183,8 @@ class _RecentInvestigationRow extends StatelessWidget {
                     item.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9AA0A6),
+                    style: TextStyle(
+                      color: appPalette.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       height: 1.2,
@@ -981,32 +1194,45 @@ class _RecentInvestigationRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            _buildBrandImage(),
+            _buildThumbnail(appPalette),
             const SizedBox(width: 10),
-            const Icon(Icons.more_vert, color: Color(0xFF8A8A8A), size: 18),
+            Icon(
+              Icons.more_vert,
+              color: appPalette.textSecondary,
+              size: 18,
+            ),
           ],
         ),
       ),
     );
+
+    return InkWell(
+      onTap: onTap,
+      child: row,
+    );
   }
 
-  Widget _buildBrandImage() {
+  /// Thumbnail — every saved investigation uses the bundled
+  /// `report.jpg` asset so the row visually anchors on a
+  /// consistent image regardless of which subject the run
+  /// covered (matches the home + latest investigations screens).
+  Widget _buildThumbnail(KashfPalette appPalette) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: Container(
         width: 48,
         height: 48,
-        color: const Color(0xFF0E0F14),
+        color: appPalette.surfaceLight,
         alignment: Alignment.center,
         child: Image.asset(
-          item.brandAsset!,
+          'assets/images/report.jpg',
           width: 48,
           height: 48,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => Icon(
             Icons.branding_watermark_outlined,
             size: 22,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: appPalette.textSecondary,
           ),
         ),
       ),

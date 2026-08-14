@@ -169,7 +169,15 @@ class InvestigationService {
         // the very next investigation the user starts.
         model: OpenRouterConfig.model,
         temperature: 0.4,
-        maxTokens: 4000,
+        // Investigation reports emit 7 sections of structured
+        // items in two languages. Budget MUST be large enough
+        // for the full schema; truncating mid-JSON is the #1
+        // cause of "can't parse the AI response" errors
+        // (observed against `openai/gpt-5.6-luna` with 4000
+        // tokens, which hit the cap and returned 4000 tokens
+        // of partial output). 8000 is the cap accepted by
+        // [OpenRouterClient._validateRequest].
+        maxTokens: 8000,
         // NOTE: do NOT set responseFormat here. With web search
         // enabled, OpenRouter silently drops tool calls when
         // `response_format: type=json_object` is present in the
@@ -192,10 +200,21 @@ class InvestigationService {
       try {
         json = await _client.chatCompletionJson(request);
       } on OpenRouterException catch (e) {
+        // Surface the upstream error in the loading sheet so the
+        // user can tell apart "model returned nothing" from
+        // "model truncated mid-JSON" from "API key missing". The
+        // generic `ir_processing_failed` string alone hides the
+        // most actionable signal — the model's own error or the
+        // client-side hint we append when the response hit the
+        // `max_tokens` cap.
+        final detail = e.message.trim();
+        final shown = detail.isEmpty
+            ? l.t('ir_processing_failed')
+            : '${l.t('ir_processing_failed')}\n$detail';
         _emit(
           l,
           InvestigationPhase.failed,
-          l.t('ir_processing_failed'),
+          shown,
           error: e.message,
         );
         throw _wrap(e);
@@ -615,6 +634,24 @@ InvestigationResultItem _parseItem(
   required String fallbackId,
 }) {
   final m = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
+  final linksRaw = m['links'];
+  final links = <InvestigationResultLink>[];
+  if (linksRaw is List) {
+    for (final entry in linksRaw) {
+      if (entry is Map<String, dynamic>) {
+        final label = (entry['label'] as String?)?.trim();
+        final url = (entry['url'] as String?)?.trim();
+        if (label == null || label.isEmpty) continue;
+        if (url == null || url.isEmpty) continue;
+        // Accept only http(s) URLs — anything else is unsafe to
+        // pass straight to url_launcher.
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          continue;
+        }
+        links.add(InvestigationResultLink(label: label, url: url));
+      }
+    }
+  }
   return InvestigationResultItem(
     id: (m['id'] as String?) ?? fallbackId,
     title: (m['title'] as String?) ?? '',
@@ -623,6 +660,7 @@ InvestigationResultItem _parseItem(
     metricLabel: m['metric_label'] as String?,
     badge: m['badge'] as String?,
     imageUrl: m['image_url'] as String?,
+    links: links,
   );
 }
 

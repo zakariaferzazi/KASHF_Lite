@@ -104,12 +104,28 @@ service cloud.firestore {
   /// [attach] is called.
   void Function(Object error, StackTrace stack)? _onError;
 
-  /// Subscribes the writer to a user's collection. Idempotent.
+  /// Subscribes the writer to a user's collection. Idempotent —
+  /// calling it again for the same user cancels the previous
+  /// listener first so we never leak two Firestore subscriptions
+  /// for the same uid (which would fan duplicate snapshots into
+  /// `_watchCtrl` and surface as duplicated rows in the UI).
   ///
   /// [onError] is invoked for every Firestore error so the caller
   /// can decide whether to fall back to the local cache.
   void attach(String userId, {void Function(Object, StackTrace)? onError}) {
     _onError = onError;
+    // Drop any pre-existing subscription for this user. Without
+    // this, a re-attach (e.g. an extra authStateChanges tick, or
+    // a redundant `watchLatest` after a hot restart) would leak a
+    // second Firestore listener that pushes the same snapshots
+    // back into `_watchCtrl`. The broadcast controller fans them
+    // out to every active subscriber, which surfaced as duplicate
+    // cards on the home screen.
+    final existing = _watchSubs[userId];
+    if (existing != null) {
+      existing.cancel();
+      _watchSubs.remove(userId);
+    }
     final sub = _userCol(userId)
         .orderBy('createdAt', descending: true)
         .limit(_kCap)

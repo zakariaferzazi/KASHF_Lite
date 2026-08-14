@@ -499,6 +499,13 @@ class AiHomeService {
   /// burning API tokens. Each cache entry is keyed on the model
   /// that produced it so a model switch in Settings wipes the
   /// visible cache automatically.
+  ///
+  /// Falls back to Firestore (via [NewsContentRepository]) when the
+  /// local disk slot is empty — this is what lets the Market Pulse
+  /// panel and Market screen survive an app reinstall / cache
+  /// wipe / model-id mismatch. The Firestore payload is written
+  /// back to disk on the way through so subsequent launches are
+  /// instant again.
   Future<void> hydrateFromDisk({
     required String language,
     String region = 'Kuwait',
@@ -513,7 +520,21 @@ class AiHomeService {
       Future<void> Function(Map<String, dynamic>) apply,
     ) async {
       final key = _diskKey(kind, language, region, modelId);
-      final raw = await disk.readJson(key);
+      var raw = await disk.readJson(key);
+      if (raw == null) {
+        // Disk miss → ask the Firestore-backed repository. It
+        // mirrors its own disk slot under a different prefix, so
+        // a fresh install (empty local prefs) still finds the
+        // last-known-good AI payload.
+        final aiKind = _aiKindFor(kind);
+        if (aiKind != null) {
+          raw = await NewsContentRepository.instance.readAiContent(
+            kind: aiKind,
+            language: language,
+            region: region,
+          );
+        }
+      }
       if (raw == null) return;
       try {
         await apply(raw);

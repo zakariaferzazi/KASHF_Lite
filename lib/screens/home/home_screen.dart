@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
 import '../../models/saved_investigation.dart';
+import '../../models/today_case.dart';
 import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_text_utils.dart';
 import '../../services/ai/featured_brand_controller.dart';
 import '../../services/ai/home_data_controller.dart';
+import '../../services/home_tab_notifier.dart';
+import '../../services/investigation_archive_service.dart';
 import '../../services/news/news_data_controller.dart';
 import '../../services/news/news_models.dart';
+import '../../services/today_case_service.dart';
 import '../../state/latest_investigations_controller.dart';
 import '../../theme.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../widgets/news_carousel.dart';
 import '../files/latest_investigations_screen.dart';
+import '../investigation/investigation_results_screen.dart';
 import '../market/market_screen.dart';
+import '../shell/home_shell.dart';
 import 'today_case_screen.dart';
 
 /// KASHF Lite dashboard. The entry point after sign-in. Layout mirrors
@@ -39,6 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
   late final LatestInvestigationsController _latestInvestigations;
   dynamic _selectedTopic = NewsTopic.fashion;
   int _trendingPage = 0;
+
+  /// Random case picked from `assets/Data/today_case.json` on
+  /// bootstrap / refresh. The same instance is forwarded to
+  /// [TodayCaseScreen] when the user taps the featured card so
+  /// the detail page mirrors the home card.
+  TodayCase? _todayCase;
 
   /// ISO 3166-1 alpha-2 country code used for the home news feed.
   static const String _countryCode = 'KW';
@@ -67,13 +80,16 @@ class _HomeScreenState extends State<HomeScreen> {
       // Restore the previously featured brand from disk so the
       // user sees the same brand after a restart.
       await _featuredBrand.bootstrap();
+      // Pick the initial random case from the bundled JSON so the
+      // featured card shows real data on first paint.
+      await _loadTodayCase();
       // Default to Fashion so the home carousel surfaces what's
       // trending in the highest-priority vertical on first load.
       //
       // `bootstrap` is cache-first: it renders whatever is on
       // disk/Firestore immediately and only schedules a network
       // refresh if the cached payload is older than 24 hours.
-      // We deliberately do NOT call `refreshNow` here — that
+      // We deliberately do NOT call `refreshNow` here â€” that
       // would defeat the 24-hour gate and re-trigger the
       // expensive Google News pipeline every time the user
       // opens the home tab.
@@ -93,6 +109,54 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Tap handler for a Latest Investigations card on the home
+  /// screen. Looks up the full report from the archive (Firestore
+  /// or the local mirror) and pushes the detail screen.
+  ///
+  /// The fetch is local-only (the document is already in memory
+  /// or in SharedPreferences cache) so we don't show an overlay â€”
+  /// a single SnackBar surfaces the rare case where the
+  /// embedded report is missing.
+  Future<void> _openSavedReport(
+    SavedInvestigation item,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final result = await InvestigationArchiveService.instance
+          .loadResult(item.id);
+      if (!mounted) return;
+      if (result == null) {
+        // The saved record exists but the embedded report is
+        // missing or unreadable â€” most likely the document was
+        // written before the new schema shipped. Tell the user
+        // rather than silently opening an empty detail screen.
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This saved report cannot be opened â€” only its '
+              'summary is available. Re-run the investigation '
+              'to refresh.',
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      await navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => InvestigationResultsScreen(result: result),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('[HomeScreen] openSavedReport failed: $e\n$st');
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open this report.')),
+      );
+    }
+  }
+
   /// Single entry-point for the user-facing "refresh everything"
   /// action (app-bar icon + pull-to-refresh). Refreshes the AI
   /// payloads AND rotates the featured brand so the brand name
@@ -104,6 +168,35 @@ class _HomeScreenState extends State<HomeScreen> {
       _featuredBrand.refresh(),
       _latestInvestigations.refresh(),
     ]);
+    // Re-roll today's case so the user sees a different company
+    // each refresh (skipping the current pick to avoid repeats).
+    await _loadTodayCase(excludeLogourl: _todayCase?.logourl);
+  }
+
+  /// Picks a random [TodayCase] from the bundled JSON pool and
+  /// stores it in [_todayCase]. Called on bootstrap and on every
+  /// full refresh so the featured card always shows fresh data.
+  ///
+  /// Failures are swallowed: a missing/broken JSON asset should
+  /// never break the home screen.
+  Future<void> _loadTodayCase({String? excludeLogourl}) async {
+    try {
+      debugPrint('[HomeScreen] _loadTodayCase: loading…');
+      final picked = await TodayCaseService.instance
+          .pickRandom(excludeLogourl: excludeLogourl);
+      debugPrint('[HomeScreen] _loadTodayCase: picked=${picked?.logourl} '
+          'name=${picked?.name}');
+      if (!mounted || picked == null) {
+        debugPrint('[HomeScreen] _loadTodayCase: skipped ('
+            'mounted=$mounted, picked=$picked)');
+        return;
+      }
+      setState(() => _todayCase = picked);
+    } catch (e, st) {
+      // Surface errors via debugPrint so they show up in BOTH
+      // debug AND release builds (assert is stripped in release).
+      debugPrint('[HomeScreen] _loadTodayCase failed: $e\n$st');
+    }
   }
 
   @override
@@ -122,6 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // Subscribe to the active theme so every rebuild picks up the
+    // freshly-selected palette. Without this dependency the
+    // IndexedStack in [HomeShell] keeps reusing our const widget
+    // and the screen never refreshes when the user changes theme.
+    ThemeScope.of(context);
     // The centered brand spinner overlays the whole page on every
     // refresh — both the very first cold load AND any tap on the
     // app-bar refresh / pull-to-refresh afterwards. The backdrop
@@ -137,9 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: LoadingOverlay(
           visible: showFullOverlay,
           blocking: true,
-          message: l.isRtl
-              ? 'جاري تحميل بيانات الذكاء الاصطناعي…'
-              : 'Loading AI data…',
+          message: l.t('home_ai_loading'),
           child: SafeArea(
             bottom: false,
             child: RefreshIndicator(
@@ -168,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _FeaturedInvestigation(
                       l: l,
                       brandController: _featuredBrand,
+                      todayCase: _todayCase,
                     ),
                   ),
                 ),
@@ -252,27 +349,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverPadding(
                   padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 16),
                   sliver: SliverToBoxAdapter(
-                    child: _RecentUpdatesList(l: l),
-                  ),
-                ),
-                SliverPadding(
-                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-                  sliver: SliverToBoxAdapter(
-                    child: _SectionHeader(
-                      title: l.t('home_latest_investigations'),
-                      trailing: l.t('home_view_all'),
-                      onTrailingTap: () => Navigator.of(
-                        context,
-                      ).push(kashfRoute(const LatestInvestigationsScreen())),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: EdgeInsetsDirectional.fromSTEB(16, 4, 16, 24),
-                  sliver: SliverToBoxAdapter(
-                    child: _LatestInvestigationsList(
+                    child: _RecentUpdatesList(
                       l: l,
-                      controller: _latestInvestigations,
+                      investigations: _latestInvestigations.items,
+                      onOpenReport: _openSavedReport,
                     ),
                   ),
                 ),
@@ -304,6 +384,9 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     // The logo image already contains the brand name, so we just render it
     // as-is. Width is sized to match the action controls (bell + avatar).
     final logoMark = Image.asset(
@@ -320,21 +403,28 @@ class _TopBar extends StatelessWidget {
       isLoading: isRefreshing,
       onTap: isRefreshing ? null : onRefresh,
     );
-    final avatar = Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: KashfColors.gold.withValues(alpha: 0.18),
-        border: Border.all(color: KashfColors.gold, width: 1.2),
-      ),
-      clipBehavior: Clip.antiAlias,
-      alignment: Alignment.center,
-      child: Image.asset(
-        'assets/images/logoprofile.jpg',
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) =>
-            Icon(Icons.person, color: KashfColors.gold, size: 18),
+    final avatar = GestureDetector(
+      // Switching tabs (not pushing a route) keeps the home
+      // shell's bottom navbar visible behind the Settings tab.
+      onTap: () =>
+          HomeTabScope.of(context).requestTab(HomeTabs.settings),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: KashfColors.gold.withValues(alpha: 0.18),
+          border: Border.all(color: KashfColors.gold, width: 1.2),
+        ),
+        clipBehavior: Clip.antiAlias,
+        alignment: Alignment.center,
+        child: Image.asset(
+          'assets/images/logoprofile.jpg',
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) =>
+              Icon(Icons.person, color: KashfColors.gold, size: 18),
+        ),
       ),
     );
 
@@ -370,6 +460,9 @@ class _RefreshIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -396,6 +489,9 @@ class _RefreshIconButton extends StatelessWidget {
 class _NotificationBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return SizedBox(
       width: 30,
       height: 30,
@@ -458,6 +554,9 @@ class _Greeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(0, 6, 0, 0),
       child: Column(
@@ -506,15 +605,30 @@ class _FeaturedInvestigation extends StatelessWidget {
   const _FeaturedInvestigation({
     required this.l,
     required this.brandController,
+    this.todayCase,
   });
   final AppLocalizations l;
   final FeaturedBrandController brandController;
+
+  /// Random case loaded from `assets/Data/today_case.json`.
+  /// When non-null, the card title + subtitle use this case's
+  /// brand name and the detail screen is opened with the same
+  /// instance. When null, the card falls back to the brand
+  /// controller's headline strings.
+  final TodayCase? todayCase;
 
   /// Brand-aware headline. Picks the Arabic label for RTL users
   /// (`brandController.brandLabel` is the Arabic form when one
   /// is known, the raw English key otherwise) and falls back to
   /// the raw English key for LTR users.
   String _title(AppLocalizations l) {
+    final c = todayCase;
+    if (c != null) {
+      // Use the bundled case as the source of truth when it's
+      // available so the headline matches the detail screen.
+      return l.t('home_featured_title_with_brand_en')
+          .replaceAll('{brand}', c.displayName(isRtl: l.isRtl));
+    }
     final brand = brandController.brandKey ?? '';
     if (brand.isEmpty) return l.t('home_featured_title');
     if (l.isRtl) {
@@ -534,19 +648,73 @@ class _FeaturedInvestigation extends StatelessWidget {
   /// sees WHICH brand the card is about. Brand name comes from
   /// the same source as [_title] so they stay in sync.
   String _subtitle(AppLocalizations l) {
+    final c = todayCase;
+    if (c != null) {
+      return l
+          .t('home_featured_subtitle_with_brand')
+          .replaceAll('{brand}', c.displayName(isRtl: l.isRtl));
+    }
     final brand = brandController.brandKey ?? '';
     if (brand.isEmpty) return l.t('home_featured_subtitle');
     return l.t('home_featured_subtitle_with_brand')
         .replaceAll('{brand}', brand);
   }
 
+  /// Trims a mentions string like `"286K"` or `"1.2M"` so it
+  /// fits inside the small featured stat slot without forcing
+  /// the whole row to scale down.
+  ///
+  /// The JSON sometimes carries long strings like `"1.2M"`
+  /// (fine) but can also carry `"1,200,000"`-style numbers.
+  /// We abbreviate the latter into compact K/M form so the
+  /// stat slot stays narrow.
+  String _compactMentions(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return s;
+    // Already short and friendly-looking — leave it alone.
+    if (s.length <= 5) return s;
+    // Strip thousands separators and try to parse as a number.
+    final stripped = s.replaceAll(',', '');
+    final n = num.tryParse(stripped);
+    if (n == null) return s;
+    if (n >= 1000000) {
+      final m = n / 1000000.0;
+      return '${_trimDecimal(m)}M';
+    }
+    if (n >= 1000) {
+      final k = n / 1000.0;
+      return '${_trimDecimal(k)}K';
+    }
+    return n.toString();
+  }
+
+  /// Trims trailing `.0` from a double so "2.0M" becomes "2M".
+  String _trimDecimal(double v) {
+    final s = v.toStringAsFixed(1);
+    return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Purple is the primary accent for this card.
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
+    // Purple is the primary accent for this card. Kept as a
+    // constant so the brand-card identity stays consistent
+    // across palettes (only the *background* surfaces flip).
     const purple = Color(0xFF8B5CF6);
+    // When the bundled JSON hasn't been loaded yet, render a
+    // skeleton card instead of the demo strings so the user
+    // never sees stale placeholder data.
+    final c = todayCase;
+    final showSkeleton = c == null;
     return GestureDetector(
-      onTap: () =>
-          Navigator.of(context).push(kashfRoute(const TodayCaseScreen())),
+      onTap: () => Navigator.of(context).push(
+        kashfRoute(
+          TodayCaseScreen(todayCase: todayCase),
+        ),
+      ),
       behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -572,10 +740,13 @@ class _FeaturedInvestigation extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1F1810), Color(0xFF2D2418)],
+                colors: [
+                  palette.surface,
+                  palette.surfaceLight,
+                ],
               ),
               border: Border.all(
                 color: purple.withValues(alpha: 0.40),
@@ -594,75 +765,103 @@ class _FeaturedInvestigation extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title — white, bold. Brand-aware so the
+                          // Title â€” white, bold. Brand-aware so the
                           // headline rotates when the user refreshes.
-                          Text(
-                            _title(l),
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              color: KashfPalette.active.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 6),
-                          // Subtitle — lighter gray, plain text (no icon).
-                          Text(
-                            _subtitle(l),
-                            style: TextStyle(
-                              color: KashfPalette.active.textPrimary.withValues(
-                                alpha: 0.7,
+                          if (showSkeleton)
+                            const _FeaturedSkeleton(height: 16, width: 0.85)
+                          else
+                            Text(
+                              _title(l),
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                color: palette.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                height: 1.3,
                               ),
-                              fontSize: 11,
-                              height: 1.4,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          const SizedBox(height: 6),
+                          // Subtitle â€” lighter gray, plain text (no icon).
+                          if (showSkeleton)
+                            const _FeaturedSkeleton(height: 12, width: 0.65)
+                          else
+                            Text(
+                              _subtitle(l),
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 11,
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           Spacer(),
                           // Bottom row: stats (start side) + CTA pill (end side).
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Stats inline with thin vertical dividers.
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    _FeaturedStat(
-                                      value: '12',
-                                      unit: l.t('home_featured_metric1_ar'),
-                                      color: purple,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Container(
-                                      width: 1,
-                                      height: 22,
-                                      color: purple.withValues(alpha: 0.30),
-                                    ),
-                                    SizedBox(width: 6),
-                                    _FeaturedStat(
-                                      value: '8',
-                                      unit: l.t('home_featured_metric2_ar'),
-                                      color: purple,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Container(
-                                      width: 1,
-                                      height: 22,
-                                      color: purple.withValues(alpha: 0.30),
-                                    ),
-                                    SizedBox(width: 6),
-                                    _FeaturedStat(
-                                      value: '24',
-                                      unit: l.t('home_featured_metric3_ar'),
-                                      color: purple,
-                                    ),
-                                  ],
+                          if (showSkeleton)
+                            const Padding(
+                              padding: EdgeInsetsDirectional.only(top: 6),
+                              child: _FeaturedSkeleton(height: 14, width: 0.5),
+                            )
+                          else
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Stats inline with thin vertical dividers.
+                                // Wrapped in Flexible so the stats block
+                                // yields room to the CTA pill on narrow
+                                // screens; each stat is also Flexible so
+                                // long unit strings shrink instead of
+                                // pushing the row off the right edge.
+                                Flexible(
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        flex: 2,
+                                        child: _FeaturedStat(
+                                          value: c.kpi.activeDays,
+                                          unit: l
+                                              .t('home_featured_metric1_ar'),
+                                          color: purple,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        width: 1,
+                                        height: 22,
+                                        color: purple.withValues(alpha: 0.30),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        flex: 2,
+                                        child: _FeaturedStat(
+                                          value: c.kpi.index,
+                                          unit: l
+                                              .t('home_featured_metric2_ar'),
+                                          color: purple,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        width: 1,
+                                        height: 22,
+                                        color: purple.withValues(alpha: 0.30),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        flex: 3,
+                                        child: _FeaturedStat(
+                                          value: _compactMentions(
+                                              c.kpi.mentions),
+                                          unit: l
+                                              .t('home_featured_metric3_ar'),
+                                          color: purple,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
                               SizedBox(width: 8),
                               // Outlined purple pill CTA on the END side.
                               Container(
@@ -671,7 +870,8 @@ class _FeaturedInvestigation extends StatelessWidget {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.35),
+                                  color: palette.surfaceLight
+                                      .withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(color: purple, width: 1),
                                 ),
@@ -709,7 +909,7 @@ class _FeaturedInvestigation extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          color: const Color(0xFF1A0F08),
+                          color: palette.surfaceLight,
                           border: Border.all(
                             color: purple.withValues(alpha: 0.45),
                             width: 1,
@@ -719,10 +919,23 @@ class _FeaturedInvestigation extends StatelessWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            _FeaturedBrandLogo(
-                              logoUrl: brandController.logoUrl,
-                              fallbackBrandKey: brandController.brandKey,
-                            ),
+                            if (showSkeleton)
+                              // Pulsing gray block while the JSON is
+                              // loading — never show the lattafa
+                              // fallback image during the load.
+                              const _FeaturedSkeleton(
+                                  height: 96, width: 1.0)
+                            else
+                              _FeaturedBrandLogo(
+                                // Prefer the JSON-bundled logo URL when
+                                // a case is loaded so the featured card
+                                // matches the detail screen.
+                                logoUrl: todayCase?.cleanLogoUrl ??
+                                    brandController.logoUrl,
+                                fallbackBrandKey:
+                                    todayCase?.logourl ??
+                                        brandController.brandKey,
+                              ),
                             DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -765,20 +978,24 @@ class _FeaturedBrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
     const purple = Color(0xFF8B5CF6);
     if (logoUrl == null) {
-      // No brand picked yet (extremely rare — bootstrap fills it
+      // No brand picked yet (extremely rare â€” bootstrap fills it
       // synchronously on launch). Render the bundled fallback so
       // the slot is never blank.
-      return _fallback(purple);
+      return _fallback(purple, palette);
     }
     return Image.network(
       logoUrl!,
-      fit: BoxFit.contain,
+      fit: BoxFit.cover,
       alignment: Alignment.center,
       // White background lets light logos (e.g. Starbucks on a
-      // white CDN) read against the dark card surface.
-      color: Colors.white,
+      // white CDN) read against the card surface in either theme.
+      color: palette.textPrimary,
       colorBlendMode: BlendMode.modulate,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
@@ -794,12 +1011,12 @@ class _FeaturedBrandLogo extends StatelessWidget {
               '$logoUrl: $error');
           return true;
         }());
-        return _fallback(purple);
+        return _fallback(purple, palette);
       },
     );
   }
 
-  Widget _fallback(Color purple) {
+  Widget _fallback(Color purple, KashfPalette palette) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -807,12 +1024,71 @@ class _FeaturedBrandLogo extends StatelessWidget {
           'assets/images/lattafa.jpeg',
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => Container(
-            color: const Color(0xFF2A1A0F),
+            color: palette.surface,
             alignment: Alignment.center,
             child: Icon(Icons.local_florist, color: purple, size: 36),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Skeleton placeholder shown on the home featured card while
+/// the bundled `assets/Data/today_case.json` is still being
+/// loaded. Renders a pulsing rounded rectangle instead of the
+/// localized demo strings so the user never sees stale data.
+class _FeaturedSkeleton extends StatefulWidget {
+  const _FeaturedSkeleton({
+    required this.height,
+    required this.width,
+  });
+
+  final double height;
+
+  /// Width as a fraction of the parent (0..1). Use 1.0 for
+  /// a full-width bar.
+  final double width;
+
+  @override
+  State<_FeaturedSkeleton> createState() => _FeaturedSkeletonState();
+}
+
+class _FeaturedSkeletonState extends State<_FeaturedSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) {
+        final t = _ctrl.value;
+        return FractionallySizedBox(
+          widthFactor: widget.width,
+          alignment: AlignmentDirectional.centerStart,
+          child: Container(
+            height: widget.height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              color: Color.lerp(
+                const Color(0x33FFFFFF),
+                const Color(0x66FFFFFF),
+                t,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -829,35 +1105,48 @@ class _FeaturedStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Small number â€" purple accent.
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            height: 1.0,
+        // Big number — purple accent. Wrapped in FittedBox so
+        // long values like "8.7M" or "286K" shrink to fit the
+        // available width instead of overflowing the row and
+        // breaking the alignment with the dividers.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            value,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+            ),
           ),
         ),
-        SizedBox(height: 1),
-        // Unit label â€" purple accent. FittedBox guarantees it shrinks
+        const SizedBox(height: 1),
+        // Unit label — purple accent. FittedBox guarantees it shrinks
         // instead of overflowing when the string is long.
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: AlignmentDirectional.centerStart,
           child: Text(
             unit,
+            maxLines: 1,
+            softWrap: false,
             style: TextStyle(
               color: color,
               fontSize: 8,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
             ),
-            maxLines: 1,
           ),
         ),
       ],
@@ -880,6 +1169,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     return Row(
       children: [
         Expanded(
@@ -956,7 +1248,13 @@ class _MarketPulsePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Color tokens used across the panel.
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final palette = KashfPalette.active;
+    // Color tokens used across the panel. The semantic colours
+    // (green/blue/red/gold) are status indicators and intentionally
+    // do NOT flip with the theme; only the *surfaces* adapt.
     const green = Color(0xFF22C55E);
     const blue = Color(0xFF38BDF8);
     const red = Color(0xFFEF4444);
@@ -976,11 +1274,11 @@ class _MarketPulsePanel extends StatelessWidget {
       }).toList();
       while (cards.length < 4) {
         cards.add(_PulseCardData(
-          label: '—',
-          value: '—',
+          label: 'â€”',
+          value: 'â€”',
           sub: '',
           color: blue,
-          bg: const Color(0xFF13202A),
+          bg: palette.surfaceLight,
           points: _kSparkWave1,
         ));
       }
@@ -991,7 +1289,7 @@ class _MarketPulsePanel extends StatelessWidget {
           value: l.t('home_pulse_gainers_val'),
           sub: l.t('home_pulse_gainers_sub'),
           color: green,
-          bg: const Color(0xFF12241A),
+          bg: green.withValues(alpha: 0.10),
           points: _kSparkUp,
         ),
         _PulseCardData(
@@ -999,7 +1297,7 @@ class _MarketPulsePanel extends StatelessWidget {
           value: l.t('home_pulse_traded_val'),
           sub: l.t('home_pulse_traded_sub'),
           color: blue,
-          bg: const Color(0xFF13202A),
+          bg: blue.withValues(alpha: 0.10),
           points: _kSparkWave1,
         ),
         _PulseCardData(
@@ -1007,7 +1305,7 @@ class _MarketPulsePanel extends StatelessWidget {
           value: l.t('home_pulse_losers_val'),
           sub: l.t('home_pulse_losers_sub'),
           color: red,
-          bg: const Color(0xFF241318),
+          bg: red.withValues(alpha: 0.10),
           points: _kSparkDown,
         ),
         _PulseCardData(
@@ -1015,7 +1313,7 @@ class _MarketPulsePanel extends StatelessWidget {
           value: l.t('home_pulse_campaigns_val'),
           sub: l.t('home_pulse_campaigns_sub'),
           color: gold,
-          bg: const Color(0xFF241F12),
+          bg: gold.withValues(alpha: 0.10),
           points: _kSparkWave2,
         ),
       ];
@@ -1180,6 +1478,9 @@ class _PulseMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
     final valueText = localiseBrandOrTag(data.value, locale: localeCode);
     final subText = localiseBrandOrTag(data.sub, locale: localeCode);
     return Container(
@@ -1193,7 +1494,7 @@ class _PulseMetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top: small label (الأكثر صعودًا, etc.).
+          // Top: small label (الأكثر صعوداً, etc.).
           Text(
             data.label,
             textAlign: TextAlign.center,
@@ -1332,64 +1633,59 @@ const List<double> _kSparkWave2 = <double>[
 ];
 
 // ============================ Recent Updates ============================
+//
+// Horizontal card list mirrored from the archive layer. Each row
+// corresponds to one [SavedInvestigation] so a user's recent
+// investigations surface immediately on the home screen without
+// scrolling to the dedicated "Latest Investigations" section.
+//
+// The visual treatment is unchanged from the previous hardcoded
+// layout â€” only the data source moved from inline demo entries to
+// the controller-driven Firestore stream.
 class _RecentUpdatesList extends StatelessWidget {
-  const _RecentUpdatesList({required this.l});
+  const _RecentUpdatesList({
+    required this.l,
+    required this.investigations,
+    required this.onOpenReport,
+  });
   final AppLocalizations l;
+  final List<SavedInvestigation> investigations;
+
+  /// Tap handler invoked when the user taps one of the cards.
+  /// Provided by the home screen so this widget stays stateless
+  /// and doesn't know about navigation / loading details.
+  final void Function(SavedInvestigation item) onOpenReport;
 
   @override
   Widget build(BuildContext context) {
-    final items = <_UpdateItem>[
-      _UpdateItem(
-        title: l.t('home_update_perfume'),
-        price: l.t('home_update_perfume_h'),
-        views: l.t('home_update_perfume_views'),
-        status: l.t('home_update_perfume_status'),
-        time: l.t('home_update_perfume_time'),
-        score: l.t('home_update_perfume_score'),
-        scoreColor: const Color(0xFF22C55E),
-        dotColor: const Color(0xFF22C55E),
-        imagePath: 'assets/images/parfum.jpeg',
-      ),
-      _UpdateItem(
-        title: l.t('home_update_campaign'),
-        price: l.t('home_update_campaign_h'),
-        views: l.t('home_update_campaign_views'),
-        status: l.t('home_update_campaign_status'),
-        time: l.t('home_update_campaign_time'),
-        score: l.t('home_update_campaign_score'),
-        scoreColor: const Color(0xFF3B82F6),
-        dotColor: const Color(0xFF3B82F6),
-        imagePath: 'assets/images/borge.jpeg',
-      ),
-      _UpdateItem(
-        title: l.t('home_update_market'),
-        price: l.t('home_update_market_h'),
-        views: l.t('home_update_market_views'),
-        status: l.t('home_update_market_status'),
-        time: l.t('home_update_market_time'),
-        score: l.t('home_update_market_score'),
-        scoreColor: const Color(0xFFF59E0B),
-        dotColor: const Color(0xFFF59E0B),
-        imagePath: 'assets/images/sauvage.jpeg',
-      ),
-      _UpdateItem(
-        title: l.t('home_update_yasmine'),
-        price: l.t('home_update_yasmine_h'),
-        views: l.t('home_update_yasmine_views'),
-        status: l.t('home_update_yasmine_status'),
-        time: l.t('home_update_yasmine_time'),
-        score: l.t('home_update_yasmine_score'),
-        scoreColor: const Color(0xFFEF4444),
-        dotColor: const Color(0xFFEF4444),
-        imagePath: 'assets/images/lattafa.jpeg',
-      ),
-    ];
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    // Caps the list at 4 rows. The upstream
+    // [LatestInvestigationsController] is now Firestore-only so
+    // no dedupe is needed — Firestore guarantees one doc per id.
+    final recent = investigations.take(4).toList();
+    if (recent.isEmpty) {
+      // Render a single muted placeholder so the section header
+      // doesn't collapse into thin air. The placeholder is
+      // non-interactive (no onOpenReport) so taps on it are a
+      // no-op rather than opening a missing report.
+      return _UpdateCard(
+        item: _UpdateItem.placeholder(l: l),
+      );
+    }
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
+      itemCount: recent.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _UpdateCard(item: items[i]),
+      itemBuilder: (_, i) {
+        final saved = recent[i];
+        return _UpdateCard(
+          item: _UpdateItem.fromInvestigation(saved: saved, l: l),
+          onTap: () => onOpenReport(saved),
+        );
+      },
     );
   }
 }
@@ -1404,8 +1700,75 @@ class _UpdateItem {
     required this.score,
     required this.scoreColor,
     required this.dotColor,
-    required this.imagePath,
+    required this.thumbnailUrl,
+    required this.entityIcon,
+    required this.entityColor,
   });
+
+  /// Builds a row model from a saved investigation. Field
+  /// mappings (kept intentionally simple so the visual stays
+  /// recognisable from the demo):
+  ///   * title   â†’ SavedInvestigation.title
+  ///   * price   â†’ SavedInvestigation.subtitle (short blurb)
+  ///   * views   â†’ evidence count if > 0, else tag list
+  ///   * status  â†’ confidence-band label (high/medium/low)
+  ///   * time    â†’ "x ago" relative timestamp
+  ///   * score   â†’ SavedInvestigation.confidencePercent
+  ///   * colors  â†’ derived from confidence band
+  ///   * thumb   â†’ SavedInvestigation.thumbnailUrl (network)
+  ///               with an entity-type icon fallback when
+  ///               no thumbnail is available
+  factory _UpdateItem.fromInvestigation({
+    required SavedInvestigation saved,
+    required AppLocalizations l,
+  }) {
+    final color = _bandColorFor(saved.confidenceBand);
+    final score = '${saved.confidencePercent}%';
+    final status = _bandLabelFor(saved.confidenceBand, l);
+    final time = _sinceLabelFor(saved.createdAt, l);
+    final price = saved.subtitle.isNotEmpty ? saved.subtitle : '';
+    final views = saved.evidenceCount > 0
+        ? l.tp('home_latest_evidence', {
+            'n': saved.evidenceCount.toString(),
+          })
+        : (saved.tags.isNotEmpty ? saved.tags.first : '');
+    return _UpdateItem(
+      title: saved.title,
+      price: price,
+      views: views,
+      status: status,
+      time: time,
+      score: score,
+      scoreColor: color,
+      dotColor: color,
+      thumbnailUrl: saved.thumbnailUrl,
+      entityIcon: saved.entityType.filledIcon,
+      entityColor: color,
+    );
+  }
+
+  /// Empty-state row shown when the user has no saved
+  /// investigations yet. Mirrors the regular row layout so the
+  /// section header doesn't sit awkwardly on its own.
+  factory _UpdateItem.placeholder({required AppLocalizations l}) {
+    // Use a neutral text-color for the placeholder markers so it
+    // works in both dark and light themes.
+    final neutral = KashfPalette.active.textSecondary;
+    return _UpdateItem(
+      title: l.t('home_update_placeholder_title'),
+      price: l.t('home_update_placeholder_subtitle'),
+      views: '',
+      status: l.t('home_latest_band_medium'),
+      time: '',
+      score: 'â€“',
+      scoreColor: neutral,
+      dotColor: neutral,
+      thumbnailUrl: null,
+      entityIcon: Icons.search_outlined,
+      entityColor: neutral,
+    );
+  }
+
   final String title;
   final String price;
   final String views;
@@ -1414,20 +1777,79 @@ class _UpdateItem {
   final String score;
   final Color scoreColor;
   final Color dotColor;
-  final String imagePath;
+  final String? thumbnailUrl;
+  final IconData entityIcon;
+  final Color entityColor;
+
+  // ------------------------------------------------------------------
+  // Inline helpers â€” duplicated from the Latest Investigations
+  // card so this section is self-contained. Kept tiny on
+  // purpose so we don't introduce a third copy of the same
+  // colour / label tables elsewhere in the app.
+  // ------------------------------------------------------------------
+  static Color _bandColorFor(String band) {
+    switch (band) {
+      case 'high':
+        return const Color(0xFF22C55E);
+      case 'low':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFFF4C542);
+    }
+  }
+
+  static String _bandLabelFor(String band, AppLocalizations l) {
+    switch (band) {
+      case 'high':
+        return l.t('home_latest_band_high');
+      case 'low':
+        return l.t('home_latest_band_low');
+      default:
+        return l.t('home_latest_band_medium');
+    }
+  }
+
+  static String _sinceLabelFor(DateTime then, AppLocalizations l) {
+    final diff = DateTime.now().difference(then);
+    if (diff.inMinutes < 1) {
+      return l.t('home_latest_since_just_now');
+    }
+    if (diff.inMinutes < 60) {
+      return l.t('home_latest_since_minutes')
+          .replaceAll('%{n}', diff.inMinutes.toString());
+    }
+    if (diff.inHours < 24) {
+      return l
+          .t('home_latest_since_hours')
+          .replaceAll('%{n}', diff.inHours.toString());
+    }
+    return l
+        .t('home_latest_since_days')
+        .replaceAll('%{n}', diff.inDays.toString());
+  }
 }
 
 class _UpdateCard extends StatelessWidget {
-  const _UpdateCard({required this.item});
+  const _UpdateCard({required this.item, this.onTap});
   final _UpdateItem item;
+
+  /// When non-null, the entire card becomes a tappable area
+  /// that opens the saved investigation report. The home
+  /// screen wires this to [_HomeScreenState._openSavedReport]
+  /// so the card stays a pure presentational widget.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Subscribe to theme changes so this const widget re-runs
+    // build() when the user flips the palette.
+    ThemeScope.of(context);
+    final appPalette = KashfPalette.active;
+    final card = Container(
       decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
+        color: appPalette.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: KashfPalette.active.cardBorder),
+        border: Border.all(color: appPalette.cardBorder),
       ),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
@@ -1435,7 +1857,11 @@ class _UpdateCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Far left: 3-dot menu
-            const Icon(Icons.more_vert, color: Color(0xFF6B7280), size: 18),
+            Icon(
+              Icons.more_vert,
+              color: appPalette.textSecondary,
+              size: 18,
+            ),
             const SizedBox(width: 10),
             // Right column: percentage (top), time (bottom)
             Column(
@@ -1443,7 +1869,7 @@ class _UpdateCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${item.score}%',
+                  item.score,
                   style: TextStyle(
                     color: item.scoreColor,
                     fontSize: 13,
@@ -1454,7 +1880,7 @@ class _UpdateCard extends StatelessWidget {
                 Text(
                   item.time,
                   style: TextStyle(
-                    color: KashfPalette.active.textSecondary,
+                    color: appPalette.textSecondary,
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1495,7 +1921,7 @@ class _UpdateCard extends StatelessWidget {
                   Text(
                     item.title,
                     style: TextStyle(
-                      color: KashfPalette.active.textPrimary,
+                      color: appPalette.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1503,49 +1929,64 @@ class _UpdateCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Text(
-                        item.price,
-                        style: TextStyle(
-                          color: KashfPalette.active.textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                  // Wrapped in Flexible so the subtitle row (price +
+                  // views) shrinks rather than overflowing when the
+                  // AI returns a long subtitle string.
+                  Flexible(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            item.price,
+                            style: TextStyle(
+                              color: appPalette.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        item.views,
-                        style: TextStyle(
-                          color: KashfPalette.active.textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            item.views,
+                            style: TextStyle(
+                              color: appPalette.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            // Far right (in LTR) / Far left (in RTL): thumbnail
+            // Far right (in LTR) / Far left (in RTL): thumbnail.
+            // Every saved investigation uses the bundled report
+            // asset so the row visually anchors on a consistent
+            // image regardless of which subject the run covered.
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Container(
+              child: Image.asset(
+                'assets/images/report.jpg',
                 width: 64,
                 height: 64,
-                color: const Color(0xFF2D2418),
-                child: Image.asset(
-                  item.imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    alignment: Alignment.center,
-                    color: const Color(0xFF2D2418),
-                    child: const Icon(
-                      Icons.image_outlined,
-                      color: KashfColors.gold,
-                      size: 24,
-                    ),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 64,
+                  height: 64,
+                  alignment: Alignment.center,
+                  color: appPalette.surfaceLight,
+                  child: Icon(
+                    item.entityIcon,
+                    color: item.entityColor,
+                    size: 26,
                   ),
                 ),
               ),
@@ -1554,468 +1995,20 @@ class _UpdateCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ============================================================================
-// Latest Investigations
-// ============================================================================
-//
-// The bottom-most section on the home screen. Backed by
-// [LatestInvestigationsController] which streams the most-recent
-// completed investigations from the archive service (Firestore
-// + local cache). Renders a vertical card list — clean, easy to
-// scan — and a friendly empty state.
-//
-// Data flow:
-//   SavedInvestigation → _LatestInvestigationCard → home page
-class _LatestInvestigationsList extends StatelessWidget {
-  const _LatestInvestigationsList({
-    required this.l,
-    required this.controller,
-  });
-  final AppLocalizations l;
-  final LatestInvestigationsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        if (controller.isLoading && controller.items.isEmpty) {
-          return const _LatestInvestigationsSkeleton();
-        }
-        if (controller.items.isEmpty) {
-          return _LatestInvestigationsEmpty(l: l);
-        }
-        return Column(
-          children: [
-            for (var i = 0; i < controller.items.length; i++) ...[
-              if (i != 0) const SizedBox(height: 10),
-              _LatestInvestigationCard(
-                item: controller.items[i],
-                l: l,
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _LatestInvestigationsEmpty extends StatelessWidget {
-  const _LatestInvestigationsEmpty({required this.l});
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 18),
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: KashfColors.gold.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: KashfColors.gold.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.search,
-              color: KashfColors.gold,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.t('home_latest_empty_title'),
-                  style: TextStyle(
-                    color: KashfPalette.active.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l.t('home_latest_empty_sub'),
-                  style: TextStyle(
-                    color: KashfPalette.active.textSecondary,
-                    fontSize: 11,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+    // Wrap the visual card in a Material + InkWell when an
+    // onTap handler is supplied so the user gets ripple feedback
+    // and the whole row is a single tap target. Without an
+    // onTap (placeholder row) the card stays non-interactive.
+    if (onTap == null) return card;
+    return Material(
+      color: appPalette.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: card,
       ),
     );
   }
 }
 
-class _LatestInvestigationsSkeleton extends StatefulWidget {
-  const _LatestInvestigationsSkeleton();
-  @override
-  State<_LatestInvestigationsSkeleton> createState() =>
-      _LatestInvestigationsSkeletonState();
-}
-
-class _LatestInvestigationsSkeletonState
-    extends State<_LatestInvestigationsSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final alpha = 0.25 + 0.25 * _ctrl.value;
-        return Column(
-          children: [
-            for (var i = 0; i < 2; i++) ...[
-              if (i != 0) const SizedBox(height: 10),
-              Container(
-                height: 92,
-                decoration: BoxDecoration(
-                  color: KashfPalette.active.surface
-                      .withValues(alpha: alpha),
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: KashfPalette.active.cardBorder),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _LatestInvestigationCard extends StatelessWidget {
-  const _LatestInvestigationCard({
-    required this.item,
-    required this.l,
-  });
-  final SavedInvestigation item;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    final band = item.confidenceBand;
-    final bandColor = _bandColor(band);
-    final pctText = '${item.confidencePercent}%';
-    final tags = item.tags;
-    final thumbnail = item.thumbnailUrl;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Visual identifier of the investigated subject.
-                // Renders the AI-provided thumbnail when available
-                // and falls back to the entity-type icon tile so
-                // the row never looks empty.
-                _LatestCardThumbnail(
-                  url: thumbnail,
-                  fallbackIcon: item.entityType.filledIcon,
-                  fallbackColor: bandColor,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: KashfPalette.active.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _LatestStatusChip(
-                  label: l.t('home_latest_status_complete'),
-                  color: const Color(0xFF22C55E),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: KashfPalette.active.textSecondary,
-                fontSize: 11,
-                height: 1.3,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: KashfPalette.active.fieldFill,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: AlignmentDirectional.centerStart,
-                      widthFactor:
-                          (item.confidencePercent / 100).clamp(0.0, 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: bandColor,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  pctText,
-                  style: TextStyle(
-                    color: bandColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _bandLabel(band),
-              style: TextStyle(
-                color: KashfPalette.active.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (tags.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final t in tags) _LatestTagPill(label: t),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _sinceLabel(item.createdAt),
-                  style: TextStyle(
-                    color: KashfPalette.active.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (item.evidenceCount > 0)
-                  Text(
-                    l.tp('home_latest_evidence', {
-                      'n': item.evidenceCount.toString(),
-                    }),
-                    style: TextStyle(
-                      color: KashfPalette.active.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _bandColor(String band) {
-    switch (band) {
-      case 'high':
-        return const Color(0xFF22C55E);
-      case 'low':
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFFF4C542);
-    }
-  }
-
-  String _bandLabel(String band) {
-    switch (band) {
-      case 'high':
-        return l.t('home_latest_band_high');
-      case 'low':
-        return l.t('home_latest_band_low');
-      default:
-        return l.t('home_latest_band_medium');
-    }
-  }
-
-  String _sinceLabel(DateTime then) {
-    final diff = DateTime.now().difference(then);
-    if (diff.inMinutes < 1) {
-      return l.t('home_latest_since_just_now');
-    }
-    if (diff.inMinutes < 60) {
-      return l.t('home_latest_since_minutes')
-          .replaceAll('%{n}', diff.inMinutes.toString());
-    }
-    if (diff.inHours < 24) {
-      return l
-          .t('home_latest_since_hours')
-          .replaceAll('%{n}', diff.inHours.toString());
-    }
-    return l
-        .t('home_latest_since_days')
-        .replaceAll('%{n}', diff.inDays.toString());
-  }
-}
-
-class _LatestStatusChip extends StatelessWidget {
-  const _LatestStatusChip({required this.label, required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-/// 40x40 thumbnail tile used in the Latest Investigations card row.
-/// Renders the AI-provided image when one was persisted to the
-/// archive; otherwise renders the entity-type icon so the slot
-/// never looks empty.
-class _LatestCardThumbnail extends StatelessWidget {
-  const _LatestCardThumbnail({
-    required this.url,
-    required this.fallbackIcon,
-    required this.fallbackColor,
-  });
-  final String? url;
-  final IconData fallbackIcon;
-  final Color fallbackColor;
-
-  static const double size = 40;
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: fallbackColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: fallbackColor.withValues(alpha: 0.45),
-        ),
-      ),
-      child: Icon(fallbackIcon, color: fallbackColor, size: 18),
-    );
-    if (url == null || url!.isEmpty) return fallback;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Image.network(
-          url!,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return Container(
-              color: KashfPalette.active.fieldFill,
-              alignment: Alignment.center,
-              child: const InlineSpinner(size: 12),
-            );
-          },
-          errorBuilder: (_, _, _) => fallback,
-        ),
-      ),
-    );
-  }
-}
-
-class _LatestTagPill extends StatelessWidget {
-  const _LatestTagPill({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: KashfPalette.active.fieldFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: KashfPalette.active.textSecondary,
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}

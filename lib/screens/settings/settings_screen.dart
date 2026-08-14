@@ -15,7 +15,7 @@ import '../../services/settings_preferences.dart';
 import '../../services/settings_scope.dart';
 import '../../theme.dart';
 import '../system_overview/system_overview_screen.dart';
-import 'backup_screen.dart';
+import 'change_country_screen.dart';
 import 'contact_support_screen.dart';
 import 'feedback_screen.dart';
 import 'help_center_screen.dart';
@@ -45,6 +45,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final localeCtrl = LocaleScope.of(context);
+    // Explicit theme subscription so this screen rebuilds when the
+    // user picks a new palette in the Appearance sheet, even though
+    // the IndexedStack in [HomeShell] keeps a const reference to
+    // us across rebuilds.
     final themeCtrl = ThemeScope.of(context);
     final prefs = SettingsScope.of(context);
     final palette = KashfPalette.active;
@@ -233,6 +237,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? user!.displayName!
         : (user?.email ?? l.t('app_title_root'));
     final initial = name.characters.first.toUpperCase();
+    final verified = user?.emailVerified ?? false;
+    final badgeColor =
+        verified ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final badgeLabel = verified
+        ? l.t('settings_account_verified')
+        : l.t('settings_account_unverified');
+    final badgeIcon = verified
+        ? Icons.verified_user_outlined
+        : Icons.error_outline;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -301,22 +314,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                        color: badgeColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.verified_user_outlined,
+                          Icon(
+                            badgeIcon,
                             size: 12,
-                            color: Color(0xFF22C55E),
+                            color: badgeColor,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            l.t('settings_trusted_account'),
-                            style: const TextStyle(
-                              color: Color(0xFF22C55E),
+                            badgeLabel,
+                            style: TextStyle(
+                              color: badgeColor,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -389,13 +402,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildDivider(palette),
           _buildTile(
             palette: palette,
-            icon: Icons.cloud_upload_outlined,
+            icon: Icons.public_rounded,
             iconColor: KashfColors.gold,
-            title: l.t('settings_backup'),
-            subtitle: l.t('settings_backup_sub'),
+            title: l.t('settings_change_country'),
+            subtitle: l.t('settings_change_country_sub'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const BackupScreen(),
+                builder: (_) => const ChangeCountryScreen(),
               ),
             ),
             showDivider: false,
