@@ -1,0 +1,2012 @@
+[
+{
+"logourl": "saudi-aramco",
+"name": "Saudi Aramco",
+"nameAr": "أرامكو السعودية",
+"description": "Saudi energy company and one of the world's largest integrated energy producers.",
+"descriptionAr": "شركة طاقة سعودية ومن أكبر منتجي الطاقة المتكاملة في العالم.",
+"logo": "[https://img.logo.dev/aramco.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/aramco.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-saudi-aramco",
+"status": "active",
+"category": "energy",
+"kpi": {
+"reach": "8.7M",
+"mentions": "286K",
+"index": "94",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "7.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "642K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "84%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$8.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-15", "title": "Energy Strategy Update", "titleAr": "تحديث استراتيجية الطاقة", "description": "The company highlighted long-term energy investment priorities.", "descriptionAr": "سلطت الشركة الضوء على أولويات الاستثمار طويلة الأجل في قطاع الطاقة." },
+{ "date": "2025-04-22", "title": "Sustainability Initiative", "titleAr": "مبادرة للاستدامة", "description": "Aramco promoted new initiatives focused on emissions reduction.", "descriptionAr": "روّجت أرامكو لمبادرات جديدة تركز على خفض الانبعاثات." },
+{ "date": "2025-08-10", "title": "Technology Investment", "titleAr": "استثمار تقني", "description": "The brand increased visibility around energy technology projects.", "descriptionAr": "زادت العلامة حضورها حول مشاريع تقنيات الطاقة." },
+{ "date": "2026-02-18", "title": "Global Expansion Update", "titleAr": "تحديث التوسع العالمي", "description": "Aramco communicated developments across international energy markets.", "descriptionAr": "أعلنت أرامكو عن تطورات في أسواق الطاقة الدولية." }
+]
+},
+{
+"logourl": "stc-saudi",
+"name": "stc",
+"nameAr": "إس تي سي",
+"description": "Saudi telecommunications and digital technology company.",
+"descriptionAr": "شركة سعودية للاتصالات والتقنية والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/stc.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/stc.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-stc",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "7.9M",
+"mentions": "241K",
+"index": "92",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "518K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "79%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-03", "title": "Digital Services Campaign", "titleAr": "حملة للخدمات الرقمية", "description": "stc launched a campaign highlighting its digital ecosystem.", "descriptionAr": "أطلقت stc حملة تسلط الضوء على منظومتها الرقمية." },
+{ "date": "2025-05-17", "title": "Customer Experience Update", "titleAr": "تحديث تجربة العملاء", "description": "The brand promoted improvements to digital customer services.", "descriptionAr": "روّجت العلامة لتحسينات في الخدمات الرقمية للعملاء." },
+{ "date": "2025-09-21", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "stc increased awareness around its 5G connectivity services.", "descriptionAr": "رفعت stc الوعي بخدمات الاتصال عبر الجيل الخامس." },
+{ "date": "2026-03-12", "title": "Technology Partnership", "titleAr": "شراكة تقنية", "description": "The company announced a technology-focused partnership.", "descriptionAr": "أعلنت الشركة عن شراكة تركز على التقنية." }
+]
+},
+{
+"logourl": "almarai",
+"name": "Almarai",
+"nameAr": "المراعي",
+"description": "Leading Saudi food and beverage company known across the Gulf region.",
+"descriptionAr": "شركة سعودية رائدة في الأغذية والمشروبات ومعروفة في منطقة الخليج.",
+"logo": "[https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-almarai",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "6.4M",
+"mentions": "178K",
+"index": "89",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "433K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "88%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-28", "title": "Product Campaign", "titleAr": "حملة منتج", "description": "Almarai promoted a new consumer product campaign across Gulf markets.", "descriptionAr": "روّجت المراعي لحملة لمنتج جديد في أسواق الخليج." },
+{ "date": "2025-04-11", "title": "Ramadan Campaign", "titleAr": "حملة رمضان", "description": "The brand launched seasonal content for Ramadan audiences.", "descriptionAr": "أطلقت العلامة محتوى موسمياً لجمهور رمضان." },
+{ "date": "2025-08-06", "title": "Brand Activation", "titleAr": "تنشيط العلامة التجارية", "description": "Almarai increased engagement through a regional activation.", "descriptionAr": "رفعت المراعي التفاعل من خلال نشاط إقليمي." },
+{ "date": "2026-01-19", "title": "Healthy Living Campaign", "titleAr": "حملة الحياة الصحية", "description": "The company emphasized nutrition and healthy lifestyle messaging.", "descriptionAr": "ركزت الشركة على التغذية ونمط الحياة الصحي." }
+]
+},
+{
+"logourl": "mobily",
+"name": "Mobily",
+"nameAr": "موبايلي",
+"description": "Major Saudi telecommunications and digital services provider.",
+"descriptionAr": "مزود سعودي رئيسي لخدمات الاتصالات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/mobily.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/mobily.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-mobily",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "6.8M",
+"mentions": "194K",
+"index": "88",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "371K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "76%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-14", "title": "5G Promotion", "titleAr": "ترويج الجيل الخامس", "description": "Mobily promoted faster connectivity services.", "descriptionAr": "روّجت موبايلي لخدمات اتصال أسرع." },
+{ "date": "2025-05-29", "title": "Digital Campaign", "titleAr": "حملة رقمية", "description": "The company expanded its digital-first marketing campaign.", "descriptionAr": "وسعت الشركة حملتها التسويقية الرقمية." },
+{ "date": "2025-10-03", "title": "Gaming Partnership", "titleAr": "شراكة في الألعاب", "description": "Mobily highlighted services aimed at gaming audiences.", "descriptionAr": "سلطت موبايلي الضوء على خدمات تستهدف جمهور الألعاب." },
+{ "date": "2026-03-26", "title": "Customer Offer", "titleAr": "عرض للعملاء", "description": "The brand promoted a new customer-focused offer.", "descriptionAr": "روّجت العلامة لعرض جديد يركز على العملاء." }
+]
+},
+{
+"logourl": "jarir",
+"name": "Jarir Bookstore",
+"nameAr": "مكتبة جرير",
+"description": "Saudi retail brand specializing in books, electronics, office products and education.",
+"descriptionAr": "علامة تجزئة سعودية متخصصة في الكتب والإلكترونيات والمستلزمات المكتبية والتعليمية.",
+"logo": "[https://img.logo.dev/jarir.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/jarir.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-jarir",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "5.1M",
+"mentions": "92K",
+"index": "84",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "242K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "82%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-09", "title": "Back to School Campaign", "titleAr": "حملة العودة للمدارس", "description": "Jarir promoted education and school products.", "descriptionAr": "روّجت جرير للمنتجات التعليمية والمدرسية." },
+{ "date": "2025-06-18", "title": "Technology Offers", "titleAr": "عروض تقنية", "description": "The retailer promoted electronics and technology offers.", "descriptionAr": "روّجت الشركة لعروض الإلكترونيات والتقنية." },
+{ "date": "2025-09-14", "title": "New Store Campaign", "titleAr": "حملة متجر جديد", "description": "Jarir increased awareness around its retail expansion.", "descriptionAr": "رفعت جرير الوعي حول توسعها في قطاع التجزئة." },
+{ "date": "2026-02-05", "title": "Digital Shopping Update", "titleAr": "تحديث التسوق الرقمي", "description": "The brand highlighted improvements to online shopping.", "descriptionAr": "سلطت العلامة الضوء على تحسينات التسوق الإلكتروني." }
+]
+},
+{
+"logourl": "nahdi",
+"name": "Nahdi Medical",
+"nameAr": "النهدي الطبية",
+"description": "Leading Saudi pharmacy and health retail brand.",
+"descriptionAr": "علامة سعودية رائدة في الصيدليات وتجارة منتجات الصحة والعناية.",
+"logo": "[https://img.logo.dev/nahdi.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/nahdi.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-nahdi",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "6.1M",
+"mentions": "134K",
+"index": "87",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "318K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "85%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-01", "title": "Wellness Campaign", "titleAr": "حملة العافية", "description": "Nahdi launched educational wellness content.", "descriptionAr": "أطلقت النهدي محتوى توعوياً حول العافية." },
+{ "date": "2025-05-20", "title": "Beauty Promotion", "titleAr": "ترويج منتجات الجمال", "description": "The brand promoted beauty and personal-care products.", "descriptionAr": "روّجت العلامة لمنتجات الجمال والعناية الشخصية." },
+{ "date": "2025-10-12", "title": "Digital Health Campaign", "titleAr": "حملة الصحة الرقمية", "description": "Nahdi increased visibility for its digital health services.", "descriptionAr": "رفعت النهدي حضور خدماتها الصحية الرقمية." },
+{ "date": "2026-03-02", "title": "Customer Experience Update", "titleAr": "تحديث تجربة العملاء", "description": "The retailer highlighted improvements to customer services.", "descriptionAr": "سلطت الشركة الضوء على تحسينات خدمات العملاء." }
+]
+},
+{
+"logourl": "jarir",
+"name": "Al Baik",
+"nameAr": "البيك",
+"description": "Iconic Saudi quick-service restaurant brand known for fried chicken and seafood.",
+"descriptionAr": "علامة مطاعم سعودية شهيرة معروفة بالدجاج والمأكولات البحرية.",
+"logo": "[https://img.logo.dev/albaik.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/albaik.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-albaik",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "9.2M",
+"mentions": "421K",
+"index": "96",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "8.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "734K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "91%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$7.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-22", "title": "Regional Campaign", "titleAr": "حملة إقليمية", "description": "Al Baik generated strong social discussion around its menu.", "descriptionAr": "حقق البيك تفاعلاً قوياً حول قائمته عبر المنصات الاجتماعية." },
+{ "date": "2025-04-06", "title": "Seasonal Promotion", "titleAr": "عرض موسمي", "description": "The brand promoted a seasonal customer campaign.", "descriptionAr": "روّجت العلامة لحملة موسمية للعملاء." },
+{ "date": "2025-08-27", "title": "Store Expansion", "titleAr": "توسع الفروع", "description": "Al Baik increased visibility around new locations.", "descriptionAr": "زاد البيك حضوره حول افتتاح مواقع جديدة." },
+{ "date": "2026-02-11", "title": "Menu Awareness Campaign", "titleAr": "حملة للتعريف بالقائمة", "description": "The brand highlighted popular menu items across social media.", "descriptionAr": "سلطت العلامة الضوء على أصنافها الشهيرة عبر التواصل الاجتماعي." }
+]
+},
+{
+"logourl": "maaden",
+"name": "Ma'aden",
+"nameAr": "معادن",
+"description": "Saudi mining and minerals company with major regional operations.",
+"descriptionAr": "شركة تعدين ومعادن سعودية ذات عمليات رئيسية في المنطقة.",
+"logo": "[https://img.logo.dev/maaden.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/maaden.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-maaden",
+"status": "active",
+"category": "mining",
+"kpi": {
+"reach": "3.9M",
+"mentions": "71K",
+"index": "82",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "166K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "78%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-16", "title": "Mining Investment Update", "titleAr": "تحديث استثمارات التعدين", "description": "Ma'aden communicated new mining investment priorities.", "descriptionAr": "أعلنت معادن عن أولويات جديدة للاستثمار في التعدين." },
+{ "date": "2025-06-07", "title": "Sustainability Initiative", "titleAr": "مبادرة استدامة", "description": "The company highlighted responsible mining practices.", "descriptionAr": "سلطت الشركة الضوء على ممارسات التعدين المسؤول." },
+{ "date": "2025-10-24", "title": "International Partnership", "titleAr": "شراكة دولية", "description": "Ma'aden increased visibility around an international partnership.", "descriptionAr": "زادت معادن حضورها حول شراكة دولية." },
+{ "date": "2026-03-18", "title": "Growth Strategy", "titleAr": "استراتيجية النمو", "description": "The brand communicated its long-term growth strategy.", "descriptionAr": "أعلنت العلامة عن استراتيجية نمو طويلة الأجل." }
+]
+},
+{
+"logourl": "alrajhi",
+"name": "Al Rajhi Bank",
+"nameAr": "مصرف الراجحي",
+"description": "One of Saudi Arabia's largest banking and financial services brands.",
+"descriptionAr": "أحد أكبر المصارف والعلامات المالية في السعودية.",
+"logo": "[https://img.logo.dev/alrajhibank.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/alrajhibank.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-alrajhi",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "7.2M",
+"mentions": "205K",
+"index": "93",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "402K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "77%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$5.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-13", "title": "Digital Banking Campaign", "titleAr": "حملة الخدمات المصرفية الرقمية", "description": "The bank promoted digital banking features.", "descriptionAr": "روّج المصرف لمزايا الخدمات المصرفية الرقمية." },
+{ "date": "2025-05-04", "title": "Mobile App Update", "titleAr": "تحديث تطبيق الهاتف", "description": "Al Rajhi highlighted improvements to its mobile experience.", "descriptionAr": "سلط الراجحي الضوء على تحسينات تجربة الهاتف." },
+{ "date": "2025-09-09", "title": "Financial Awareness Campaign", "titleAr": "حملة توعية مالية", "description": "The brand shared financial education content.", "descriptionAr": "شارك المصرف محتوى للتوعية المالية." },
+{ "date": "2026-02-22", "title": "Customer Campaign", "titleAr": "حملة للعملاء", "description": "The bank launched a new customer-focused campaign.", "descriptionAr": "أطلق المصرف حملة جديدة تركز على العملاء." }
+]
+},
+{
+"logourl": "riyadbank",
+"name": "Riyad Bank",
+"nameAr": "بنك الرياض",
+"description": "Major Saudi financial institution serving retail and corporate customers.",
+"descriptionAr": "مؤسسة مالية سعودية كبرى تخدم الأفراد والشركات.",
+"logo": "[https://img.logo.dev/riyadbank.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/riyadbank.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-riyadbank",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "4.8M",
+"mentions": "103K",
+"index": "85",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "239K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "74%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-08", "title": "Digital Finance Campaign", "titleAr": "حملة التمويل الرقمي", "description": "Riyad Bank promoted digital financial services.", "descriptionAr": "روّج بنك الرياض للخدمات المالية الرقمية." },
+{ "date": "2025-06-22", "title": "Business Banking Update", "titleAr": "تحديث الخدمات المصرفية للشركات", "description": "The bank highlighted new business banking services.", "descriptionAr": "سلط البنك الضوء على خدمات مصرفية جديدة للشركات." },
+{ "date": "2025-10-15", "title": "Savings Campaign", "titleAr": "حملة الادخار", "description": "The brand launched content encouraging financial planning.", "descriptionAr": "أطلق البنك محتوى يشجع على التخطيط المالي." },
+{ "date": "2026-03-05", "title": "Customer Experience Update", "titleAr": "تحديث تجربة العملاء", "description": "Riyad Bank communicated improvements to customer journeys.", "descriptionAr": "أعلن بنك الرياض عن تحسينات في رحلة العملاء." }
+]
+},
+{
+"logourl": "saudi-airlines",
+"name": "Saudia",
+"nameAr": "الخطوط السعودية",
+"description": "Saudi Arabia's national airline and a major regional carrier.",
+"descriptionAr": "الناقل الوطني للمملكة العربية السعودية وإحدى شركات الطيران الرئيسية إقليمياً.",
+"logo": "[https://img.logo.dev/saudia.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/saudia.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-saudia",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "8.1M",
+"mentions": "312K",
+"index": "91",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "585K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "86%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-18", "title": "Travel Campaign", "titleAr": "حملة سفر", "description": "Saudia promoted destinations and travel experiences.", "descriptionAr": "روّجت السعودية للوجهات وتجارب السفر." },
+{ "date": "2025-05-11", "title": "Fleet Update", "titleAr": "تحديث الأسطول", "description": "The airline highlighted fleet modernization plans.", "descriptionAr": "سلطت الشركة الضوء على خطط تحديث الأسطول." },
+{ "date": "2025-09-19", "title": "International Route Campaign", "titleAr": "حملة وجهات دولية", "description": "Saudia increased awareness of international routes.", "descriptionAr": "رفعت السعودية الوعي بالوجهات الدولية." },
+{ "date": "2026-02-28", "title": "Digital Travel Experience", "titleAr": "تجربة السفر الرقمية", "description": "The airline promoted improvements to digital travel services.", "descriptionAr": "روّجت الشركة لتحسينات الخدمات الرقمية للسفر." }
+]
+},
+{
+"logourl": "almarai-fresh",
+"name": "Almarai Fresh",
+"nameAr": "المراعي الطازج",
+"description": "Saudi consumer food brand associated with fresh dairy and food products.",
+"descriptionAr": "علامة غذائية سعودية مرتبطة بمنتجات الألبان والأغذية الطازجة.",
+"logo": "[https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-almarai-fresh",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "5.7M",
+"mentions": "149K",
+"index": "86",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "326K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "89%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-10", "title": "Fresh Products Campaign", "titleAr": "حملة المنتجات الطازجة", "description": "The brand promoted its fresh product range.", "descriptionAr": "روّجت العلامة لمجموعة منتجاتها الطازجة." },
+{ "date": "2025-06-13", "title": "Family Campaign", "titleAr": "حملة العائلة", "description": "Almarai launched family-focused social content.", "descriptionAr": "أطلقت المراعي محتوى اجتماعياً يركز على العائلة." },
+{ "date": "2025-09-28", "title": "Nutrition Campaign", "titleAr": "حملة التغذية", "description": "The brand highlighted nutrition and product quality.", "descriptionAr": "سلطت العلامة الضوء على التغذية وجودة المنتجات." },
+{ "date": "2026-03-09", "title": "Regional Activation", "titleAr": "نشاط إقليمي", "description": "The company expanded consumer engagement across Gulf markets.", "descriptionAr": "وسعت الشركة تفاعلها مع المستهلكين في أسواق الخليج." }
+]
+},
+{
+"logourl": "tamimi-markets",
+"name": "Tamimi Markets",
+"nameAr": "أسواق التميمي",
+"description": "Saudi supermarket and grocery retail brand.",
+"descriptionAr": "علامة سعودية في مجال المتاجر الكبرى وتجارة المواد الغذائية.",
+"logo": "[https://img.logo.dev/tamimimarkets.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/tamimimarkets.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-tamimi-markets",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "3.8M",
+"mentions": "67K",
+"index": "80",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "151K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "78%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "facebook", "x", "youtube"],
+"timeline": [
+{ "date": "2025-01-30", "title": "Weekly Offers", "titleAr": "العروض الأسبوعية", "description": "Tamimi promoted weekly grocery offers.", "descriptionAr": "روّجت التميمي لعروض المواد الغذائية الأسبوعية." },
+{ "date": "2025-05-15", "title": "Store Campaign", "titleAr": "حملة المتاجر", "description": "The retailer increased awareness around store locations.", "descriptionAr": "رفعت الشركة الوعي حول مواقع متاجرها." },
+{ "date": "2025-08-19", "title": "Fresh Food Campaign", "titleAr": "حملة الأغذية الطازجة", "description": "The brand promoted fresh food categories.", "descriptionAr": "روّجت العلامة لفئات الأغذية الطازجة." },
+{ "date": "2026-02-14", "title": "Digital Shopping", "titleAr": "التسوق الرقمي", "description": "Tamimi highlighted its online shopping experience.", "descriptionAr": "سلطت التميمي الضوء على تجربة التسوق الإلكتروني." }
+]
+},
+{
+"logourl": "saudi-electricity",
+"name": "Saudi Electricity Company",
+"nameAr": "الشركة السعودية للكهرباء",
+"description": "Saudi utility company responsible for electricity generation and distribution services.",
+"descriptionAr": "شركة مرافق سعودية تقدم خدمات الكهرباء والتوزيع.",
+"logo": "[https://img.logo.dev/se.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/se.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-saudi-electricity",
+"status": "active",
+"category": "utilities",
+"kpi": {
+"reach": "4.2M",
+"mentions": "83K",
+"index": "81",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "184K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "71%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-05", "title": "Energy Efficiency Campaign", "titleAr": "حملة كفاءة الطاقة", "description": "The company promoted electricity efficiency awareness.", "descriptionAr": "روّجت الشركة للتوعية بكفاءة استهلاك الكهرباء." },
+{ "date": "2025-06-16", "title": "Grid Modernization", "titleAr": "تحديث الشبكة", "description": "Saudi Electricity highlighted infrastructure modernization.", "descriptionAr": "سلطت الشركة الضوء على تحديث البنية التحتية." },
+{ "date": "2025-10-09", "title": "Customer Service Update", "titleAr": "تحديث خدمة العملاء", "description": "The brand communicated improvements to customer services.", "descriptionAr": "أعلنت العلامة عن تحسينات في خدمات العملاء." },
+{ "date": "2026-03-21", "title": "Sustainability Initiative", "titleAr": "مبادرة الاستدامة", "description": "The company shared sustainability-related initiatives.", "descriptionAr": "شاركت الشركة مبادرات مرتبطة بالاستدامة." }
+]
+},
+{
+"logourl": "alrajhi-takaful",
+"name": "Al Rajhi Takaful",
+"nameAr": "الراجحي للتأمين التعاوني",
+"description": "Saudi insurance brand providing Sharia-compliant insurance solutions.",
+"descriptionAr": "علامة تأمين سعودية تقدم حلول تأمينية متوافقة مع الشريعة.",
+"logo": "[https://img.logo.dev/alrajhitakaful.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/alrajhitakaful.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-alrajhi-takaful",
+"status": "active",
+"category": "insurance",
+"kpi": {
+"reach": "3.1M",
+"mentions": "52K",
+"index": "78",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "128K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "73%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "x", "facebook", "linkedin", "youtube"],
+"timeline": [
+{ "date": "2025-01-25", "title": "Insurance Awareness", "titleAr": "التوعية بالتأمين", "description": "The brand shared educational insurance content.", "descriptionAr": "شاركت العلامة محتوى توعوياً حول التأمين." },
+{ "date": "2025-05-08", "title": "Digital Services", "titleAr": "الخدمات الرقمية", "description": "Al Rajhi Takaful promoted digital customer services.", "descriptionAr": "روّجت الراجحي للتأمين لخدمات العملاء الرقمية." },
+{ "date": "2025-09-17", "title": "Motor Insurance Campaign", "titleAr": "حملة تأمين السيارات", "description": "The company promoted motor insurance solutions.", "descriptionAr": "روّجت الشركة لحلول تأمين السيارات." },
+{ "date": "2026-02-07", "title": "Customer Experience", "titleAr": "تجربة العملاء", "description": "The brand highlighted improvements to customer support.", "descriptionAr": "سلطت العلامة الضوء على تحسينات دعم العملاء." }
+]
+},
+{
+"logourl": "qatar-airways",
+"name": "Qatar Airways",
+"nameAr": "الخطوط الجوية القطرية",
+"description": "Qatar's national airline and a globally recognized premium carrier.",
+"descriptionAr": "الناقل الوطني لدولة قطر وإحدى شركات الطيران العالمية المعروفة.",
+"logo": "[https://img.logo.dev/qatarairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/qatarairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-qatar-airways",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "9.6M",
+"mentions": "398K",
+"index": "97",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "8.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "821K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "92%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$9.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-12", "title": "Global Travel Campaign", "titleAr": "حملة سفر عالمية", "description": "Qatar Airways promoted its global network and travel experience.", "descriptionAr": "روّجت الخطوط القطرية لشبكتها العالمية وتجربة السفر." },
+{ "date": "2025-04-25", "title": "Destination Campaign", "titleAr": "حملة الوجهات", "description": "The airline promoted several international destinations.", "descriptionAr": "روّجت الشركة لعدد من الوجهات الدولية." },
+{ "date": "2025-09-05", "title": "Premium Experience Campaign", "titleAr": "حملة التجربة الفاخرة", "description": "The brand highlighted its premium onboard experience.", "descriptionAr": "سلطت العلامة الضوء على تجربة السفر الفاخرة." },
+{ "date": "2026-01-29", "title": "Global Partnership", "titleAr": "شراكة عالمية", "description": "Qatar Airways increased visibility around a global partnership.", "descriptionAr": "زادت الخطوط القطرية حضورها حول شراكة عالمية." }
+]
+},
+{
+"logourl": "qnb",
+"name": "QNB Group",
+"nameAr": "مجموعة QNB",
+"description": "Qatar-based banking group and one of the largest financial institutions in the region.",
+"descriptionAr": "مجموعة مصرفية قطرية ومن أكبر المؤسسات المالية في المنطقة.",
+"logo": "[https://img.logo.dev/qnb.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/qnb.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-qnb",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "5.5M",
+"mentions": "112K",
+"index": "88",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "276K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "80%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-12", "title": "Digital Banking Campaign", "titleAr": "حملة الخدمات المصرفية الرقمية", "description": "QNB promoted its digital banking ecosystem.", "descriptionAr": "روّجت QNB لمنظومتها المصرفية الرقمية." },
+{ "date": "2025-05-31", "title": "Financial Education", "titleAr": "التثقيف المالي", "description": "The bank shared financial education content.", "descriptionAr": "شارك البنك محتوى للتثقيف المالي." },
+{ "date": "2025-10-18", "title": "International Banking Campaign", "titleAr": "حملة مصرفية دولية", "description": "QNB highlighted its international presence.", "descriptionAr": "سلطت QNB الضوء على حضورها الدولي." },
+{ "date": "2026-03-14", "title": "Technology Initiative", "titleAr": "مبادرة تقنية", "description": "The group promoted technology and digital transformation.", "descriptionAr": "روّجت المجموعة للتقنية والتحول الرقمي." }
+]
+},
+{
+"logourl": "ooredoo-qatar",
+"name": "Ooredoo Qatar",
+"nameAr": "أوريدو قطر",
+"description": "Major Qatari telecommunications and digital services brand.",
+"descriptionAr": "علامة قطرية رئيسية في الاتصالات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/ooredoo.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/ooredoo.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-ooredoo-qatar",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "6.9M",
+"mentions": "225K",
+"index": "90",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "441K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "83%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-20", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "Ooredoo promoted next-generation connectivity.", "descriptionAr": "روّجت أوريدو لخدمات الاتصال من الجيل الجديد." },
+{ "date": "2025-04-17", "title": "Digital Entertainment Campaign", "titleAr": "حملة الترفيه الرقمي", "description": "The brand promoted digital entertainment services.", "descriptionAr": "روّجت العلامة لخدمات الترفيه الرقمي." },
+{ "date": "2025-09-11", "title": "Customer Offer", "titleAr": "عرض للعملاء", "description": "Ooredoo launched a customer-focused promotional offer.", "descriptionAr": "أطلقت أوريدو عرضاً ترويجياً يركز على العملاء." },
+{ "date": "2026-02-24", "title": "Smart City Initiative", "titleAr": "مبادرة المدن الذكية", "description": "The company highlighted connectivity for smart-city services.", "descriptionAr": "سلطت الشركة الضوء على الاتصال لخدمات المدن الذكية." }
+]
+},
+{
+"logourl": "qatar-national-bank",
+"name": "Doha Bank",
+"nameAr": "بنك الدوحة",
+"description": "Established Qatari bank offering personal, business and digital banking services.",
+"descriptionAr": "بنك قطري يقدم الخدمات المصرفية للأفراد والشركات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/dohabank.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/dohabank.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-doha-bank",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "3.2M",
+"mentions": "48K",
+"index": "76",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "124K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "72%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-06", "title": "Digital Banking", "titleAr": "الخدمات المصرفية الرقمية", "description": "Doha Bank promoted its digital banking services.", "descriptionAr": "روّج بنك الدوحة لخدماته المصرفية الرقمية." },
+{ "date": "2025-06-03", "title": "SME Campaign", "titleAr": "حملة الشركات الصغيرة والمتوسطة", "description": "The bank highlighted services for small businesses.", "descriptionAr": "سلط البنك الضوء على خدمات الشركات الصغيرة." },
+{ "date": "2025-10-20", "title": "Financial Awareness", "titleAr": "التوعية المالية", "description": "The brand published financial awareness content.", "descriptionAr": "نشرت العلامة محتوى للتوعية المالية." },
+{ "date": "2026-03-07", "title": "Mobile Experience", "titleAr": "تجربة الهاتف", "description": "The bank highlighted improvements to its mobile services.", "descriptionAr": "سلط البنك الضوء على تحسينات خدمات الهاتف." }
+]
+},
+{
+"logourl": "al-meera",
+"name": "Al Meera",
+"nameAr": "الميرة",
+"description": "Major Qatari supermarket and retail chain.",
+"descriptionAr": "سلسلة متاجر قطرية كبرى في قطاع التجزئة والمواد الغذائية.",
+"logo": "[https://img.logo.dev/almeera.com.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/almeera.com.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-al-meera",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "4.1M",
+"mentions": "76K",
+"index": "79",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "197K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.5M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "facebook", "x", "youtube"],
+"timeline": [
+{ "date": "2025-01-16", "title": "Grocery Campaign", "titleAr": "حملة المواد الغذائية", "description": "Al Meera promoted weekly shopping offers.", "descriptionAr": "روّجت الميرة لعروض التسوق الأسبوعية." },
+{ "date": "2025-05-12", "title": "Local Products Campaign", "titleAr": "حملة المنتجات المحلية", "description": "The retailer promoted locally sourced products.", "descriptionAr": "روّجت الشركة للمنتجات المحلية." },
+{ "date": "2025-08-30", "title": "Back to School Campaign", "titleAr": "حملة العودة للمدارس", "description": "Al Meera launched a seasonal family campaign.", "descriptionAr": "أطلقت الميرة حملة عائلية موسمية." },
+{ "date": "2026-02-16", "title": "Digital Shopping Update", "titleAr": "تحديث التسوق الرقمي", "description": "The retailer promoted its digital shopping experience.", "descriptionAr": "روّجت الشركة لتجربة التسوق الرقمية." }
+]
+},
+{
+"logourl": "qatarenergy",
+"name": "QatarEnergy",
+"nameAr": "قطر للطاقة",
+"description": "Qatar's state-owned energy company and global LNG producer.",
+"descriptionAr": "شركة الطاقة القطرية الحكومية ومنتج عالمي للغاز الطبيعي المسال.",
+"logo": "[https://img.logo.dev/qatarenergy.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/qatarenergy.qa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-qatarenergy",
+"status": "active",
+"category": "energy",
+"kpi": {
+"reach": "6.3M",
+"mentions": "144K",
+"index": "89",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "318K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "82%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$5.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-08", "title": "LNG Expansion Update", "titleAr": "تحديث توسعة الغاز المسال", "description": "QatarEnergy highlighted LNG expansion plans.", "descriptionAr": "سلطت قطر للطاقة الضوء على خطط توسعة الغاز المسال." },
+{ "date": "2025-04-14", "title": "Sustainability Initiative", "titleAr": "مبادرة الاستدامة", "description": "The company communicated environmental initiatives.", "descriptionAr": "أعلنت الشركة عن مبادرات بيئية." },
+{ "date": "2025-09-02", "title": "International Partnership", "titleAr": "شراكة دولية", "description": "QatarEnergy highlighted an international energy partnership.", "descriptionAr": "سلطت قطر للطاقة الضوء على شراكة دولية في الطاقة." },
+{ "date": "2026-03-19", "title": "Energy Investment Update", "titleAr": "تحديث استثمارات الطاقة", "description": "The company shared updates on long-term energy investments.", "descriptionAr": "شاركت الشركة تحديثات حول الاستثمارات طويلة الأجل في الطاقة." }
+]
+},
+{
+"logourl": "qatar-national-bank",
+"name": "Qatar Airways Cargo",
+"nameAr": "الخطوط الجوية القطرية للشحن",
+"description": "Global air cargo brand operated by Qatar Airways.",
+"descriptionAr": "علامة عالمية للشحن الجوي تابعة للخطوط الجوية القطرية.",
+"logo": "[https://img.logo.dev/qatarairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/qatarairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-qatar-cargo",
+"status": "active",
+"category": "logistics",
+"kpi": {
+"reach": "3.5M",
+"mentions": "61K",
+"index": "80",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.5M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "149K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "84%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-02", "title": "Cargo Network Update", "titleAr": "تحديث شبكة الشحن", "description": "Qatar Airways Cargo promoted its global logistics network.", "descriptionAr": "روّجت الخطوط القطرية للشحن لشبكتها اللوجستية العالمية." },
+{ "date": "2025-06-11", "title": "Freight Partnership", "titleAr": "شراكة للشحن", "description": "The brand highlighted a new logistics partnership.", "descriptionAr": "سلطت العلامة الضوء على شراكة لوجستية جديدة." },
+{ "date": "2025-10-07", "title": "Sustainability Campaign", "titleAr": "حملة الاستدامة", "description": "The company promoted more sustainable cargo operations.", "descriptionAr": "روّجت الشركة لعمليات شحن أكثر استدامة." },
+{ "date": "2026-03-03", "title": "Global Logistics Update", "titleAr": "تحديث الخدمات اللوجستية العالمية", "description": "The brand shared developments across its cargo network.", "descriptionAr": "شاركت العلامة تطورات حول شبكة الشحن العالمية." }
+]
+},
+{
+"logourl": "emirates",
+"name": "Emirates",
+"nameAr": "طيران الإمارات",
+"description": "Dubai-based global airline known for premium international travel.",
+"descriptionAr": "شركة طيران عالمية مقرها دبي ومعروفة بتجارب السفر الدولية الفاخرة.",
+"logo": "[https://img.logo.dev/emirates.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/emirates.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-emirates",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "10M",
+"mentions": "487K",
+"index": "98",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "9.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "936K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "93%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$9.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-14", "title": "Global Brand Campaign", "titleAr": "حملة عالمية للعلامة", "description": "Emirates launched a campaign highlighting its global travel network.", "descriptionAr": "أطلقت طيران الإمارات حملة تسلط الضوء على شبكتها العالمية." },
+{ "date": "2025-04-19", "title": "Premium Travel Campaign", "titleAr": "حملة السفر الفاخر", "description": "The airline promoted its premium passenger experience.", "descriptionAr": "روّجت الشركة لتجربة السفر الفاخرة." },
+{ "date": "2025-09-16", "title": "Destination Campaign", "titleAr": "حملة الوجهات", "description": "Emirates promoted key international destinations.", "descriptionAr": "روّجت طيران الإمارات لوجهات دولية رئيسية." },
+{ "date": "2026-02-26", "title": "Fleet Modernization", "titleAr": "تحديث الأسطول", "description": "The airline highlighted fleet modernization efforts.", "descriptionAr": "سلطت الشركة الضوء على جهود تحديث الأسطول." }
+]
+},
+{
+"logourl": "etisalat-eand",
+"name": "e&",
+"nameAr": "إي آند",
+"description": "UAE-based telecommunications and technology group with international operations.",
+"descriptionAr": "مجموعة إماراتية للاتصالات والتقنية ذات عمليات دولية.",
+"logo": "[https://img.logo.dev/eand.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/eand.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-eand",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "8.4M",
+"mentions": "274K",
+"index": "94",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "623K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "85%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$7.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-17", "title": "Digital Transformation Campaign", "titleAr": "حملة التحول الرقمي", "description": "e& promoted its transformation into a technology group.", "descriptionAr": "روّجت إي آند لتحولها إلى مجموعة تقنية." },
+{ "date": "2025-05-09", "title": "5G Innovation", "titleAr": "ابتكار الجيل الخامس", "description": "The group highlighted 5G and connectivity innovation.", "descriptionAr": "سلطت المجموعة الضوء على ابتكارات الجيل الخامس والاتصال." },
+{ "date": "2025-10-22", "title": "AI Initiative", "titleAr": "مبادرة الذكاء الاصطناعي", "description": "e& increased visibility around AI-powered services.", "descriptionAr": "زادت إي آند حضورها حول الخدمات المدعومة بالذكاء الاصطناعي." },
+{ "date": "2026-03-11", "title": "Regional Expansion", "titleAr": "التوسع الإقليمي", "description": "The group communicated regional digital expansion.", "descriptionAr": "أعلنت المجموعة عن توسع رقمي إقليمي." }
+]
+},
+{
+"logourl": "adnoc",
+"name": "ADNOC",
+"nameAr": "أدنوك",
+"description": "Abu Dhabi's integrated energy group and one of the UAE's largest companies.",
+"descriptionAr": "مجموعة الطاقة المتكاملة في أبوظبي وإحدى أكبر شركات الإمارات.",
+"logo": "[https://img.logo.dev/adnoc.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/adnoc.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-adnoc",
+"status": "active",
+"category": "energy",
+"kpi": {
+"reach": "8.8M",
+"mentions": "261K",
+"index": "93",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "7.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "536K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "83%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$8.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-15", "title": "Energy Growth Update", "titleAr": "تحديث نمو الطاقة", "description": "ADNOC highlighted expansion across its energy portfolio.", "descriptionAr": "سلطت أدنوك الضوء على توسع محفظتها في قطاع الطاقة." },
+{ "date": "2025-06-08", "title": "Low Carbon Initiative", "titleAr": "مبادرة منخفضة الكربون", "description": "The company promoted lower-carbon energy initiatives.", "descriptionAr": "روّجت الشركة لمبادرات الطاقة منخفضة الكربون." },
+{ "date": "2025-10-13", "title": "International Partnership", "titleAr": "شراكة دولية", "description": "ADNOC announced a new international energy collaboration.", "descriptionAr": "أعلنت أدنوك عن تعاون دولي جديد في مجال الطاقة." },
+{ "date": "2026-03-23", "title": "Technology Investment", "titleAr": "استثمار تقني", "description": "The group highlighted technology investments in energy.", "descriptionAr": "سلطت المجموعة الضوء على الاستثمارات التقنية في الطاقة." }
+]
+},
+{
+"logourl": "emaar",
+"name": "Emaar",
+"nameAr": "إعمار",
+"description": "Dubai-based real estate developer behind major residential and lifestyle destinations.",
+"descriptionAr": "شركة تطوير عقاري مقرها دبي وتقف وراء وجهات سكنية وترفيهية بارزة.",
+"logo": "[https://img.logo.dev/emaar.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/emaar.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-emaar",
+"status": "active",
+"category": "real-estate",
+"kpi": {
+"reach": "8.2M",
+"mentions": "236K",
+"index": "92",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "572K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "87%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-26", "title": "Dubai Development Campaign", "titleAr": "حملة مشاريع دبي", "description": "Emaar promoted new residential and lifestyle destinations.", "descriptionAr": "روّجت إعمار لوجهات سكنية وترفيهية جديدة." },
+{ "date": "2025-05-16", "title": "Lifestyle Campaign", "titleAr": "حملة أسلوب الحياة", "description": "The brand highlighted premium lifestyle experiences.", "descriptionAr": "سلطت العلامة الضوء على تجارب أسلوب الحياة الفاخرة." },
+{ "date": "2025-09-07", "title": "New Development", "titleAr": "مشروع تطوير جديد", "description": "Emaar increased awareness around a new development.", "descriptionAr": "رفعت إعمار الوعي حول مشروع تطوير جديد." },
+{ "date": "2026-02-20", "title": "Destination Marketing", "titleAr": "تسويق الوجهات", "description": "The company promoted Dubai destinations to international audiences.", "descriptionAr": "روّجت الشركة لوجهات دبي للجمهور الدولي." }
+]
+},
+{
+"logourl": "emirates-nbd",
+"name": "Emirates NBD",
+"nameAr": "بنك الإمارات دبي الوطني",
+"description": "Leading UAE banking group serving consumers and businesses across the region.",
+"descriptionAr": "مجموعة مصرفية إماراتية رائدة تخدم الأفراد والشركات في المنطقة.",
+"logo": "[https://img.logo.dev/emiratesnbd.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/emiratesnbd.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-emirates-nbd",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "6.7M",
+"mentions": "163K",
+"index": "89",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "352K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "78%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.5M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-11", "title": "Digital Banking Campaign", "titleAr": "حملة الخدمات المصرفية الرقمية", "description": "Emirates NBD promoted its mobile and digital banking tools.", "descriptionAr": "روّج بنك الإمارات دبي الوطني لأدواته المصرفية الرقمية." },
+{ "date": "2025-05-21", "title": "SME Banking Campaign", "titleAr": "حملة مصرفية للشركات الصغيرة", "description": "The bank highlighted services for entrepreneurs and SMEs.", "descriptionAr": "سلط البنك الضوء على خدمات رواد الأعمال والشركات الصغيرة." },
+{ "date": "2025-09-18", "title": "Financial Wellness", "titleAr": "العافية المالية", "description": "The brand published financial planning content.", "descriptionAr": "نشرت العلامة محتوى حول التخطيط المالي." },
+{ "date": "2026-03-06", "title": "AI Banking Initiative", "titleAr": "مبادرة الذكاء الاصطناعي المصرفي", "description": "The bank highlighted AI-driven customer services.", "descriptionAr": "سلط البنك الضوء على خدمات العملاء المدعومة بالذكاء الاصطناعي." }
+]
+},
+{
+"logourl": "fab",
+"name": "First Abu Dhabi Bank",
+"nameAr": "بنك أبوظبي الأول",
+"description": "One of the UAE's largest banks and a major regional financial institution.",
+"descriptionAr": "أحد أكبر البنوك في الإمارات ومؤسسة مالية إقليمية كبرى.",
+"logo": "[https://img.logo.dev/bankfab.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/bankfab.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-fab",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "5.9M",
+"mentions": "121K",
+"index": "87",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "288K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "79%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-18", "title": "Digital Banking Campaign", "titleAr": "حملة مصرفية رقمية", "description": "FAB promoted digital banking solutions.", "descriptionAr": "روّج بنك أبوظبي الأول للحلول المصرفية الرقمية." },
+{ "date": "2025-06-14", "title": "Corporate Banking Update", "titleAr": "تحديث الخدمات المصرفية للشركات", "description": "The bank highlighted corporate banking capabilities.", "descriptionAr": "سلط البنك الضوء على قدراته المصرفية للشركات." },
+{ "date": "2025-10-05", "title": "Sustainability Finance", "titleAr": "التمويل المستدام", "description": "FAB communicated sustainable finance initiatives.", "descriptionAr": "أعلن البنك عن مبادرات للتمويل المستدام." },
+{ "date": "2026-03-16", "title": "Customer Experience", "titleAr": "تجربة العملاء", "description": "The brand promoted improvements to customer journeys.", "descriptionAr": "روّجت العلامة لتحسينات في رحلة العملاء." }
+]
+},
+{
+"logourl": "aldar",
+"name": "Aldar Properties",
+"nameAr": "الدار العقارية",
+"description": "Leading Abu Dhabi real estate developer and investment company.",
+"descriptionAr": "شركة تطوير واستثمار عقاري رائدة في أبوظبي.",
+"logo": "[https://img.logo.dev/aldar.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/aldar.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-aldar",
+"status": "active",
+"category": "real-estate",
+"kpi": {
+"reach": "5.4M",
+"mentions": "98K",
+"index": "85",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "267K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "86%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-23", "title": "Abu Dhabi Development", "titleAr": "تطوير في أبوظبي", "description": "Aldar promoted new residential developments.", "descriptionAr": "روّجت الدار لمشاريع سكنية جديدة." },
+{ "date": "2025-05-06", "title": "Lifestyle Destination", "titleAr": "وجهة أسلوب حياة", "description": "The company highlighted lifestyle destinations.", "descriptionAr": "سلطت الشركة الضوء على وجهات أسلوب الحياة." },
+{ "date": "2025-09-23", "title": "Sustainability Initiative", "titleAr": "مبادرة الاستدامة", "description": "Aldar communicated sustainable development initiatives.", "descriptionAr": "أعلنت الدار عن مبادرات للتطوير المستدام." },
+{ "date": "2026-02-12", "title": "Regional Expansion", "titleAr": "التوسع الإقليمي", "description": "The company highlighted its regional growth strategy.", "descriptionAr": "سلطت الشركة الضوء على استراتيجية النمو الإقليمي." }
+]
+},
+{
+"logourl": "adnoc-distribution",
+"name": "ADNOC Distribution",
+"nameAr": "أدنوك للتوزيع",
+"description": "UAE fuel retail and mobility services brand.",
+"descriptionAr": "علامة إماراتية لخدمات توزيع الوقود والتنقل.",
+"logo": "[https://img.logo.dev/adnocdistribution.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/adnocdistribution.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-adnoc-distribution",
+"status": "active",
+"category": "automotive",
+"kpi": {
+"reach": "5.7M",
+"mentions": "115K",
+"index": "86",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "297K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-02-09", "title": "Mobility Campaign", "titleAr": "حملة التنقل", "description": "ADNOC Distribution promoted mobility services.", "descriptionAr": "روّجت أدنوك للتوزيع لخدمات التنقل." },
+{ "date": "2025-06-19", "title": "EV Initiative", "titleAr": "مبادرة السيارات الكهربائية", "description": "The brand increased awareness around EV charging.", "descriptionAr": "رفعت العلامة الوعي حول شحن السيارات الكهربائية." },
+{ "date": "2025-10-10", "title": "Customer Rewards", "titleAr": "مكافآت العملاء", "description": "The company promoted its customer rewards ecosystem.", "descriptionAr": "روّجت الشركة لمنظومة مكافآت العملاء." },
+{ "date": "2026-03-01", "title": "Service Expansion", "titleAr": "توسع الخدمات", "description": "ADNOC Distribution highlighted new mobility services.", "descriptionAr": "سلطت أدنوك للتوزيع الضوء على خدمات تنقل جديدة." }
+]
+},
+{
+"logourl": "du",
+"name": "du",
+"nameAr": "دو",
+"description": "UAE telecommunications and digital services provider.",
+"descriptionAr": "مزود إماراتي لخدمات الاتصالات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/du.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/du.ae?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-du",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "6.1M",
+"mentions": "189K",
+"index": "88",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "384K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "77%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-19", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "du promoted 5G connectivity and home services.", "descriptionAr": "روّجت دو لخدمات الجيل الخامس والإنترنت المنزلي." },
+{ "date": "2025-05-13", "title": "Entertainment Campaign", "titleAr": "حملة الترفيه", "description": "The company promoted digital entertainment services.", "descriptionAr": "روّجت الشركة لخدمات الترفيه الرقمي." },
+{ "date": "2025-09-26", "title": "Smart Home Initiative", "titleAr": "مبادرة المنزل الذكي", "description": "du highlighted smart-home connectivity solutions.", "descriptionAr": "سلطت دو الضوء على حلول الاتصال للمنزل الذكي." },
+{ "date": "2026-02-08", "title": "Customer Offer", "titleAr": "عرض للعملاء", "description": "The brand promoted a new consumer connectivity offer.", "descriptionAr": "روّجت العلامة لعرض اتصال جديد للمستهلكين." }
+]
+},
+{
+"logourl": "noon",
+"name": "noon",
+"nameAr": "نون",
+"description": "Dubai-based regional e-commerce and digital marketplace brand.",
+"descriptionAr": "علامة تجارة إلكترونية وسوق رقمي إقليمية مقرها دبي.",
+"logo": "[https://img.logo.dev/noon.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/noon.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-noon",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "10M",
+"mentions": "462K",
+"index": "95",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "8.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "792K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "84%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$8.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-07", "title": "Mega Sale Campaign", "titleAr": "حملة تخفيضات كبرى", "description": "noon promoted a major regional shopping campaign.", "descriptionAr": "روّجت نون لحملة تسوق إقليمية كبرى." },
+{ "date": "2025-04-28", "title": "Fashion Campaign", "titleAr": "حملة الأزياء", "description": "The marketplace increased visibility for fashion categories.", "descriptionAr": "رفعت المنصة حضور فئات الأزياء." },
+{ "date": "2025-09-15", "title": "Back to School", "titleAr": "العودة للمدارس", "description": "noon launched seasonal education and electronics promotions.", "descriptionAr": "أطلقت نون عروضاً موسمية للتعليم والإلكترونيات." },
+{ "date": "2026-02-17", "title": "Fast Delivery Campaign", "titleAr": "حملة التوصيل السريع", "description": "The brand promoted faster delivery services.", "descriptionAr": "روّجت العلامة لخدمات التوصيل الأسرع." }
+]
+},
+{
+"logourl": "careem",
+"name": "Careem",
+"nameAr": "كريم",
+"description": "Dubai-founded technology platform providing mobility and digital services across the region.",
+"descriptionAr": "منصة تقنية تأسست في دبي وتقدم خدمات التنقل والخدمات الرقمية في المنطقة.",
+"logo": "[https://img.logo.dev/careem.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/careem.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-careem",
+"status": "active",
+"category": "technology",
+"kpi": {
+"reach": "9.4M",
+"mentions": "438K",
+"index": "94",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "7.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "681K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "82%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$7.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-10", "title": "Super App Campaign", "titleAr": "حملة التطبيق الشامل", "description": "Careem promoted its broader digital services ecosystem.", "descriptionAr": "روّجت كريم لمنظومتها الأوسع من الخدمات الرقمية." },
+{ "date": "2025-05-24", "title": "Delivery Expansion", "titleAr": "توسع خدمات التوصيل", "description": "The company increased visibility around delivery services.", "descriptionAr": "زادت الشركة حضور خدمات التوصيل." },
+{ "date": "2025-09-08", "title": "Mobility Campaign", "titleAr": "حملة التنقل", "description": "Careem promoted its mobility services across Gulf markets.", "descriptionAr": "روّجت كريم لخدمات التنقل في أسواق الخليج." },
+{ "date": "2026-03-13", "title": "Digital Payments Update", "titleAr": "تحديث المدفوعات الرقمية", "description": "The platform highlighted digital payment features.", "descriptionAr": "سلطت المنصة الضوء على مزايا المدفوعات الرقمية." }
+]
+},
+{
+"logourl": "mashreq",
+"name": "Mashreq",
+"nameAr": "المشرق",
+"description": "One of the UAE's oldest banking brands with a strong digital banking presence.",
+"descriptionAr": "إحدى أقدم العلامات المصرفية في الإمارات مع حضور قوي في الخدمات الرقمية.",
+"logo": "[https://img.logo.dev/mashreq.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/mashreq.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-mashreq",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "4.9M",
+"mentions": "86K",
+"index": "83",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "214K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "76%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-11", "title": "Digital Banking", "titleAr": "الخدمات المصرفية الرقمية", "description": "Mashreq promoted its digital-first banking experience.", "descriptionAr": "روّج المشرق لتجربته المصرفية الرقمية." },
+{ "date": "2025-06-05", "title": "SME Banking Campaign", "titleAr": "حملة الشركات الصغيرة", "description": "The bank promoted financial solutions for businesses.", "descriptionAr": "روّج البنك لحلول مالية للشركات." },
+{ "date": "2025-10-16", "title": "Payments Innovation", "titleAr": "ابتكار المدفوعات", "description": "Mashreq highlighted new payment technology.", "descriptionAr": "سلط المشرق الضوء على تقنيات دفع جديدة." },
+{ "date": "2026-03-04", "title": "Customer Experience", "titleAr": "تجربة العملاء", "description": "The brand promoted improvements to digital customer journeys.", "descriptionAr": "روّجت العلامة لتحسينات في رحلة العملاء الرقمية." }
+]
+},
+{
+"logourl": "al-futtaim",
+"name": "Al-Futtaim",
+"nameAr": "مجموعة الفطيم",
+"description": "Major Dubai-based conglomerate active in automotive, retail and technology.",
+"descriptionAr": "مجموعة إماراتية كبرى مقرها دبي وتنشط في السيارات والتجزئة والتقنية.",
+"logo": "[https://img.logo.dev/alfuttaim.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/alfuttaim.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-al-futtaim",
+"status": "active",
+"category": "automotive",
+"kpi": {
+"reach": "7.1M",
+"mentions": "171K",
+"index": "88",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "359K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$5.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-21", "title": "Automotive Campaign", "titleAr": "حملة السيارات", "description": "Al-Futtaim promoted automotive brands and mobility solutions.", "descriptionAr": "روّجت الفطيم لعلامات السيارات وحلول التنقل." },
+{ "date": "2025-05-10", "title": "Retail Campaign", "titleAr": "حملة التجزئة", "description": "The group promoted its retail portfolio.", "descriptionAr": "روّجت المجموعة لمحفظتها في قطاع التجزئة." },
+{ "date": "2025-09-12", "title": "EV Campaign", "titleAr": "حملة السيارات الكهربائية", "description": "The company increased awareness around electric vehicles.", "descriptionAr": "رفعت الشركة الوعي حول السيارات الكهربائية." },
+{ "date": "2026-02-25", "title": "Digital Transformation", "titleAr": "التحول الرقمي", "description": "Al-Futtaim highlighted digital customer experiences.", "descriptionAr": "سلطت الفطيم الضوء على التجارب الرقمية للعملاء." }
+]
+},
+{
+"logourl": "majid-al-futtaim",
+"name": "Majid Al Futtaim",
+"nameAr": "ماجد الفطيم",
+"description": "Dubai-based group operating major retail, entertainment and leisure brands.",
+"descriptionAr": "مجموعة مقرها دبي وتدير علامات كبرى في التجزئة والترفيه.",
+"logo": "[https://img.logo.dev/majidalfuttaim.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/majidalfuttaim.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-majid-al-futtaim",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "8.5M",
+"mentions": "219K",
+"index": "91",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "492K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "88%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-29", "title": "Shopping Campaign", "titleAr": "حملة التسوق", "description": "The group promoted its retail destinations.", "descriptionAr": "روّجت المجموعة لوجهاتها التجارية." },
+{ "date": "2025-05-18", "title": "Entertainment Campaign", "titleAr": "حملة الترفيه", "description": "Majid Al Futtaim promoted entertainment experiences.", "descriptionAr": "روّجت ماجد الفطيم لتجارب الترفيه." },
+{ "date": "2025-09-04", "title": "Sustainability Campaign", "titleAr": "حملة الاستدامة", "description": "The group communicated sustainability initiatives.", "descriptionAr": "أعلنت المجموعة عن مبادرات للاستدامة." },
+{ "date": "2026-02-09", "title": "Digital Retail Update", "titleAr": "تحديث التجزئة الرقمية", "description": "The brand highlighted digital retail experiences.", "descriptionAr": "سلطت العلامة الضوء على تجارب التجزئة الرقمية." }
+]
+},
+{
+"logourl": "lulu-hypermarket",
+"name": "LuLu Hypermarket",
+"nameAr": "لولو هايبرماركت",
+"description": "Major UAE-founded retail chain operating across the Gulf and wider region.",
+"descriptionAr": "سلسلة متاجر كبرى تأسست في الإمارات وتعمل في الخليج والمنطقة.",
+"logo": "[https://img.logo.dev/luluhypermarket.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/luluhypermarket.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-lulu",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "9.1M",
+"mentions": "326K",
+"index": "92",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "7.0M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "614K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "86%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$7.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-06", "title": "Grocery Campaign", "titleAr": "حملة المواد الغذائية", "description": "LuLu promoted weekly grocery promotions across Gulf markets.", "descriptionAr": "روّجت لولو للعروض الغذائية الأسبوعية في أسواق الخليج." },
+{ "date": "2025-05-22", "title": "Ramadan Campaign", "titleAr": "حملة رمضان", "description": "The retailer promoted seasonal shopping content.", "descriptionAr": "روّجت الشركة لمحتوى تسوق موسمي." },
+{ "date": "2025-09-13", "title": "Back to School Campaign", "titleAr": "حملة العودة للمدارس", "description": "LuLu promoted school and family products.", "descriptionAr": "روّجت لولو لمنتجات المدارس والعائلة." },
+{ "date": "2026-02-21", "title": "Digital Shopping Campaign", "titleAr": "حملة التسوق الرقمي", "description": "The brand highlighted online grocery shopping.", "descriptionAr": "سلطت العلامة الضوء على التسوق الإلكتروني للمواد الغذائية." }
+]
+},
+{
+"logourl": "alshaya",
+"name": "Alshaya Group",
+"nameAr": "مجموعة الشايع",
+"description": "Kuwait-based retail franchise group operating major international brands across the Middle East.",
+"descriptionAr": "مجموعة تجزئة كويتية تدير علامات عالمية كبرى في الشرق الأوسط.",
+"logo": "[https://img.logo.dev/alshaya.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/alshaya.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-alshaya",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "8.9M",
+"mentions": "304K",
+"index": "91",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "588K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "84%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-04", "title": "Fashion Campaign", "titleAr": "حملة الأزياء", "description": "Alshaya promoted its portfolio of fashion brands.", "descriptionAr": "روّجت الشايع لمحفظتها من علامات الأزياء." },
+{ "date": "2025-05-27", "title": "Beauty Campaign", "titleAr": "حملة الجمال", "description": "The group increased visibility for beauty retail brands.", "descriptionAr": "رفعت المجموعة حضور علامات منتجات الجمال." },
+{ "date": "2025-09-06", "title": "New Store Campaign", "titleAr": "حملة متجر جديد", "description": "The retailer highlighted new store openings.", "descriptionAr": "سلطت الشركة الضوء على افتتاح متاجر جديدة." },
+{ "date": "2026-03-10", "title": "Digital Retail Campaign", "titleAr": "حملة التجزئة الرقمية", "description": "Alshaya promoted its digital shopping ecosystem.", "descriptionAr": "روّجت الشايع لمنظومتها للتسوق الرقمي." }
+]
+},
+{
+"logourl": "kuwait-airways",
+"name": "Kuwait Airways",
+"nameAr": "الخطوط الجوية الكويتية",
+"description": "Kuwait's national airline serving regional and international destinations.",
+"descriptionAr": "الناقل الوطني لدولة الكويت ويخدم وجهات إقليمية ودولية.",
+"logo": "[https://img.logo.dev/kuwaitairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/kuwaitairways.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-kuwait-airways",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "5.8M",
+"mentions": "147K",
+"index": "86",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "318K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-24", "title": "Destination Campaign", "titleAr": "حملة الوجهات", "description": "Kuwait Airways promoted international destinations.", "descriptionAr": "روّجت الخطوط الكويتية للوجهات الدولية." },
+{ "date": "2025-05-14", "title": "Travel Experience Campaign", "titleAr": "حملة تجربة السفر", "description": "The airline highlighted passenger experience improvements.", "descriptionAr": "سلطت الشركة الضوء على تحسينات تجربة المسافرين." },
+{ "date": "2025-09-20", "title": "Fleet Campaign", "titleAr": "حملة الأسطول", "description": "Kuwait Airways communicated fleet development updates.", "descriptionAr": "أعلنت الخطوط الكويتية عن تحديثات حول تطوير الأسطول." },
+{ "date": "2026-02-15", "title": "Seasonal Travel Campaign", "titleAr": "حملة السفر الموسمية", "description": "The airline promoted seasonal travel offers.", "descriptionAr": "روّجت الشركة لعروض السفر الموسمية." }
+]
+},
+{
+"logourl": "zain-kuwait",
+"name": "Zain Kuwait",
+"nameAr": "زين الكويت",
+"description": "Kuwait-based telecommunications and digital services provider.",
+"descriptionAr": "مزود كويتي لخدمات الاتصالات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/zain.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/zain.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-zain-kuwait",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "7.6M",
+"mentions": "259K",
+"index": "91",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "511K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "82%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$5.5M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-15", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "Zain Kuwait promoted its 5G network.", "descriptionAr": "روّجت زين الكويت لشبكة الجيل الخامس." },
+{ "date": "2025-04-23", "title": "Gaming Campaign", "titleAr": "حملة الألعاب", "description": "The brand promoted connectivity services for gamers.", "descriptionAr": "روّجت العلامة لخدمات اتصال مخصصة للاعبين." },
+{ "date": "2025-09-10", "title": "Digital Services", "titleAr": "الخدمات الرقمية", "description": "Zain highlighted new digital customer services.", "descriptionAr": "سلطت زين الضوء على خدمات رقمية جديدة للعملاء." },
+{ "date": "2026-03-17", "title": "Technology Partnership", "titleAr": "شراكة تقنية", "description": "The company announced a technology-focused partnership.", "descriptionAr": "أعلنت الشركة عن شراكة تركز على التقنية." }
+]
+},
+{
+"logourl": "nbk",
+"name": "National Bank of Kuwait",
+"nameAr": "بنك الكويت الوطني",
+"description": "Kuwait's largest banking brand and one of the region's major financial institutions.",
+"descriptionAr": "أكبر علامة مصرفية في الكويت وإحدى المؤسسات المالية الكبرى في المنطقة.",
+"logo": "[https://img.logo.dev/nbk.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/nbk.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-nbk",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "6.2M",
+"mentions": "138K",
+"index": "89",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "301K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "79%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.0M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-07", "title": "Digital Banking Campaign", "titleAr": "حملة الخدمات المصرفية الرقمية", "description": "NBK promoted its digital banking ecosystem.", "descriptionAr": "روّج بنك الكويت الوطني لمنظومته المصرفية الرقمية." },
+{ "date": "2025-06-21", "title": "Financial Literacy Campaign", "titleAr": "حملة الثقافة المالية", "description": "The bank shared financial literacy content.", "descriptionAr": "شارك البنك محتوى حول الثقافة المالية." },
+{ "date": "2025-10-14", "title": "SME Banking Campaign", "titleAr": "حملة الشركات الصغيرة والمتوسطة", "description": "NBK highlighted services for business customers.", "descriptionAr": "سلط الوطني الضوء على خدمات عملاء الأعمال." },
+{ "date": "2026-03-08", "title": "Digital Innovation", "titleAr": "الابتكار الرقمي", "description": "The bank promoted technology-driven banking services.", "descriptionAr": "روّج البنك لخدمات مصرفية مدفوعة بالتقنية." }
+]
+},
+{
+"logourl": "americana-restaurants",
+"name": "Americana Restaurants",
+"nameAr": "أمريكانا للمطاعم",
+"description": "Kuwait-founded restaurant operator with major food brands across the Gulf.",
+"descriptionAr": "شركة مطاعم تأسست في الكويت وتدير علامات غذائية كبرى في الخليج.",
+"logo": "[https://img.logo.dev/americanarestaurants.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/americanarestaurants.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-americana",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "8.3M",
+"mentions": "274K",
+"index": "90",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "6.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "581K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "80%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$6.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-31", "title": "Restaurant Campaign", "titleAr": "حملة المطاعم", "description": "Americana promoted its restaurant portfolio across Gulf markets.", "descriptionAr": "روّجت أمريكانا لمحفظة مطاعمها في أسواق الخليج." },
+{ "date": "2025-05-19", "title": "New Menu Campaign", "titleAr": "حملة قائمة جديدة", "description": "The group promoted new menu items across its brands.", "descriptionAr": "روّجت المجموعة لأصناف جديدة عبر علاماتها." },
+{ "date": "2025-09-25", "title": "Delivery Campaign", "titleAr": "حملة التوصيل", "description": "Americana increased visibility around delivery options.", "descriptionAr": "رفعت أمريكانا حضور خدمات التوصيل." },
+{ "date": "2026-02-06", "title": "Regional Food Campaign", "titleAr": "حملة غذائية إقليمية", "description": "The group launched a regional food and dining campaign.", "descriptionAr": "أطلقت المجموعة حملة إقليمية للطعام والمطاعم." }
+]
+},
+{
+"logourl": "agility",
+"name": "Agility",
+"nameAr": "أجيليتي",
+"description": "Kuwait-based logistics and supply chain company with global operations.",
+"descriptionAr": "شركة لوجستية كويتية تعمل في سلاسل الإمداد على مستوى عالمي.",
+"logo": "[https://img.logo.dev/agility.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/agility.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-agility",
+"status": "active",
+"category": "logistics",
+"kpi": {
+"reach": "3.7M",
+"mentions": "64K",
+"index": "79",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "153K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "75%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.3M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["linkedin", "instagram", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-02-13", "title": "Logistics Innovation", "titleAr": "ابتكار لوجستي", "description": "Agility promoted technology-driven logistics solutions.", "descriptionAr": "روّجت أجيليتي لحلول لوجستية مدفوعة بالتقنية." },
+{ "date": "2025-06-09", "title": "Supply Chain Campaign", "titleAr": "حملة سلاسل الإمداد", "description": "The company highlighted supply chain capabilities.", "descriptionAr": "سلطت الشركة الضوء على قدراتها في سلاسل الإمداد." },
+{ "date": "2025-10-21", "title": "Sustainability Initiative", "titleAr": "مبادرة الاستدامة", "description": "Agility communicated sustainability efforts in logistics.", "descriptionAr": "أعلنت أجيليتي عن جهود الاستدامة في الخدمات اللوجستية." },
+{ "date": "2026-03-15", "title": "Global Expansion", "titleAr": "التوسع العالمي", "description": "The group highlighted developments in global logistics markets.", "descriptionAr": "سلطت المجموعة الضوء على تطورات الأسواق اللوجستية العالمية." }
+]
+},
+{
+"logourl": "boubyan-bank",
+"name": "Boubyan Bank",
+"nameAr": "بنك بوبيان",
+"description": "Kuwaiti Islamic bank known for its digital-first banking services.",
+"descriptionAr": "بنك إسلامي كويتي معروف بخدماته المصرفية الرقمية.",
+"logo": "[https://img.logo.dev/boubyan.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/boubyan.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-boubyan",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "4.5M",
+"mentions": "93K",
+"index": "84",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "224K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "83%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-18", "title": "Digital Banking Campaign", "titleAr": "حملة مصرفية رقمية", "description": "Boubyan promoted its mobile banking experience.", "descriptionAr": "روّج بنك بوبيان لتجربته المصرفية عبر الهاتف." },
+{ "date": "2025-05-07", "title": "Youth Banking Campaign", "titleAr": "حملة مصرفية للشباب", "description": "The bank launched content targeting younger customers.", "descriptionAr": "أطلق البنك محتوى يستهدف العملاء الشباب." },
+{ "date": "2025-09-22", "title": "Payment Innovation", "titleAr": "ابتكار المدفوعات", "description": "Boubyan highlighted new payment capabilities.", "descriptionAr": "سلط بوبيان الضوء على مزايا دفع جديدة." },
+{ "date": "2026-02-27", "title": "Customer Experience", "titleAr": "تجربة العملاء", "description": "The bank promoted improvements to digital customer services.", "descriptionAr": "روّج البنك لتحسينات الخدمات الرقمية للعملاء." }
+]
+},
+{
+"logourl": "bahrain-telecom",
+"name": "Batelco",
+"nameAr": "بتلكو",
+"description": "Bahrain-based telecommunications company and established Gulf brand.",
+"descriptionAr": "شركة اتصالات بحرينية وعلامة خليجية عريقة.",
+"logo": "[https://img.logo.dev/batelco.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/batelco.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-batelco",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "4.7M",
+"mentions": "118K",
+"index": "83",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.5M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "245K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "80%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-02-20", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "Batelco promoted 5G connectivity services.", "descriptionAr": "روّجت بتلكو لخدمات الاتصال بالجيل الخامس." },
+{ "date": "2025-06-15", "title": "Digital Services", "titleAr": "الخدمات الرقمية", "description": "The company highlighted digital customer services.", "descriptionAr": "سلطت الشركة الضوء على الخدمات الرقمية للعملاء." },
+{ "date": "2025-10-08", "title": "Gaming Campaign", "titleAr": "حملة الألعاب", "description": "Batelco promoted services for gaming audiences.", "descriptionAr": "روّجت بتلكو لخدمات تستهدف جمهور الألعاب." },
+{ "date": "2026-03-20", "title": "Smart Connectivity", "titleAr": "الاتصال الذكي", "description": "The brand highlighted smart connectivity solutions.", "descriptionAr": "سلطت العلامة الضوء على حلول الاتصال الذكي." }
+]
+},
+{
+"logourl": "bahrain-air",
+"name": "Gulf Air",
+"nameAr": "طيران الخليج",
+"description": "Bahrain's national carrier and one of the Gulf's established airlines.",
+"descriptionAr": "الناقل الوطني لمملكة البحرين وإحدى شركات الطيران الخليجية العريقة.",
+"logo": "[https://img.logo.dev/gulfair.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/gulfair.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-gulf-air",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "6.4M",
+"mentions": "159K",
+"index": "87",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "337K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "85%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$4.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-27", "title": "Destination Campaign", "titleAr": "حملة الوجهات", "description": "Gulf Air promoted international destinations.", "descriptionAr": "روّج طيران الخليج للوجهات الدولية." },
+{ "date": "2025-05-23", "title": "Travel Experience", "titleAr": "تجربة السفر", "description": "The airline highlighted passenger experience.", "descriptionAr": "سلطت الشركة الضوء على تجربة المسافرين." },
+{ "date": "2025-09-18", "title": "Fleet Update", "titleAr": "تحديث الأسطول", "description": "Gulf Air communicated fleet development updates.", "descriptionAr": "أعلن طيران الخليج عن تحديثات تطوير الأسطول." },
+{ "date": "2026-02-13", "title": "Seasonal Travel Campaign", "titleAr": "حملة السفر الموسمية", "description": "The airline promoted seasonal travel offers.", "descriptionAr": "روّجت الشركة لعروض السفر الموسمية." }
+]
+},
+{
+"logourl": "bahrain-airport",
+"name": "Bahrain Airport Company",
+"nameAr": "شركة مطار البحرين",
+"description": "Operator of Bahrain International Airport and a major aviation services brand.",
+"descriptionAr": "الشركة المشغلة لمطار البحرين الدولي وإحدى العلامات الرئيسية في خدمات الطيران.",
+"logo": "[https://img.logo.dev/bahrainairport.bh?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/bahrainairport.bh?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-bahrain-airport",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "3.6M",
+"mentions": "55K",
+"index": "77",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.4M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "132K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "87%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-09", "title": "Airport Experience Campaign", "titleAr": "حملة تجربة المطار", "description": "The company promoted passenger experience improvements.", "descriptionAr": "روّجت الشركة لتحسينات تجربة المسافرين." },
+{ "date": "2025-06-18", "title": "Travel Campaign", "titleAr": "حملة السفر", "description": "Bahrain International Airport promoted travel connectivity.", "descriptionAr": "روّج مطار البحرين الدولي للربط الجوي." },
+{ "date": "2025-10-02", "title": "Digital Airport Initiative", "titleAr": "مبادرة المطار الرقمي", "description": "The airport highlighted digital passenger services.", "descriptionAr": "سلط المطار الضوء على خدمات المسافرين الرقمية." },
+{ "date": "2026-03-05", "title": "Aviation Partnership", "titleAr": "شراكة في الطيران", "description": "The company communicated a new aviation partnership.", "descriptionAr": "أعلنت الشركة عن شراكة جديدة في مجال الطيران." }
+]
+},
+{
+"logourl": "bapco",
+"name": "Bapco Energies",
+"nameAr": "بابكو إنرجيز",
+"description": "Bahrain's integrated energy company spanning energy production and distribution.",
+"descriptionAr": "شركة الطاقة المتكاملة في البحرين وتشمل الإنتاج والتوزيع.",
+"logo": "[https://img.logo.dev/bapcoenergies.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/bapcoenergies.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-bapco",
+"status": "active",
+"category": "energy",
+"kpi": {
+"reach": "4.4M",
+"mentions": "72K",
+"index": "80",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "181K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "79%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-13", "title": "Energy Strategy", "titleAr": "استراتيجية الطاقة", "description": "Bapco Energies highlighted its long-term energy strategy.", "descriptionAr": "سلطت بابكو إنرجيز الضوء على استراتيجية الطاقة طويلة الأجل." },
+{ "date": "2025-05-29", "title": "Sustainability Campaign", "titleAr": "حملة الاستدامة", "description": "The company promoted sustainability initiatives.", "descriptionAr": "روّجت الشركة لمبادرات الاستدامة." },
+{ "date": "2025-09-16", "title": "Energy Infrastructure", "titleAr": "البنية التحتية للطاقة", "description": "Bapco highlighted infrastructure investments.", "descriptionAr": "سلطت بابكو الضوء على استثمارات البنية التحتية." },
+{ "date": "2026-02-19", "title": "Technology Update", "titleAr": "تحديث تقني", "description": "The company communicated new energy technology projects.", "descriptionAr": "أعلنت الشركة عن مشاريع جديدة في تقنيات الطاقة." }
+]
+},
+{
+"logourl": "batelco-parent",
+"name": "Beyon",
+"nameAr": "بيون",
+"description": "Bahrain-based technology and telecommunications group.",
+"descriptionAr": "مجموعة بحرينية للتقنية والاتصالات.",
+"logo": "[https://img.logo.dev/beyon.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/beyon.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-beyon",
+"status": "active",
+"category": "technology",
+"kpi": {
+"reach": "3.8M",
+"mentions": "63K",
+"index": "79",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "159K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.3M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-17", "title": "Technology Campaign", "titleAr": "حملة تقنية", "description": "Beyon promoted its technology portfolio.", "descriptionAr": "روّجت بيون لمحفظتها التقنية." },
+{ "date": "2025-06-12", "title": "Digital Transformation", "titleAr": "التحول الرقمي", "description": "The group highlighted digital transformation initiatives.", "descriptionAr": "سلطت المجموعة الضوء على مبادرات التحول الرقمي." },
+{ "date": "2025-10-11", "title": "Connectivity Partnership", "titleAr": "شراكة اتصال", "description": "Beyon communicated a new connectivity partnership.", "descriptionAr": "أعلنت بيون عن شراكة جديدة في مجال الاتصال." },
+{ "date": "2026-03-24", "title": "Innovation Update", "titleAr": "تحديث الابتكار", "description": "The group highlighted technology innovation projects.", "descriptionAr": "سلطت المجموعة الضوء على مشاريع الابتكار التقني." }
+]
+},
+{
+"logourl": "oman-air",
+"name": "Oman Air",
+"nameAr": "الطيران العماني",
+"description": "Oman's national airline connecting the country with regional and international destinations.",
+"descriptionAr": "الناقل الوطني لسلطنة عمان ويربطها بوجهات إقليمية ودولية.",
+"logo": "[https://img.logo.dev/omanair.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/omanair.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-oman-air",
+"status": "active",
+"category": "aviation",
+"kpi": {
+"reach": "5.2M",
+"mentions": "132K",
+"index": "84",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "287K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "88%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-16", "title": "Destination Campaign", "titleAr": "حملة الوجهات", "description": "Oman Air promoted international destinations.", "descriptionAr": "روّج الطيران العماني للوجهات الدولية." },
+{ "date": "2025-05-30", "title": "Travel Experience", "titleAr": "تجربة السفر", "description": "The airline highlighted its onboard experience.", "descriptionAr": "سلطت الشركة الضوء على تجربة السفر على متن الطائرة." },
+{ "date": "2025-09-14", "title": "Route Expansion", "titleAr": "توسع الوجهات", "description": "Oman Air promoted new or expanded routes.", "descriptionAr": "روّج الطيران العماني لوجهات جديدة أو موسعة." },
+{ "date": "2026-02-23", "title": "Seasonal Campaign", "titleAr": "حملة موسمية", "description": "The airline promoted seasonal travel offers.", "descriptionAr": "روّجت الشركة لعروض السفر الموسمية." }
+]
+},
+{
+"logourl": "omantel",
+"name": "Omantel",
+"nameAr": "عمانتل",
+"description": "Oman's leading telecommunications and digital services provider.",
+"descriptionAr": "مزود الاتصالات والخدمات الرقمية الرائد في سلطنة عمان.",
+"logo": "[https://img.logo.dev/omantel.om?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/omantel.om?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-omantel",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "4.9M",
+"mentions": "116K",
+"index": "83",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.5M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "256K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "80%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.1M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-02-04", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "Omantel promoted 5G connectivity services.", "descriptionAr": "روّجت عمانتل لخدمات الجيل الخامس." },
+{ "date": "2025-06-20", "title": "Digital Services", "titleAr": "الخدمات الرقمية", "description": "The company highlighted digital customer solutions.", "descriptionAr": "سلطت الشركة الضوء على حلول العملاء الرقمية." },
+{ "date": "2025-10-06", "title": "Smart City Initiative", "titleAr": "مبادرة المدن الذكية", "description": "Omantel promoted connectivity for smart-city projects.", "descriptionAr": "روّجت عمانتل لخدمات الاتصال لمشاريع المدن الذكية." },
+{ "date": "2026-03-09", "title": "Technology Partnership", "titleAr": "شراكة تقنية", "description": "The company announced a new technology partnership.", "descriptionAr": "أعلنت الشركة عن شراكة تقنية جديدة." }
+]
+},
+{
+"logourl": "bank-muscat",
+"name": "Bank Muscat",
+"nameAr": "بنك مسقط",
+"description": "Oman's largest banking brand and a leading financial institution.",
+"descriptionAr": "أكبر علامة مصرفية في سلطنة عمان ومؤسسة مالية رائدة.",
+"logo": "[https://img.logo.dev/bankmuscat.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/bankmuscat.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-bank-muscat",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "4.6M",
+"mentions": "88K",
+"index": "82",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "207K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "78%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-19", "title": "Digital Banking", "titleAr": "الخدمات المصرفية الرقمية", "description": "Bank Muscat promoted digital banking services.", "descriptionAr": "روّج بنك مسقط للخدمات المصرفية الرقمية." },
+{ "date": "2025-05-09", "title": "Savings Campaign", "titleAr": "حملة الادخار", "description": "The bank promoted financial planning and savings.", "descriptionAr": "روّج البنك للتخطيط المالي والادخار." },
+{ "date": "2025-09-17", "title": "SME Campaign", "titleAr": "حملة الشركات الصغيرة", "description": "Bank Muscat highlighted services for SMEs.", "descriptionAr": "سلط بنك مسقط الضوء على خدمات الشركات الصغيرة والمتوسطة." },
+{ "date": "2026-02-26", "title": "Mobile Banking Update", "titleAr": "تحديث الخدمات المصرفية عبر الهاتف", "description": "The bank highlighted mobile banking improvements.", "descriptionAr": "سلط البنك الضوء على تحسينات الخدمات المصرفية عبر الهاتف." }
+]
+},
+{
+"logourl": "omran",
+"name": "OMRAN Group",
+"nameAr": "مجموعة عُمران",
+"description": "Oman tourism development company behind major hospitality and destination projects.",
+"descriptionAr": "شركة عمانية لتطوير السياحة تقف وراء مشاريع ضيافة ووجهات رئيسية.",
+"logo": "[https://img.logo.dev/omran.om?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/omran.om?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-omran",
+"status": "active",
+"category": "tourism",
+"kpi": {
+"reach": "3.9M",
+"mentions": "69K",
+"index": "80",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.8M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "174K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "90%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-14", "title": "Tourism Campaign", "titleAr": "حملة سياحية", "description": "OMRAN promoted Oman's tourism destinations.", "descriptionAr": "روّجت عُمران للوجهات السياحية في سلطنة عمان." },
+{ "date": "2025-06-06", "title": "Hospitality Development", "titleAr": "تطوير الضيافة", "description": "The group highlighted new hospitality projects.", "descriptionAr": "سلطت المجموعة الضوء على مشاريع ضيافة جديدة." },
+{ "date": "2025-10-18", "title": "Destination Marketing", "titleAr": "تسويق الوجهات", "description": "OMRAN increased international awareness of Omani destinations.", "descriptionAr": "رفعت عُمران الوعي الدولي بالوجهات العمانية." },
+{ "date": "2026-03-12", "title": "Tourism Investment", "titleAr": "الاستثمار السياحي", "description": "The group communicated new tourism investment opportunities.", "descriptionAr": "أعلنت المجموعة عن فرص استثمار سياحية جديدة." }
+]
+},
+{
+"logourl": "al-meera-oman",
+"name": "Lulu Oman",
+"nameAr": "لولو عمان",
+"description": "Major retail and supermarket brand serving consumers across Oman.",
+"descriptionAr": "علامة رئيسية في التجزئة والهايبرماركت تخدم المستهلكين في سلطنة عمان.",
+"logo": "[https://img.logo.dev/luluhypermarket.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/luluhypermarket.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-lulu-oman",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "5.6M",
+"mentions": "127K",
+"index": "84",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "302K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "87%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "facebook", "x"],
+"timeline": [
+{ "date": "2025-01-12", "title": "Grocery Offers", "titleAr": "عروض المواد الغذائية", "description": "Lulu Oman promoted weekly grocery offers.", "descriptionAr": "روّجت لولو عمان لعروض المواد الغذائية الأسبوعية." },
+{ "date": "2025-05-26", "title": "Family Campaign", "titleAr": "حملة العائلة", "description": "The retailer promoted family shopping content.", "descriptionAr": "روّجت الشركة لمحتوى التسوق العائلي." },
+{ "date": "2025-09-09", "title": "Back to School", "titleAr": "العودة للمدارس", "description": "Lulu Oman promoted school products and offers.", "descriptionAr": "روّجت لولو عمان للمنتجات والعروض المدرسية." },
+{ "date": "2026-02-18", "title": "Online Shopping Campaign", "titleAr": "حملة التسوق الإلكتروني", "description": "The brand promoted its digital shopping services.", "descriptionAr": "روّجت العلامة لخدمات التسوق الرقمية." }
+]
+},
+{
+"logourl": "asaffa",
+"name": "A'Saffa Foods",
+"nameAr": "أصيلة للأغذية",
+"description": "Omani food company known for poultry and food products.",
+"descriptionAr": "شركة أغذية عمانية معروفة بمنتجات الدواجن والأغذية.",
+"logo": "[https://img.logo.dev/asaffa.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/asaffa.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-asaffa",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "3.3M",
+"mentions": "51K",
+"index": "77",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "141K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "86%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "facebook", "youtube", "x"],
+"timeline": [
+{ "date": "2025-02-01", "title": "Food Campaign", "titleAr": "حملة غذائية", "description": "A'Saffa promoted its locally produced food range.", "descriptionAr": "روّجت أصيلة لمجموعة منتجاتها الغذائية المحلية." },
+{ "date": "2025-06-17", "title": "Family Campaign", "titleAr": "حملة العائلة", "description": "The brand launched family-oriented content.", "descriptionAr": "أطلقت العلامة محتوى يركز على العائلة." },
+{ "date": "2025-10-04", "title": "Product Awareness", "titleAr": "التعريف بالمنتجات", "description": "A'Saffa highlighted product quality and variety.", "descriptionAr": "سلطت أصيلة الضوء على جودة وتنوع المنتجات." },
+{ "date": "2026-03-22", "title": "Local Food Campaign", "titleAr": "حملة الغذاء المحلي", "description": "The company promoted local food production.", "descriptionAr": "روّجت الشركة للإنتاج الغذائي المحلي." }
+]
+},
+{
+"logourl": "al-duqm",
+"name": "Oman Cement",
+"nameAr": "شركة إسمنت عمان",
+"description": "Omani industrial company producing cement for construction markets.",
+"descriptionAr": "شركة صناعية عمانية تنتج الإسمنت لأسواق البناء.",
+"logo": "[https://img.logo.dev/omancement.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/omancement.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-oman-cement",
+"status": "active",
+"category": "industrial",
+"kpi": {
+"reach": "2.4M",
+"mentions": "29K",
+"index": "70",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "1.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "86K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "74%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.3M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["linkedin", "instagram", "facebook", "x"],
+"timeline": [
+{ "date": "2025-01-20", "title": "Production Update", "titleAr": "تحديث الإنتاج", "description": "The company highlighted production and supply capabilities.", "descriptionAr": "سلطت الشركة الضوء على قدرات الإنتاج والتوريد." },
+{ "date": "2025-05-15", "title": "Construction Market Campaign", "titleAr": "حملة سوق البناء", "description": "The brand highlighted its role in construction supply.", "descriptionAr": "سلطت العلامة الضوء على دورها في توريد قطاع البناء." },
+{ "date": "2025-09-13", "title": "Sustainability Initiative", "titleAr": "مبادرة الاستدامة", "description": "The company communicated industrial sustainability efforts.", "descriptionAr": "أعلنت الشركة عن جهود الاستدامة الصناعية." },
+{ "date": "2026-02-10", "title": "Capacity Update", "titleAr": "تحديث الطاقة الإنتاجية", "description": "The company shared an update on production capacity.", "descriptionAr": "شاركت الشركة تحديثاً حول الطاقة الإنتاجية." }
+]
+},
+{
+"logourl": "saudi-telecom-bahrain",
+"name": "stc Bahrain",
+"nameAr": "إس تي سي البحرين",
+"description": "Bahrain telecommunications brand providing mobile, broadband and digital services.",
+"descriptionAr": "علامة اتصالات بحرينية تقدم خدمات الهاتف والإنترنت والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/stc.com.bh?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/stc.com.bh?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-stc-bahrain",
+"status": "active",
+"category": "telecom",
+"kpi": {
+"reach": "5.3M",
+"mentions": "151K",
+"index": "86",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "329K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "81%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-14", "title": "5G Campaign", "titleAr": "حملة الجيل الخامس", "description": "stc Bahrain promoted next-generation connectivity.", "descriptionAr": "روّجت stc البحرين لخدمات الاتصال من الجيل الجديد." },
+{ "date": "2025-05-28", "title": "Digital Entertainment", "titleAr": "الترفيه الرقمي", "description": "The brand promoted digital entertainment services.", "descriptionAr": "روّجت العلامة لخدمات الترفيه الرقمي." },
+{ "date": "2025-09-19", "title": "Gaming Campaign", "titleAr": "حملة الألعاب", "description": "stc Bahrain launched content targeting gamers.", "descriptionAr": "أطلقت stc البحرين محتوى يستهدف اللاعبين." },
+{ "date": "2026-03-02", "title": "Customer Offer", "titleAr": "عرض للعملاء", "description": "The company promoted a new connectivity offer.", "descriptionAr": "روّجت الشركة لعرض اتصال جديد." }
+]
+},
+{
+"logourl": "qatar-duty-free",
+"name": "Qatar Duty Free",
+"nameAr": "القطرية للأسواق الحرة",
+"description": "Major airport retail brand operating at Hamad International Airport.",
+"descriptionAr": "علامة رئيسية في تجارة التجزئة بالمطارات وتعمل في مطار حمد الدولي.",
+"logo": "[https://img.logo.dev/qatardutyfree.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/qatardutyfree.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-qatar-duty-free",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "5.1M",
+"mentions": "104K",
+"index": "85",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.7M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "269K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "91%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-02-03", "title": "Luxury Retail Campaign", "titleAr": "حملة التجزئة الفاخرة", "description": "Qatar Duty Free promoted premium shopping experiences.", "descriptionAr": "روّجت القطرية للأسواق الحرة لتجارب التسوق الفاخرة." },
+{ "date": "2025-06-16", "title": "Beauty Campaign", "titleAr": "حملة الجمال", "description": "The retailer promoted beauty and cosmetics collections.", "descriptionAr": "روّجت الشركة لمجموعات الجمال ومستحضرات التجميل." },
+{ "date": "2025-10-27", "title": "Travel Retail Campaign", "titleAr": "حملة تجارة السفر", "description": "The brand promoted airport shopping experiences.", "descriptionAr": "روّجت العلامة لتجارب التسوق في المطار." },
+{ "date": "2026-03-13", "title": "Luxury Partnership", "titleAr": "شراكة فاخرة", "description": "Qatar Duty Free highlighted a premium brand partnership.", "descriptionAr": "سلطت القطرية للأسواق الحرة الضوء على شراكة مع علامة فاخرة." }
+]
+},
+{
+"logourl": "saudi-airlines-cargo",
+"name": "Saudia Cargo",
+"nameAr": "السعودية للشحن",
+"description": "Saudi air cargo company serving global logistics markets.",
+"descriptionAr": "شركة سعودية للشحن الجوي تخدم أسواق الخدمات اللوجستية العالمية.",
+"logo": "[https://img.logo.dev/saudiacargo.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/saudiacargo.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-saudia-cargo",
+"status": "active",
+"category": "logistics",
+"kpi": {
+"reach": "3.4M",
+"mentions": "57K",
+"index": "78",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "127K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "83%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.0M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["linkedin", "instagram", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-29", "title": "Cargo Network Update", "titleAr": "تحديث شبكة الشحن", "description": "Saudia Cargo highlighted global cargo connectivity.", "descriptionAr": "سلطت السعودية للشحن الضوء على الربط العالمي للشحن." },
+{ "date": "2025-05-11", "title": "Logistics Partnership", "titleAr": "شراكة لوجستية", "description": "The company promoted a new logistics partnership.", "descriptionAr": "روّجت الشركة لشراكة لوجستية جديدة." },
+{ "date": "2025-09-23", "title": "Pharma Logistics", "titleAr": "الخدمات اللوجستية الدوائية", "description": "Saudia Cargo highlighted specialized cargo services.", "descriptionAr": "سلطت السعودية للشحن الضوء على خدمات الشحن المتخصصة." },
+{ "date": "2026-02-18", "title": "Global Expansion", "titleAr": "التوسع العالمي", "description": "The company communicated expansion across international routes.", "descriptionAr": "أعلنت الشركة عن توسع عبر المسارات الدولية." }
+]
+},
+{
+"logourl": "almarai-baby",
+"name": "Almarai",
+"nameAr": "المراعي",
+"description": "Saudi food and beverage brand with a broad portfolio across Gulf markets.",
+"descriptionAr": "علامة سعودية في الأغذية والمشروبات ذات محفظة واسعة في أسواق الخليج.",
+"logo": "[https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/almarai.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-almarai-brand",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "7.4M",
+"mentions": "205K",
+"index": "91",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "5.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "481K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "90%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$5.4M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-02-08", "title": "Family Campaign", "titleAr": "حملة العائلة", "description": "Almarai launched family-oriented social content.", "descriptionAr": "أطلقت المراعي محتوى اجتماعياً يركز على العائلة." },
+{ "date": "2025-06-27", "title": "Product Campaign", "titleAr": "حملة منتجات", "description": "The brand highlighted several popular food products.", "descriptionAr": "سلطت العلامة الضوء على عدد من منتجاتها الغذائية الشهيرة." },
+{ "date": "2025-10-09", "title": "Nutrition Campaign", "titleAr": "حملة التغذية", "description": "Almarai promoted nutrition and balanced lifestyles.", "descriptionAr": "روّجت المراعي للتغذية ونمط الحياة المتوازن." },
+{ "date": "2026-03-16", "title": "Gulf Campaign", "titleAr": "حملة خليجية", "description": "The brand increased engagement across Gulf audiences.", "descriptionAr": "رفعت العلامة التفاعل مع الجمهور الخليجي." }
+]
+},
+{
+"logourl": "saudi-retail-jarir",
+"name": "Extra Stores",
+"nameAr": "إكسترا",
+"description": "Saudi electronics and consumer technology retail brand.",
+"descriptionAr": "علامة سعودية متخصصة في بيع الإلكترونيات وتقنيات المستهلك.",
+"logo": "[https://img.logo.dev/extra.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/extra.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-extra",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "5.8M",
+"mentions": "142K",
+"index": "86",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "4.3M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "351K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "78%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$3.8M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "snapchat"],
+"timeline": [
+{ "date": "2025-01-05", "title": "Technology Sale", "titleAr": "تخفيضات التقنية", "description": "Extra promoted consumer electronics offers.", "descriptionAr": "روّجت إكسترا لعروض الإلكترونيات الاستهلاكية." },
+{ "date": "2025-05-17", "title": "Smartphone Campaign", "titleAr": "حملة الهواتف الذكية", "description": "The retailer highlighted smartphone products.", "descriptionAr": "سلطت الشركة الضوء على منتجات الهواتف الذكية." },
+{ "date": "2025-09-21", "title": "Back to School Technology", "titleAr": "تقنية العودة للمدارس", "description": "Extra promoted laptops and technology for students.", "descriptionAr": "روّجت إكسترا للحواسيب والتقنية للطلاب." },
+{ "date": "2026-02-04", "title": "Digital Shopping Campaign", "titleAr": "حملة التسوق الرقمي", "description": "The brand promoted its online shopping experience.", "descriptionAr": "روّجت العلامة لتجربة التسوق الإلكتروني." }
+]
+},
+{
+"logourl": "saudi-auto",
+"name": "Petromin",
+"nameAr": "بترومين",
+"description": "Saudi automotive services and mobility company with a broad regional presence.",
+"descriptionAr": "شركة سعودية لخدمات السيارات والتنقل ذات حضور إقليمي واسع.",
+"logo": "[https://img.logo.dev/petromin.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/petromin.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-petromin",
+"status": "active",
+"category": "automotive",
+"kpi": {
+"reach": "4.6M",
+"mentions": "91K",
+"index": "82",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.2M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "218K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "76%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.7M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-12", "title": "Automotive Services Campaign", "titleAr": "حملة خدمات السيارات", "description": "Petromin promoted automotive maintenance services.", "descriptionAr": "روّجت بترومين لخدمات صيانة السيارات." },
+{ "date": "2025-06-09", "title": "EV Mobility Campaign", "titleAr": "حملة التنقل الكهربائي", "description": "The company highlighted electric mobility solutions.", "descriptionAr": "سلطت الشركة الضوء على حلول التنقل الكهربائي." },
+{ "date": "2025-10-18", "title": "Customer Service Campaign", "titleAr": "حملة خدمة العملاء", "description": "Petromin promoted improved automotive customer services.", "descriptionAr": "روّجت بترومين لتحسين خدمات العملاء في قطاع السيارات." },
+{ "date": "2026-03-07", "title": "Mobility Partnership", "titleAr": "شراكة في التنقل", "description": "The company announced a mobility-focused partnership.", "descriptionAr": "أعلنت الشركة عن شراكة تركز على التنقل." }
+]
+},
+{
+"logourl": "saudi-food-tanmia",
+"name": "Tanmiah Food Company",
+"nameAr": "شركة التنمية الغذائية",
+"description": "Saudi food company specializing in poultry and food products.",
+"descriptionAr": "شركة أغذية سعودية متخصصة في الدواجن والمنتجات الغذائية.",
+"logo": "[https://img.logo.dev/tanmiah.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/tanmiah.com?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-tanmiah",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "3.2M",
+"mentions": "46K",
+"index": "75",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.1M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "119K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "84%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.6M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "facebook", "youtube", "x", "linkedin"],
+"timeline": [
+{ "date": "2025-01-17", "title": "Food Quality Campaign", "titleAr": "حملة جودة الغذاء", "description": "Tanmiah promoted food quality and local production.", "descriptionAr": "روّجت التنمية لجودة الغذاء والإنتاج المحلي." },
+{ "date": "2025-05-21", "title": "Poultry Campaign", "titleAr": "حملة الدواجن", "description": "The brand highlighted its poultry products.", "descriptionAr": "سلطت العلامة الضوء على منتجات الدواجن." },
+{ "date": "2025-09-12", "title": "Family Food Campaign", "titleAr": "حملة الغذاء العائلي", "description": "The company launched family-focused food content.", "descriptionAr": "أطلقت الشركة محتوى غذائياً يركز على العائلة." },
+{ "date": "2026-03-18", "title": "Local Production Update", "titleAr": "تحديث الإنتاج المحلي", "description": "Tanmiah highlighted local food production capabilities.", "descriptionAr": "سلطت التنمية الضوء على قدرات الإنتاج الغذائي المحلي." }
+]
+},
+{
+"logourl": "kib",
+"name": "Kuwait International Bank",
+"nameAr": "بنك الكويت الدولي",
+"description": "Kuwaiti Islamic bank offering personal, corporate and digital financial services.",
+"descriptionAr": "بنك إسلامي كويتي يقدم الخدمات المالية للأفراد والشركات والخدمات الرقمية.",
+"logo": "[https://img.logo.dev/kib.com.kw?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/kib.com.kw?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-kib",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "3.8M",
+"mentions": "62K",
+"index": "78",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "143K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "80%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$1.9M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-02-22", "title": "Digital Banking Campaign", "titleAr": "حملة مصرفية رقمية", "description": "KIB promoted digital banking services.", "descriptionAr": "روّج بنك الكويت الدولي لخدماته المصرفية الرقمية." },
+{ "date": "2025-06-13", "title": "Youth Campaign", "titleAr": "حملة الشباب", "description": "The bank promoted services for younger customers.", "descriptionAr": "روّج البنك لخدمات تستهدف العملاء الشباب." },
+{ "date": "2025-10-24", "title": "Financial Awareness", "titleAr": "التوعية المالية", "description": "KIB published financial education content.", "descriptionAr": "نشر البنك محتوى للتوعية المالية." },
+{ "date": "2026-03-06", "title": "Mobile Banking Update", "titleAr": "تحديث الخدمات المصرفية عبر الهاتف", "description": "The bank highlighted improvements to its mobile app.", "descriptionAr": "سلط البنك الضوء على تحسينات تطبيق الهاتف." }
+]
+},
+{
+"logourl": "gulf-bank",
+"name": "Gulf Bank",
+"nameAr": "بنك الخليج",
+"description": "Major Kuwaiti commercial bank offering retail and corporate financial services.",
+"descriptionAr": "بنك تجاري كويتي رئيسي يقدم الخدمات المالية للأفراد والشركات.",
+"logo": "[https://img.logo.dev/gulfbank.com.kw?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/gulfbank.com.kw?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-gulf-bank",
+"status": "active",
+"category": "finance",
+"kpi": {
+"reach": "4.2M",
+"mentions": "74K",
+"index": "80",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.9M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "165K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "77%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.2M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "youtube", "x", "facebook", "linkedin"],
+"timeline": [
+{ "date": "2025-01-09", "title": "Digital Banking Campaign", "titleAr": "حملة مصرفية رقمية", "description": "Gulf Bank promoted its digital banking tools.", "descriptionAr": "روّج بنك الخليج لأدواته المصرفية الرقمية." },
+{ "date": "2025-05-24", "title": "Rewards Campaign", "titleAr": "حملة المكافآت", "description": "The bank promoted customer rewards and benefits.", "descriptionAr": "روّج البنك لمكافآت ومزايا العملاء." },
+{ "date": "2025-09-15", "title": "Travel Banking Campaign", "titleAr": "حملة الخدمات المصرفية للسفر", "description": "Gulf Bank promoted travel-related banking services.", "descriptionAr": "روّج بنك الخليج للخدمات المصرفية المرتبطة بالسفر." },
+{ "date": "2026-02-28", "title": "Customer Experience", "titleAr": "تجربة العملاء", "description": "The brand highlighted improvements to customer service.", "descriptionAr": "سلطت العلامة الضوء على تحسينات خدمة العملاء." }
+]
+},
+{
+"logourl": "saudi-coffee",
+"name": "Barn's",
+"nameAr": "بارنز",
+"description": "Popular Saudi coffeehouse brand with a growing presence across the Kingdom.",
+"descriptionAr": "علامة مقاهي سعودية شهيرة ذات حضور متوسع في المملكة.",
+"logo": "[https://img.logo.dev/barns.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/barns.com.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-barns",
+"status": "active",
+"category": "food",
+"kpi": {
+"reach": "4.8M",
+"mentions": "126K",
+"index": "85",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "3.6M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "281K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "89%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.5M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "snapchat"],
+"timeline": [
+{ "date": "2025-02-06", "title": "Coffee Campaign", "titleAr": "حملة القهوة", "description": "Barn's promoted its coffee and beverage range.", "descriptionAr": "روّجت بارنز لمجموعة القهوة والمشروبات." },
+{ "date": "2025-05-16", "title": "Seasonal Drinks", "titleAr": "المشروبات الموسمية", "description": "The brand promoted seasonal beverages.", "descriptionAr": "روّجت العلامة للمشروبات الموسمية." },
+{ "date": "2025-09-08", "title": "Store Expansion", "titleAr": "توسع الفروع", "description": "Barn's increased awareness around new locations.", "descriptionAr": "رفعت بارنز الوعي حول افتتاح مواقع جديدة." },
+{ "date": "2026-03-01", "title": "Coffee Lifestyle Campaign", "titleAr": "حملة أسلوب حياة القهوة", "description": "The brand launched lifestyle-focused coffee content.", "descriptionAr": "أطلقت العلامة محتوى يركز على أسلوب حياة القهوة." }
+]
+},
+{
+"logourl": "saudi-fashion-jarir",
+"name": "SACO",
+"nameAr": "ساكو",
+"description": "Saudi retail brand specializing in home improvement, tools and lifestyle products.",
+"descriptionAr": "علامة تجزئة سعودية متخصصة في تحسين المنزل والأدوات ومنتجات أسلوب الحياة.",
+"logo": "[https://img.logo.dev/saco.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png](https://img.logo.dev/saco.sa?token=pk_alLbQ-_HQ6yA195-bcNVGQ&size=256&format=png)",
+"coverImage": "cover-saco",
+"status": "active",
+"category": "retail",
+"kpi": {
+"reach": "3.7M",
+"mentions": "58K",
+"index": "77",
+"activeDays": "30"
+},
+"quickIndicators": {
+"volume": { "value": "2.5M", "label": "Volume", "labelAr": "حجم التداول", "sub": "daily" },
+"engagement": { "value": "142K", "label": "Engagement", "labelAr": "التفاعل", "sub": "monthly" },
+"positive": { "value": "76%", "label": "Positive", "labelAr": "إيجابي", "sub": "sentiment" },
+"revenue": { "value": "$2.0M", "label": "Revenue", "labelAr": "الإيرادات", "sub": "estimated" }
+},
+"socialPlatforms": ["instagram", "tiktok", "youtube", "x", "facebook"],
+"timeline": [
+{ "date": "2025-01-28", "title": "Home Improvement Campaign", "titleAr": "حملة تحسين المنزل", "description": "SACO promoted home improvement products.", "descriptionAr": "روّجت ساكو لمنتجات تحسين المنزل." },
+{ "date": "2025-05-19", "title": "DIY Campaign", "titleAr": "حملة الأعمال اليدوية", "description": "The brand shared DIY-focused content.", "descriptionAr": "شاركت العلامة محتوى يركز على الأعمال اليدوية." },
+{ "date": "2025-09-26", "title": "Seasonal Offers", "titleAr": "عروض موسمية", "description": "SACO promoted seasonal home products.", "descriptionAr": "روّجت ساكو لمنتجات منزلية موسمية." },
+{ "date": "2026-02-12", "title": "Digital Retail Update", "titleAr": "تحديث التجزئة الرقمية", "description": "The retailer promoted its online shopping experience.", "descriptionAr": "روّجت الشركة لتجربة التسوق الإلكتروني." }
+]
+}
+]

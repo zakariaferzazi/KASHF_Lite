@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../models/today_case.dart';
+import '../../services/today_case_service.dart';
 import '../../theme.dart';
 
 /// "ملفي النشط" / "قضية اليوم" detail screen — opens when the user
@@ -17,8 +19,20 @@ import '../../theme.dart';
 ///   6. "مؤشرات سريعة" 2x2 stat grid
 ///   7. "تحديث سريع" timeline with date pills
 ///   8. "عرض جدول زمني كامل" outlined CTA
+///
+/// When [todayCase] is supplied (the normal path from the home
+/// screen) every data-driven section — hero, KPI strip, quick
+/// indicators, timeline — pulls its content from the bundled
+/// `assets/Data/today_case.json` entry. When it's null, the
+/// screen falls back to the original localized placeholder
+/// strings so the layout stays valid during navigation races.
 class TodayCaseScreen extends StatefulWidget {
-  const TodayCaseScreen({super.key});
+  const TodayCaseScreen({super.key, this.todayCase});
+
+  /// Random case loaded by the home screen from
+  /// `assets/Data/today_case.json`. Forwarded here so the
+  /// detail page renders the same brand the user just tapped.
+  final TodayCase? todayCase;
 
   @override
   State<TodayCaseScreen> createState() => _TodayCaseScreenState();
@@ -32,10 +46,15 @@ const Color _tcAccent = Color(0xFFF4C542);
 
 // Accent colors used on the metric strip / timeline.
 const Color _tcGreen = Color(0xFF22C55E);
-const Color _tcBlue = Color(0xFF3B82F6);
 
 class _TodayCaseScreenState extends State<TodayCaseScreen> {
   int _tabIndex = 0;
+
+  /// Resolved case. Starts equal to whatever the caller passed;
+  /// if the caller didn't pass one (or passed null), we fetch
+  /// our own random pick from the bundled JSON so the screen
+  /// always shows real data instead of placeholder strings.
+  TodayCase? _case;
 
   // Brand-aligned gold accent used across the screen — matches the
   // global brand gold so the status pill, "اقرأ المزيد", "$482K"
@@ -44,8 +63,31 @@ class _TodayCaseScreenState extends State<TodayCaseScreen> {
   static const Color _accent = _tcAccent;
 
   @override
+  void initState() {
+    super.initState();
+    _case = widget.todayCase;
+    if (_case == null) {
+      // Fallback: load a random case ourselves so the screen
+      // works even when opened without a pre-loaded case.
+      _loadOwnCase();
+    }
+  }
+
+  Future<void> _loadOwnCase() async {
+    try {
+      final picked = await TodayCaseService.instance.pickRandom();
+      if (!mounted || picked == null) return;
+      setState(() => _case = picked);
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('[TodayCaseScreen] _loadOwnCase failed: $e\n$st');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final c = _case;
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -58,31 +100,27 @@ class _TodayCaseScreenState extends State<TodayCaseScreen> {
             children: [
               _TopBar(l: l),
               const SizedBox(height: 12),
-              _HeroCard(l: l, accent: _accent),
+              _HeroCard(l: l, accent: _accent, todayCase: c),
               const SizedBox(height: 12),
-              _KpiStrip(l: l),
-              const SizedBox(height: 12),
-              _TabsRow(
-                index: _tabIndex,
-                onChanged: (i) => setState(() => _tabIndex = i),
-                l: l,
-              ),
+              _KpiStrip(l: l, todayCase: c),
+            
               const SizedBox(height: 12),
               _SectionTitle(text: l.t('tc_section_overview_ar')),
               const SizedBox(height: 6),
-              _AboutBody(text: l.t('tc_about_body')),
+              _AboutBody(
+                text: c != null
+                    ? c.displayDescription(isRtl: l.isRtl)
+                    : l.t('tc_about_body'),
+              ),
               const SizedBox(height: 10),
-              _ReadMoreCta(l: l, accent: _accent),
-              const SizedBox(height: 16),
+        
               _SectionTitle(text: l.t('tc_quick_ar')),
               const SizedBox(height: 8),
-              _QuickIndicatorsGrid(l: l),
+              _QuickIndicatorsGrid(l: l, todayCase: c),
               const SizedBox(height: 16),
               _SectionTitle(text: l.t('tc_timeline_ar')),
               const SizedBox(height: 8),
-              _TimelineList(l: l),
-              const SizedBox(height: 16),
-              _AskAiCta(l: l, accent: _accent),
+              _TimelineList(l: l, todayCase: c),
             ],
           ),
         ),
@@ -265,9 +303,17 @@ class _CircleIconButton extends StatelessWidget {
 //   LTR: [text col] [image]
 //   RTL: [image] [text col]
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.l, required this.accent});
+  const _HeroCard({
+    required this.l,
+    required this.accent,
+    this.todayCase,
+  });
   final AppLocalizations l;
   final Color accent;
+
+  /// Case to render. `null` keeps the original placeholder
+  /// title/subtitle so the layout stays valid.
+  final TodayCase? todayCase;
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +358,9 @@ class _HeroCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 // Title.
                 Text(
-                  l.t('tc_hero_title_ar'),
+                  todayCase != null
+                      ? todayCase!.displayName(isRtl: l.isRtl)
+                      : l.t('tc_hero_title_ar'),
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     color: KashfPalette.active.textPrimary,
@@ -326,7 +374,9 @@ class _HeroCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Subtitle below the title.
                 Text(
-                  l.t('tc_hero_sub_ar'),
+                  todayCase != null
+                      ? todayCase!.displayDescription(isRtl: l.isRtl)
+                      : l.t('tc_hero_sub_ar'),
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     color: KashfPalette.active.textSecondary,
@@ -418,15 +468,7 @@ class _HeroCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  'assets/images/parfum.jpeg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    color: const Color(0xFF2A1A0F),
-                    alignment: Alignment.center,
-                    child: Icon(Icons.local_florist, color: accent, size: 32),
-                  ),
-                ),
+                _HeroImage(todayCase: todayCase),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -443,6 +485,79 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Renders the hero tile's cover image.
+///
+/// Prefers the JSON-provided logo URL (`TodayCase.coverImageUrl`
+/// — a real Logo.dev CDN URL with the markdown wrapper stripped).
+/// Falls back to the bundled asset for the `coverImage` key, then
+/// to a generic parfum asset, then to a brand-colored placeholder.
+class _HeroImage extends StatelessWidget {
+  const _HeroImage({this.todayCase});
+  final TodayCase? todayCase;
+
+  static const String _fallbackAsset = 'assets/images/parfum.jpeg';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = todayCase;
+    final url = c?.coverImageUrl ?? '';
+    final assetPath = c?.coverAssetPath ?? '';
+
+    // 1) Real CDN URL from the JSON — the preferred source.
+    if (url.isNotEmpty && url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return _spinnerBox();
+        },
+        errorBuilder: (_, _, _) => _assetOrFallback(assetPath),
+      );
+    }
+    return _assetOrFallback(assetPath);
+  }
+
+  Widget _assetOrFallback(String assetPath) {
+    // 2) Bundled asset key — may or may not exist on disk.
+    if (assetPath.isNotEmpty) {
+      return Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _fallback(),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() {
+    return Image.asset(
+      _fallbackAsset,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Container(
+        color: const Color(0xFF2A1A0F),
+        alignment: Alignment.center,
+        child: Icon(Icons.local_florist, color: _tcAccent, size: 32),
+      ),
+    );
+  }
+
+  Widget _spinnerBox() {
+    return Container(
+      color: const Color(0xFF1A0F08),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(_tcAccent),
+        ),
       ),
     );
   }
@@ -570,16 +685,23 @@ class _DashedDivider extends StatelessWidget {
 // and a gray label below. Children listed in visual LTR order so
 // RTL mirrors them (the first item ends up on the RIGHT = START).
 class _KpiStrip extends StatelessWidget {
-  const _KpiStrip({required this.l});
+  const _KpiStrip({required this.l, this.todayCase});
   final AppLocalizations l;
+
+  /// Optional case whose KPI numbers drive the strip's values
+  /// when available. Falls back to localized demo values.
+  final TodayCase? todayCase;
 
   @override
   Widget build(BuildContext context) {
+    // When the bundled case is supplied, swap the demo values
+    // for the real ones so the strip matches the home card.
+    final k = todayCase?.kpi;
     final tiles = <_KpiTile>[
       _KpiTile(
         icon: Icons.gps_fixed,
         iconColor: _tcGreen,
-        value: l.t('tc_metric_reach_v'),
+        value: k?.reach ?? l.t('tc_metric_reach_v'),
         valueColor: _tcGreen,
         label: l.t('tc_metric_reach_label'),
         labelColor: _tcGreen,
@@ -587,7 +709,7 @@ class _KpiStrip extends StatelessWidget {
       _KpiTile(
         icon: Icons.camera_alt_outlined,
         iconColor: _tcGreen,
-        value: l.t('tc_metric_mentions_v'),
+        value: k?.mentions ?? l.t('tc_metric_mentions_v'),
         valueColor: _tcGreen,
         label: l.t('tc_metric_mentions_label'),
         labelColor: _tcGreen,
@@ -595,7 +717,7 @@ class _KpiStrip extends StatelessWidget {
       _KpiTile(
         icon: Icons.donut_large,
         iconColor: const Color.fromARGB(255, 255, 255, 255),
-        value: l.t('tc_metric_index_v'),
+        value: k?.index ?? l.t('tc_metric_index_v'),
         valueColor: const Color.fromARGB(255, 255, 255, 255),
         label: l.t('tc_metric_index_label'),
         labelColor: const Color.fromARGB(255, 255, 255, 255),
@@ -603,7 +725,7 @@ class _KpiStrip extends StatelessWidget {
       _KpiTile(
         icon: Icons.access_time,
         iconColor: _tcGreen,
-        value: l.t('tc_metric_active_label'),
+        value: k?.activeDays ?? l.t('tc_metric_active_label'),
         valueColor: _tcGreen,
         label: l.t('tc_metric_active_v'),
         labelColor: _tcGreen,
@@ -696,68 +818,6 @@ class _KpiTileView extends StatelessWidget {
   }
 }
 
-// ============================ Tabs ============================
-// Tabs are listed in visual LTR order so the first item ends up on
-// the RIGHT (start) in RTL. First tab is selected by default.
-class _TabsRow extends StatelessWidget {
-  const _TabsRow({
-    required this.index,
-    required this.onChanged,
-    required this.l,
-  });
-  final int index;
-  final ValueChanged<int> onChanged;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    // Order in the screenshot, right→left in RTL = first item here:
-    // ملخص | الأدلة | التحديثات | الرؤى
-    final tabs = <String>[
-      l.t('tc_tab_overview_ar'),
-      l.t('tc_tab_evidence_ar'),
-      l.t('tc_tab_updates_ar'),
-      l.t('tc_tab_insights_ar'),
-    ];
-    return Container(
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < tabs.length; i++)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: i == index
-                        ? _tcAccent.withValues(alpha: 0.18)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    tabs[i],
-                    style: TextStyle(
-                      color: i == index
-                          ? _tcAccent
-                          : KashfPalette.active.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 // ============================ About ============================
 class _SectionTitle extends StatelessWidget {
@@ -769,7 +829,7 @@ class _SectionTitle extends StatelessWidget {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: Text(
-        "",
+        text,
         style: TextStyle(
           color: KashfPalette.active.textPrimary,
           fontSize: 13,
@@ -806,34 +866,6 @@ class _AboutBody extends StatelessWidget {
   }
 }
 
-// "اقرأ المزيد" gold outlined pill CTA below the summary.
-class _ReadMoreCta extends StatelessWidget {
-  const _ReadMoreCta({required this.l, required this.accent});
-  final AppLocalizations l;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(22, 8, 22, 8),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accent, width: 1),
-        ),
-        child: Text(
-          l.t('tc_read_more'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ============================ Quick Indicators ============================
 // A single horizontal row of 4 stat cards. The row scrolls
@@ -842,33 +874,42 @@ class _ReadMoreCta extends StatelessWidget {
 // (≈ 25% of the available row) and the whole row respects
 // Directionality so RTL mirrors naturally.
 class _QuickIndicatorsGrid extends StatelessWidget {
-  const _QuickIndicatorsGrid({required this.l});
+  const _QuickIndicatorsGrid({required this.l, this.todayCase});
   final AppLocalizations l;
+
+  /// Case used to source the four stat cards' values + labels.
+  /// When null we fall back to the localized demo strings.
+  final TodayCase? todayCase;
 
   @override
   Widget build(BuildContext context) {
     // Order in the screenshot, right→left in RTL:
     // $482K الإيرادات | 81% إيجابي | 286K تفاعل | 4.2M حجم التداول
+    final q = todayCase?.quickIndicators;
     final tiles = <_QuickTile>[
       _QuickTile(
-        label: l.t('tc_quick_volume_ar'),
-        value: l.t('tc_quick_volume_v_ar'),
-        sub: l.t('tc_quick_volume_sub_ar'),
+        label: q?.volume.displayLabel(isRtl: l.isRtl) ??
+            l.t('tc_quick_volume_ar'),
+        value: q?.volume.value ?? l.t('tc_quick_volume_v_ar'),
+        sub: q?.volume.sub ?? l.t('tc_quick_volume_sub_ar'),
       ),
       _QuickTile(
-        label: l.t('tc_quick_engagement_ar'),
-        value: l.t('tc_quick_engagement_v_ar'),
-        sub: l.t('tc_quick_engagement_sub_ar'),
+        label: q?.engagement.displayLabel(isRtl: l.isRtl) ??
+            l.t('tc_quick_engagement_ar'),
+        value: q?.engagement.value ?? l.t('tc_quick_engagement_v_ar'),
+        sub: q?.engagement.sub ?? l.t('tc_quick_engagement_sub_ar'),
       ),
       _QuickTile(
-        label: l.t('tc_quick_positive_ar'),
-        value: l.t('tc_quick_positive_v_ar'),
-        sub: l.t('tc_quick_positive_sub_ar'),
+        label: q?.positive.displayLabel(isRtl: l.isRtl) ??
+            l.t('tc_quick_positive_ar'),
+        value: q?.positive.value ?? l.t('tc_quick_positive_v_ar'),
+        sub: q?.positive.sub ?? l.t('tc_quick_positive_sub_ar'),
       ),
       _QuickTile(
-        label: l.t('tc_quick_revenue_ar'),
-        value: l.t('tc_quick_revenue_v_ar'),
-        sub: l.t('tc_quick_revenue_sub_ar'),
+        label: q?.revenue.displayLabel(isRtl: l.isRtl) ??
+            l.t('tc_quick_revenue_ar'),
+        value: q?.revenue.value ?? l.t('tc_quick_revenue_v_ar'),
+        sub: q?.revenue.sub ?? l.t('tc_quick_revenue_sub_ar'),
       ),
     ];
 
@@ -965,32 +1006,49 @@ class _QuickCard extends StatelessWidget {
 // The connector line runs vertically THROUGH the date pills so the
 // pills appear threaded onto the line.
 class _TimelineList extends StatelessWidget {
-  const _TimelineList({required this.l});
+  const _TimelineList({required this.l, this.todayCase});
   final AppLocalizations l;
+
+  /// Case to source timeline rows from. When null we fall back
+  /// to the original hardcoded demo events so the layout stays
+  /// valid during navigation races.
+  final TodayCase? todayCase;
 
   @override
   Widget build(BuildContext context) {
     final items = <_TimelineItem>[
-      _TimelineItem(
-        date: '2025-05-01',
-        title: l.t('tc_tl1_title_ar'),
-        h: l.t('tc_tl1_h_ar'),
-      ),
-      _TimelineItem(
-        date: '2025-05-10',
-        title: l.t('tc_tl2_title_ar'),
-        h: l.t('tc_tl2_h_ar'),
-      ),
-      _TimelineItem(
-        date: '2025-05-20',
-        title: l.t('tc_tl3_title_ar'),
-        h: l.t('tc_tl3_h_ar'),
-      ),
-      _TimelineItem(
-        date: '2025-06-01',
-        title: l.t('tc_tl4_title_ar'),
-        h: l.t('tc_tl4_h_ar'),
-      ),
+      // Prefer the bundled case timeline when it has at least
+      // one event; otherwise show the demo rows so the section
+      // is never empty.
+      if (todayCase != null && todayCase!.timeline.isNotEmpty)
+        for (final e in todayCase!.timeline)
+          _TimelineItem(
+            date: e.date,
+            title: e.displayTitle(isRtl: l.isRtl),
+            h: e.displayDescription(isRtl: l.isRtl),
+          )
+      else ...[
+        _TimelineItem(
+          date: '2025-05-01',
+          title: l.t('tc_tl1_title_ar'),
+          h: l.t('tc_tl1_h_ar'),
+        ),
+        _TimelineItem(
+          date: '2025-05-10',
+          title: l.t('tc_tl2_title_ar'),
+          h: l.t('tc_tl2_h_ar'),
+        ),
+        _TimelineItem(
+          date: '2025-05-20',
+          title: l.t('tc_tl3_title_ar'),
+          h: l.t('tc_tl3_h_ar'),
+        ),
+        _TimelineItem(
+          date: '2025-06-01',
+          title: l.t('tc_tl4_title_ar'),
+          h: l.t('tc_tl4_h_ar'),
+        ),
+      ],
     ];
 
     return Container(
@@ -1154,35 +1212,6 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
-// ============================ Timeline CTA ============================
-// Plain outlined CTA at the bottom of the timeline section. No
-// background fill, no leading icon — just a thin border + label
-// so it reads as a secondary action.
-class _AskAiCta extends StatelessWidget {
-  const _AskAiCta({required this.l, required this.accent});
-  final AppLocalizations l;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.55)),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        l.t('tc_ask_ai_ar'),
-        style: TextStyle(
-          color: accent,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
 
 // ============================ Bottom Action Bar ============================
 // 5-item dark pill bar matching the reference screenshot.

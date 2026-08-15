@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
+import 'auth_social_block.dart';
 import 'sign_up_screen.dart';
 import '../../theme.dart';
 
@@ -170,13 +171,9 @@ class _SignInEmailScreenState extends State<SignInEmailScreen> {
           enabled: true,
           loading: _isLoading,
         ),
-        SizedBox(height: AuthSpacing.gapDividerApple),
-        const OrDivider(),
-        SizedBox(height: AuthSpacing.gapDividerApple),
-        AppleButton(
-          onTap: () => navigateToHome(context),
-          label: l.t('auth_welcome_body_apple'),
-        ),
+        // Apple block — gated to iOS/macOS. On Android the whole
+        // group (divider + button) disappears.
+        const AuthSocialBlock(),
       ],
     );
 

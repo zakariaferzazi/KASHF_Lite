@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, User;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 import 'l10n/app_locale.dart';
@@ -12,20 +13,86 @@ import 'l10n/theme_controller.dart';
 import 'l10n/theme_scope.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/shell/home_shell.dart';
+import 'services/ai/ai_home_service.dart';
+import 'services/ai/disk_cache.dart';
+import 'services/ai/featured_brand_controller.dart';
+import 'services/archive/firestore_investigation_writer.dart';
+import 'services/investigation_archive_service.dart';
+import 'services/news/news_content_repository.dart';
+import 'services/news/news_service.dart';
+import 'services/settings_preferences.dart';
+import 'services/settings_scope.dart';
 import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load the .env file so `OpenRouterConfig` can read the API key.
+  // We tolerate a missing file (missing `.env` should not crash the
+  // app — the AI service falls back to demo data instead).
+  await _loadEnv();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Wire the shared disk-cache so AI + Google News payloads
+  // survive app restarts. Created once per process and shared
+  // across every data controller instance.
+  final diskCache = await DiskCache.create();
+  AiHomeService.initDiskCache(diskCache);
+  NewsService.initDiskCache(diskCache);
+  FeaturedBrandController.initDiskCache(diskCache);
+  // Initialise the news content repository with the same
+  // disk-cache instance. This is the gatekeeper that ensures
+  // NewsService only ever runs the heavy Google News scrape
+  // once per 24 hours across every screen in the app.
+  NewsContentRepository.init(diskCache);
+  // Hook the archive service up to Firestore so completed
+  // investigations land under `users/{uid}/investigations/{docId}`
+  // and stay in sync across the user's devices. The archive
+  // service's auth-state listener re-attaches the writer every
+  // time the user signs in/out so each user only ever sees their
+  // own slice.
+  InvestigationArchiveService.instance.enableFirestore(
+    FirestoreInvestigationWriter(),
+  );
   final localeController = await LocaleController.load();
-  runApp(KashfApp(localeController: localeController));
+  // Build a persisting theme controller so the very first frame
+  // already reflects the user's saved preference (no flash of the
+  // default mode on app launch).
+  final themeController = ThemeController.load();
+  final settingsPrefs = await SettingsPreferences.load();
+  // Expose the prefs globally so [OpenRouterConfig.model] (a static
+  // getter — can't reach into the widget tree) can read the user's
+  // chosen model without circular dependencies.
+  SettingsPreferences.instance = settingsPrefs;
+  runApp(KashfApp(
+    localeController: localeController,
+    themeController: themeController,
+    settingsPrefs: settingsPrefs,
+  ));
+}
+
+/// Loads `.env` if present. Silently no-ops if the file is missing
+/// so first-launch / unsigned builds continue to work.
+Future<void> _loadEnv() async {
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Missing or unreadable .env — the AI service will fall back
+    // to demo data and surface a "configure API key" hint in the
+    // audit log.
+  }
 }
 
 class KashfApp extends StatefulWidget {
-  const KashfApp({super.key, required this.localeController});
+  const KashfApp({
+    super.key,
+    required this.localeController,
+    required this.themeController,
+    required this.settingsPrefs,
+  });
   final LocaleController localeController;
+  final ThemeController themeController;
+  final SettingsPreferences settingsPrefs;
 
   @override
   State<KashfApp> createState() => _KashfAppState();
@@ -33,34 +100,21 @@ class KashfApp extends StatefulWidget {
 
 class _KashfAppState extends State<KashfApp> {
   late final ThemeController _themeController;
+  late final SettingsPreferences _settingsPrefs;
 
   @override
   void initState() {
     super.initState();
-    _themeController = ThemeController();
-    // Apply the initial palette so the very first frame is correct.
-    _applyPalette(_themeController.mode);
+    _themeController = widget.themeController;
+    _settingsPrefs = widget.settingsPrefs;
   }
 
   @override
   void dispose() {
     widget.localeController.dispose();
     _themeController.dispose();
+    _settingsPrefs.dispose();
     super.dispose();
-  }
-
-  void _applyPalette(AppThemeMode mode) {
-    switch (mode) {
-      case AppThemeMode.dark:
-        KashfPalette.setActive(KashfPalette.dark);
-        break;
-      case AppThemeMode.light:
-        KashfPalette.setActive(KashfPalette.light);
-        break;
-      case AppThemeMode.main:
-        KashfPalette.setActive(KashfPalette.main);
-        break;
-    }
   }
 
   @override
@@ -69,13 +123,20 @@ class _KashfAppState extends State<KashfApp> {
       controller: widget.localeController,
       child: ThemeScope(
         controller: _themeController,
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            widget.localeController,
-            _themeController,
-          ]),
+        child: SettingsScope(
+          prefs: _settingsPrefs,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([
+              widget.localeController,
+              _themeController,
+              _settingsPrefs,
+            ]),
           builder: (context, _) {
-            _applyPalette(_themeController.mode);
+            // ThemeController now keeps KashfPalette.active in sync
+            // before notifying listeners, so we don't need to
+            // re-apply the palette here. The AnimatedBuilder is kept
+            // so MaterialApp rebuilds and Material picks up the new
+            // brightness / color scheme.
             final l = AppLocalizations(widget.localeController.language);
             // Use MaterialApp.builder (instead of wrapping MaterialApp
             // from outside) so the Directionality lives *inside* the
@@ -119,6 +180,7 @@ class _KashfAppState extends State<KashfApp> {
               home: const _AuthGate(),
             );
           },
+          ),
         ),
       ),
     );

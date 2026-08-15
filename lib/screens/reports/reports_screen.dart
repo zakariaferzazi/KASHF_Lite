@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/theme_scope.dart';
+import '../../models/entity_type.dart';
+import '../../models/saved_investigation.dart';
+import '../../services/investigation_archive_service.dart';
+import '../../state/latest_investigations_controller.dart';
 import '../../theme.dart';
+import '../investigation/investigation_results_screen.dart';
 
 /// Reports tab — redesigned to match the marketing reference: a header
 /// with title + subtitle, a search field, filter chips, KPI cards, a
@@ -15,109 +21,286 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
+  /// Filter index — maps to [_filterDefs]:
+  ///   0 = all
+  ///   1 = companies
+  ///   2 = brands
+  ///   3 = products
+  ///   4 = influencers
+  ///   5 = markets
   int _filterIndex = 0;
   final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+  _SortMode _sortMode = _SortMode.newest;
+  late final LatestInvestigationsController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = LatestInvestigationsController();
+    _controller.addListener(_onControllerChanged);
+    _searchCtrl.addListener(_onSearchChanged);
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  static const List<_FilterDef> _filters = [
-    _FilterDef(_FilterKind.all, 'reports_filter_all'),
-    _FilterDef(_FilterKind.favorites, 'reports_filter_favorites'),
-    _FilterDef(_FilterKind.shared, 'reports_filter_shared'),
-    _FilterDef(_FilterKind.archived, 'reports_filter_archived'),
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onSearchChanged() {
+    if (_query == _searchCtrl.text) return;
+    setState(() => _query = _searchCtrl.text);
+  }
+
+  /// Opens the saved report for the tapped card. Mirrors the
+  /// tap behaviour used in the home + latest investigations +
+  /// explore screens.
+  Future<void> _openSavedReport(SavedInvestigation item) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final result = await InvestigationArchiveService.instance
+          .loadResult(item.id);
+      if (!mounted) return;
+      if (result == null) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This saved report cannot be opened — only its '
+              'summary is available. Re-run the investigation '
+              'to refresh.',
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      await navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => InvestigationResultsScreen(result: result),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('[ReportsScreen] openSavedReport failed: $e\n$st');
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open this report.')),
+      );
+    }
+  }
+
+  // ============================ Filter definitions ============================
+  //
+  // The original screen had four "favorites / shared / archived" filters that
+  // we don't actually persist on a SavedInvestigation. To stay useful with
+  // the data we DO have, the filter row now classifies by entity type
+  // (matches the latest investigations screen) plus an "All" entry.
+
+  static const List<_FilterDef> _filterDefs = <_FilterDef>[
+    _FilterDef(_FilterKind.all, 'reports_filter_all', Icons.dashboard_customize_outlined),
+    _FilterDef(
+      _FilterKind.companies,
+      'li_tab_companies',
+      Icons.apartment_outlined,
+    ),
+    _FilterDef(
+      _FilterKind.brands,
+      'li_tab_brands',
+      Icons.local_offer_outlined,
+    ),
+    _FilterDef(
+      _FilterKind.products,
+      'li_tab_products',
+      Icons.inventory_2_outlined,
+    ),
+    _FilterDef(
+      _FilterKind.influencers,
+      'li_tab_influencers',
+      Icons.person_outline,
+    ),
+    _FilterDef(
+      _FilterKind.markets,
+      'li_tab_markets',
+      Icons.public,
+    ),
   ];
 
-  static const List<_KpiDef> _kpis = [
-    _KpiDef(
-      value: '24',
-      labelKey: 'reports_kpi_completed',
-      icon: Icons.check_circle_outline,
-      iconBg: Color(0xFF22C55E),
-      iconFg: Colors.white,
-    ),
-    _KpiDef(
-      value: '8',
-      labelKey: 'reports_kpi_in_progress',
-      icon: Icons.access_time,
-      iconBg: Color(0xFF3B82F6),
-      iconFg: Colors.white,
-    ),
-    _KpiDef(
-      value: '56',
-      labelKey: 'reports_kpi_total',
-      icon: Icons.description_outlined,
-      iconBg: Color(0xFFF59E0B),
-      iconFg: Colors.white,
-    ),
-    _KpiDef(
-      value: '12',
-      labelKey: 'reports_kpi_review',
-      icon: Icons.refresh,
-      iconBg: Color(0xFF8B5CF6),
-      iconFg: Colors.white,
-    ),
-  ];
+  EntityType? _entityTypeForKind(_FilterKind kind) {
+    switch (kind) {
+      case _FilterKind.all:
+        return null;
+      case _FilterKind.companies:
+        return EntityType.company;
+      case _FilterKind.brands:
+        return EntityType.brand;
+      case _FilterKind.products:
+        return EntityType.product;
+      case _FilterKind.influencers:
+        return EntityType.influencer;
+      case _FilterKind.markets:
+        return EntityType.market;
+    }
+  }
 
-  static const List<_ReportItem> _items = [
-    _ReportItem(
-      titleKey: 'reports_item1_title',
-      sectorKey: 'reports_sector_perfume',
-      timeKey: 'reports_item1_time',
-      statusKey: 'reports_status_completed',
-      statusColor: _StatusColor.completed,
-      bookmarked: false,
-      image: 'assets/images/sauvage.jpeg',
-      fallbackIcon: Icons.image_outlined,
-    ),
-    _ReportItem(
-      titleKey: 'reports_item2_title',
-      sectorKey: 'reports_sector_perfume',
-      timeKey: 'reports_item2_time',
-      statusKey: 'reports_status_completed',
-      statusColor: _StatusColor.completed,
-      bookmarked: false,
-      image: 'assets/images/parfum.jpeg',
-      fallbackIcon: Icons.image_outlined,
-    ),
-    _ReportItem(
-      titleKey: 'reports_item3_title',
-      sectorKey: 'reports_sector_perfume',
-      timeKey: 'reports_item3_time',
-      statusKey: 'reports_status_review',
-      statusColor: _StatusColor.review,
-      bookmarked: true,
-      image: 'assets/images/winner.jpeg',
-      fallbackIcon: Icons.image_outlined,
-    ),
-    _ReportItem(
-      titleKey: 'reports_item4_title',
-      sectorKey: 'reports_sector_social',
-      timeKey: 'reports_item4_time',
-      statusKey: 'reports_status_completed',
-      statusColor: _StatusColor.completed,
-      bookmarked: false,
-      image: 'assets/images/lattafa.jpeg',
-      fallbackIcon: Icons.image_outlined,
-    ),
-    _ReportItem(
-      titleKey: 'reports_item5_title',
-      sectorKey: 'reports_sector_social',
-      timeKey: 'reports_item5_time',
-      statusKey: 'reports_status_review',
-      statusColor: _StatusColor.review,
-      bookmarked: true,
-      image: 'assets/images/borge.jpeg',
-      fallbackIcon: Icons.image_outlined,
-    ),
-  ];
+  // ============================ KPI computation ============================
+
+  /// Computes the four KPI values from the Firestore snapshot. The
+  /// original screen used hardcoded numbers; we now surface live
+  /// counts so the user always sees the truth.
+  List<_KpiDef> _kpisFor(AppLocalizations l) {
+    final items = _controller.items;
+    final completed = items.length; // every saved record is completed
+    final highConfidence = items.where((it) => it.confidenceBand == 'high').length;
+    final mediumConfidence =
+        items.where((it) => it.confidenceBand == 'medium').length;
+    final lowConfidence =
+        items.where((it) => it.confidenceBand == 'low').length;
+    // "In review" is our best proxy for "needs another look" given
+    // that no review state is persisted — low confidence items.
+    return <_KpiDef>[
+      _KpiDef(
+        value: completed.toString(),
+        labelKey: 'reports_kpi_completed',
+        icon: Icons.check_circle_outline,
+        iconBg: const Color(0xFF22C55E),
+        iconFg: Colors.white,
+      ),
+      _KpiDef(
+        value: highConfidence.toString(),
+        labelKey: 'reports_kpi_high',
+        icon: Icons.verified_outlined,
+        iconBg: const Color(0xFF3B82F6),
+        iconFg: Colors.white,
+      ),
+      _KpiDef(
+        value: mediumConfidence.toString(),
+        labelKey: 'reports_kpi_medium',
+        icon: Icons.description_outlined,
+        iconBg: const Color(0xFFF59E0B),
+        iconFg: Colors.white,
+      ),
+      _KpiDef(
+        value: lowConfidence.toString(),
+        labelKey: 'reports_kpi_review',
+        icon: Icons.refresh,
+        iconBg: const Color(0xFF8B5CF6),
+        iconFg: Colors.white,
+      ),
+    ];
+  }
+
+  // ============================ Filtering + sorting ============================
+
+  /// Applies the active search query, filter chip and sort mode
+  /// to the controller's snapshot. Mirrors the latest investigations
+  /// screen behaviour so the two screens feel consistent.
+  List<SavedInvestigation> _filteredItems(AppLocalizations l) {
+    Iterable<SavedInvestigation> view = _controller.items;
+    final entityType = _entityTypeForKind(_filterDefs[_filterIndex].kind);
+    if (entityType != null) {
+      view = view.where((it) => it.entityType == entityType);
+    }
+    final q = _query.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      view = view.where((it) {
+        return it.title.toLowerCase().contains(q) ||
+            it.subtitle.toLowerCase().contains(q) ||
+            it.tags.any((t) => t.toLowerCase().contains(q));
+      });
+    }
+    final list = view.toList();
+    switch (_sortMode) {
+      case _SortMode.newest:
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _SortMode.oldest:
+        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case _SortMode.confidence:
+        list.sort(
+          (a, b) => b.confidencePercent.compareTo(a.confidencePercent),
+        );
+    }
+    return list;
+  }
+
+  /// Toggles a saved investigation's "favourited" visual state
+  /// (cosmetic only — bookmarking isn't persisted yet). Keeps
+  /// the bookmark icon on each card functional so the UI feels
+  /// alive even before we wire persistence.
+  void _toggleBookmark(String id) {
+    setState(() {
+      if (_bookmarkedIds.contains(id)) {
+        _bookmarkedIds.remove(id);
+      } else {
+        _bookmarkedIds.add(id);
+      }
+    });
+  }
+
+  final Set<String> _bookmarkedIds = <String>{};
+
+  /// Bottom-sheet menu for the sort dropdown on the recent header.
+  Future<void> _openSortMenu() async {
+    final picked = await showModalBottomSheet<_SortMode>(
+      context: context,
+      backgroundColor: KashfPalette.active.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        final l = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SortMenuTile(
+                  icon: Icons.schedule,
+                  label: l.t('li_sort_newest'),
+                  selected: _sortMode == _SortMode.newest,
+                  onTap: () =>
+                      Navigator.of(sheetCtx).pop(_SortMode.newest),
+                ),
+                _SortMenuTile(
+                  icon: Icons.history,
+                  label: l.t('li_sort_oldest'),
+                  selected: _sortMode == _SortMode.oldest,
+                  onTap: () =>
+                      Navigator.of(sheetCtx).pop(_SortMode.oldest),
+                ),
+                _SortMenuTile(
+                  icon: Icons.bolt,
+                  label: l.t('li_sort_confidence'),
+                  selected: _sortMode == _SortMode.confidence,
+                  onTap: () =>
+                      Navigator.of(sheetCtx).pop(_SortMode.confidence),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    if (picked != null) setState(() => _sortMode = picked);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // Subscribe to theme changes so the IndexedStack container in
+    // [HomeShell] actually rebuilds us when the user picks a
+    // different palette.
+    ThemeScope.of(context);
+    final items = _filteredItems(l);
     return Directionality(
       textDirection: l.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -145,7 +328,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
                 sliver: SliverToBoxAdapter(
                   child: _FilterChipsRow(
-                    filters: _filters,
+                    filters: _filterDefs,
                     selectedIndex: _filterIndex,
                     onSelect: (i) => setState(() => _filterIndex = i),
                     l: l,
@@ -155,30 +338,83 @@ class _ReportsScreenState extends State<ReportsScreen> {
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 18, 20, 0),
                 sliver: SliverToBoxAdapter(
-                  child: _KpiRow(kpis: _kpis, l: l),
+                  child: _KpiRow(kpis: _kpisFor(l), l: l),
                 ),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(20, 22, 20, 6),
                 sliver: SliverToBoxAdapter(
-                  child: _RecentHeader(l: l, onSort: () {}),
+                  child: _RecentHeader(
+                    l: l,
+                    onSort: _openSortMenu,
+                    sortLabel: _sortLabelFor(l),
+                  ),
                 ),
               ),
-              SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
-                sliver: SliverList.separated(
-                  itemCount: _items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) =>
-                      _ReportCard(item: _items[i], l: l),
+              if (_controller.isLoading && _controller.items.isEmpty)
+                const SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+                  sliver: SliverToBoxAdapter(
+                    child: _ReportsSkeleton(),
+                  ),
+                )
+              else if (items.isEmpty)
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+                  sliver: SliverToBoxAdapter(
+                    child: _EmptyState(
+                      l: l,
+                      isFilterResult: _controller.items.isNotEmpty,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+                  sliver: SliverList.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) => _ReportCard(
+                      saved: items[i],
+                      bookmarked: _bookmarkedIds.contains(items[i].id),
+                      onTap: () => _openSavedReport(items[i]),
+                      onToggleBookmark: () => _toggleBookmark(items[i].id),
+                      l: l,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
       ),
     );
   }
+
+  String _sortLabelFor(AppLocalizations l) {
+    switch (_sortMode) {
+      case _SortMode.newest:
+        return l.t('li_sort_newest');
+      case _SortMode.oldest:
+        return l.t('li_sort_oldest');
+      case _SortMode.confidence:
+        return l.t('li_sort_confidence');
+    }
+  }
+}
+
+// =====================================================================
+// Sort mode + filter kinds
+// =====================================================================
+
+enum _SortMode { newest, oldest, confidence }
+
+enum _FilterKind {
+  all,
+  companies,
+  brands,
+  products,
+  influencers,
+  markets,
 }
 
 // =====================================================================
@@ -315,12 +551,11 @@ class _SearchField extends StatelessWidget {
 // Filter chips
 // =====================================================================
 
-enum _FilterKind { all, favorites, shared, archived }
-
 class _FilterDef {
-  const _FilterDef(this.kind, this.labelKey);
+  const _FilterDef(this.kind, this.labelKey, this.icon);
   final _FilterKind kind;
   final String labelKey;
+  final IconData icon;
 }
 
 class _FilterChipsRow extends StatelessWidget {
@@ -350,26 +585,13 @@ class _FilterChipsRow extends StatelessWidget {
               selected: i == selectedIndex,
               onTap: () => onSelect(i),
               l: l,
-              icon: _iconFor(filters[i].kind),
+              icon: filters[i].icon,
             ),
             if (i != filters.length - 1) const SizedBox(width: 10),
           ],
         ],
       ),
     );
-  }
-
-  IconData? _iconFor(_FilterKind k) {
-    switch (k) {
-      case _FilterKind.all:
-        return Icons.dashboard_customize_outlined;
-      case _FilterKind.favorites:
-        return Icons.star_border;
-      case _FilterKind.shared:
-        return Icons.group_outlined;
-      case _FilterKind.archived:
-        return Icons.calendar_month_outlined;
-    }
   }
 }
 
@@ -533,9 +755,14 @@ class _KpiCard extends StatelessWidget {
 // =====================================================================
 
 class _RecentHeader extends StatelessWidget {
-  const _RecentHeader({required this.l, required this.onSort});
+  const _RecentHeader({
+    required this.l,
+    required this.onSort,
+    required this.sortLabel,
+  });
   final AppLocalizations l;
   final VoidCallback onSort;
+  final String sortLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -569,7 +796,7 @@ class _RecentHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    l.t('reports_sort_label'),
+                    sortLabel,
                     style: TextStyle(
                       color: KashfPalette.active.textSecondary,
                       fontSize: 11,
@@ -596,32 +823,91 @@ class _RecentHeader extends StatelessWidget {
 // Report card
 // =====================================================================
 
-enum _StatusColor { completed, review, progress }
+/// Visual status palette derived from the saved record's confidence
+/// band. Maps onto the same three pills the original screen used
+/// (completed / review / progress) so the chrome stays identical
+/// while the underlying data is now live.
+class _ReportStatusStyle {
+  const _ReportStatusStyle(this.bg, this.fg, this.labelKey);
+  final Color bg;
+  final Color fg;
+  final String labelKey;
+}
 
-class _ReportItem {
-  const _ReportItem({
-    required this.titleKey,
-    required this.sectorKey,
-    required this.timeKey,
-    required this.statusKey,
-    required this.statusColor,
-    required this.bookmarked,
-    required this.image,
-    required this.fallbackIcon,
-  });
-  final String titleKey;
-  final String sectorKey;
-  final String timeKey;
-  final String statusKey;
-  final _StatusColor statusColor;
-  final bool bookmarked;
-  final String image;
-  final IconData fallbackIcon;
+_ReportStatusStyle _styleFor(SavedInvestigation saved) {
+  switch (saved.confidenceBand) {
+    case 'high':
+      return const _ReportStatusStyle(
+        Color(0xFF22C55E),
+        Colors.white,
+        'reports_status_completed',
+      );
+    case 'low':
+      return const _ReportStatusStyle(
+        Color(0xFFF59E0B),
+        Colors.white,
+        'reports_status_review',
+      );
+    default:
+      return const _ReportStatusStyle(
+        Color(0xFF3B82F6),
+        Colors.white,
+        'reports_status_progress',
+      );
+  }
+}
+
+/// Sector label key derived from the entity type. Keeps the
+/// little dot + sector line on each card populated from real data
+/// instead of a hardcoded constant.
+String _sectorLabelKey(EntityType type) {
+  switch (type) {
+    case EntityType.company:
+      return 'reports_sector_company';
+    case EntityType.brand:
+      return 'reports_sector_brand';
+    case EntityType.product:
+      return 'reports_sector_product';
+    case EntityType.influencer:
+      return 'reports_sector_influencer';
+    case EntityType.market:
+      return 'reports_sector_market';
+  }
+}
+
+/// "x ago" label for the timestamp row. Mirrors the helper used
+/// in the home / latest investigations screens.
+String _sinceLabel(AppLocalizations l, DateTime then) {
+  final diff = DateTime.now().difference(then);
+  if (diff.inMinutes < 1) return l.t('home_latest_since_just_now');
+  if (diff.inMinutes < 60) {
+    return l
+        .t('home_latest_since_minutes')
+        .replaceAll('%{n}', diff.inMinutes.toString());
+  }
+  if (diff.inHours < 24) {
+    return l
+        .t('home_latest_since_hours')
+        .replaceAll('%{n}', diff.inHours.toString());
+  }
+  return l
+      .t('home_latest_since_days')
+      .replaceAll('%{n}', diff.inDays.toString());
 }
 
 class _ReportCard extends StatelessWidget {
-  const _ReportCard({required this.item, required this.l});
-  final _ReportItem item;
+  const _ReportCard({
+    required this.saved,
+    required this.bookmarked,
+    required this.onTap,
+    required this.onToggleBookmark,
+    required this.l,
+  });
+
+  final SavedInvestigation saved;
+  final bool bookmarked;
+  final VoidCallback onTap;
+  final VoidCallback onToggleBookmark;
   final AppLocalizations l;
 
   @override
@@ -629,9 +915,10 @@ class _ReportCard extends StatelessWidget {
     final textPrimary = KashfPalette.active.textPrimary;
     final textSecondary = KashfPalette.active.textSecondary;
 
-    final (statusBg, statusFg) = _statusColors(item.statusColor);
+    final style = _styleFor(saved);
+    final sectorKey = _sectorLabelKey(saved.entityType);
 
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: KashfPalette.active.surface,
@@ -642,15 +929,24 @@ class _ReportCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         textDirection: TextDirection.ltr,
         children: [
-          // Vertical icon column on the left
+          // Vertical icon column on the left. Bookmark icon is
+          // its own tappable target so we don't trigger the
+          // card's onTap when the user only wants to star.
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                item.bookmarked ? Icons.bookmark : Icons.bookmark_border,
-                size: 18,
-                color: item.bookmarked ? KashfColors.gold : textSecondary,
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onToggleBookmark,
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    size: 18,
+                    color: bookmarked ? KashfColors.gold : textSecondary,
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               Icon(Icons.more_vert, size: 14, color: textSecondary),
@@ -664,7 +960,7 @@ class _ReportCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l.t(item.titleKey),
+                  saved.title,
                   style: TextStyle(
                     color: textPrimary,
                     fontSize: 13,
@@ -688,7 +984,7 @@ class _ReportCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        l.t(item.sectorKey),
+                        l.t(sectorKey),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -705,7 +1001,7 @@ class _ReportCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        l.t(item.timeKey),
+                        _sinceLabel(l, saved.createdAt),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: textSecondary, fontSize: 10),
@@ -713,9 +1009,9 @@ class _ReportCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     _StatusPill(
-                      label: l.t(item.statusKey),
-                      bg: statusBg,
-                      fg: statusFg,
+                      label: l.t(style.labelKey),
+                      bg: style.bg,
+                      fg: style.fg,
                     ),
                   ],
                 ),
@@ -723,7 +1019,9 @@ class _ReportCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // Thumbnail on the right
+          // Thumbnail on the right — uses the bundled report.jpg
+          // so every saved investigation shares a consistent
+          // visual anchor (matches the rest of the app).
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
@@ -732,12 +1030,12 @@ class _ReportCard extends StatelessWidget {
               color: const Color(0xFF1A1C28),
               alignment: Alignment.center,
               child: Image.asset(
-                item.image,
+                'assets/images/report.jpg',
                 width: 64,
                 height: 64,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => Icon(
-                  item.fallbackIcon,
+                  Icons.image_outlined,
                   size: 26,
                   color: KashfPalette.active.textSecondary,
                 ),
@@ -747,17 +1045,16 @@ class _ReportCard extends StatelessWidget {
         ],
       ),
     );
-  }
 
-  (Color bg, Color fg) _statusColors(_StatusColor c) {
-    switch (c) {
-      case _StatusColor.completed:
-        return (const Color(0xFF22C55E), Colors.white);
-      case _StatusColor.review:
-        return (const Color(0xFFF59E0B), Colors.white);
-      case _StatusColor.progress:
-        return (const Color(0xFF3B82F6), Colors.white);
-    }
+    return Material(
+      color: KashfPalette.active.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: card,
+      ),
+    );
   }
 }
 
@@ -778,6 +1075,171 @@ class _StatusPill extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// Loading + empty states
+// =====================================================================
+
+class _ReportsSkeleton extends StatefulWidget {
+  const _ReportsSkeleton();
+
+  @override
+  State<_ReportsSkeleton> createState() => _ReportsSkeletonState();
+}
+
+class _ReportsSkeletonState extends State<_ReportsSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final alpha = 0.25 + 0.25 * _ctrl.value;
+        return Column(
+          children: [
+            for (var i = 0; i < 4; i++) ...[
+              if (i != 0) const SizedBox(height: 12),
+              Container(
+                height: 84,
+                decoration: BoxDecoration(
+                  color:
+                      KashfPalette.active.surface.withValues(alpha: alpha),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: KashfPalette.active.cardBorder),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.l, required this.isFilterResult});
+  final AppLocalizations l;
+  final bool isFilterResult;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 18),
+      decoration: BoxDecoration(
+        color: KashfPalette.active.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: KashfColors.gold.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: KashfColors.gold.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isFilterResult
+                  ? Icons.filter_alt_off_outlined
+                  : Icons.search,
+              color: KashfColors.gold,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFilterResult
+                      ? l.t('li_no_filter_results_title')
+                      : l.t('reports_empty_title'),
+                  style: TextStyle(
+                    color: KashfPalette.active.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isFilterResult
+                      ? l.t('li_no_filter_results_sub')
+                      : l.t('reports_empty_sub'),
+                  style: TextStyle(
+                    color: KashfPalette.active.textSecondary,
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// Sort menu tile
+// =====================================================================
+
+class _SortMenuTile extends StatelessWidget {
+  const _SortMenuTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: KashfPalette.active.textPrimary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: KashfPalette.active.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check, color: KashfColors.gold, size: 18),
+          ],
+        ),
       ),
     );
   }

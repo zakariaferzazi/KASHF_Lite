@@ -31,28 +31,28 @@ class KashfPalette {
   final Brightness brightness;
 
   static const KashfPalette dark = KashfPalette(
-    background: Color(0xFF14151A),
-    surface: Color(0xFF1C1E2A),
-    surfaceLight: Color(0xFF1C1E2A),
-    cardBorder: Color(0xFF2D3142),
-    fieldFill: Color(0xFF1C1E2A),
-    fieldBorder: Color(0xFF31344A),
-    textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xFF9CA3B0),
-    divider: Color(0xFF31344A),
+    background: Color(0xFF12131A),
+    surface: Color(0xFF1A1C26),
+    surfaceLight: Color(0xFF262B3A),
+    cardBorder: Color(0xFF3A4055),
+    fieldFill: Color(0xFF22263A),
+    fieldBorder: Color(0xFF3A4055),
+    textPrimary: Color(0xFFECEFF4),
+    textSecondary: Color(0xFF8B95A8),
+    divider: Color(0xFF2E3348),
     brightness: Brightness.dark,
   );
 
   static const KashfPalette main = KashfPalette(
-    background: Color(0xFF050608),
-    surface: Color(0xFF0C0D14),
-    surfaceLight: Color(0xFF0C0D14),
-    cardBorder: Color(0xFF1A1C28),
-    fieldFill: Color(0xFF0C0D14),
-    fieldBorder: Color(0xFF1A1C28),
-    textPrimary: Color(0xFFF1E2B0),
-    textSecondary: Color(0xFF8A8273),
-    divider: Color(0xFF1A1C28),
+    background: Color(0xFF0D0E14),
+    surface: Color(0xFF161822),
+    surfaceLight: Color(0xFF222633),
+    cardBorder: Color(0xFF32374D),
+    fieldFill: Color(0xFF1A1D28),
+    fieldBorder: Color(0xFF32374D),
+    textPrimary: Color(0xFFF4E6C1),
+    textSecondary: Color(0xFF9A9283),
+    divider: Color(0xFF2A2E3D),
     brightness: Brightness.dark,
   );
 
@@ -84,13 +84,13 @@ class KashfPalette {
 /// resolve colors from [KashfPalette.active] to react to the picked
 /// theme mode.
 class KashfColors {
-  // Dark palette constants (original brand colors).
+  // Dark palette constants (updated for proper contrast and visual hierarchy).
   static const Color background = Color(0xFF14151A);
   static const Color backgroundTop = background;
   static const Color backgroundBottom = background;
   static const Color surface = Color(0xFF1C1E2A);
-  static const Color surfaceLight = Color(0xFF1C1E2A);
-  static const Color cardBorder = Color(0xFF2D3142);
+  static const Color surfaceLight = Color(0xFF252836);
+  static const Color cardBorder = Color(0xFF353848);
 
   // Brand gold palette stays the same across themes.
   static const Color gold = Color(0xFFF4C542);
@@ -102,11 +102,11 @@ class KashfColors {
   static const Color success = Color(0xFF22C55E);
   static const Color successDark = Color(0xFF15803D);
 
-  static const Color fieldFill = Color(0xFF1C1E2A);
-  static const Color fieldBorder = Color(0xFF31344A);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9CA3B0);
-  static const Color divider = Color(0xFF31344A);
+  static const Color fieldFill = Color(0xFF1E2029);
+  static const Color fieldBorder = Color(0xFF3D4155);
+  static const Color textPrimary = Color(0xFFF5F5F5);
+  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color divider = Color(0xFF353848);
 }
 
 // ===================== Success Popup =====================
@@ -757,6 +757,7 @@ class OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -765,9 +766,9 @@ class OptionTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1E2A),
+            color: palette.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF2D3142)),
+            border: Border.all(color: palette.cardBorder),
           ),
           child: Row(
             children: [
@@ -776,15 +777,15 @@ class OptionTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    color: KashfColors.textPrimary,
+                  style: TextStyle(
+                    color: palette.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              const DirectionalChevron(
-                color: KashfColors.textPrimary,
+              DirectionalChevron(
+                color: palette.textPrimary,
                 size: 22,
               ),
             ],
