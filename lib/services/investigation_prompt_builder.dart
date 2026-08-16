@@ -3,6 +3,7 @@ import '../l10n/app_strings.dart';
 import '../models/evidence.dart';
 import '../models/entity_type.dart';
 import '../models/investigation_action.dart';
+import 'ai/gemini_video_analyzer.dart';
 import 'ai/openrouter_client.dart';
 
 /// Builds the system + user messages we send to OpenRouter for a
@@ -219,11 +220,29 @@ prose before/after the JSON.
         {
           "id": string,
           "title": string,
-          "body": string,
-          "metric": string | null,
-          "metric_label": string | null,
-          "badge": string | null,
-          "image_url": string | null,
+          "body": string,                  // REQUIRED. This is the
+                                            // most important field — it
+                                            // MUST be a substantive
+                                            // explanatory paragraph
+                                            // (3-6 sentences) that
+                                            // answers WHY this item
+                                            // matters, what evidence
+                                            // supports it, what it
+                                            // means for the user, and
+                                            // what to do next. NEVER
+                                            // write a one-liner or a
+                                            // bare fact. The title
+                                            // names the item; the body
+                                            // explains it.
+          "metric": string | null,         // Optional highlighted
+                                            // number (e.g. "+24%",
+                                            // "1.2M followers",
+                                            // "4.5/5 rating").
+          "metric_label": string | null,   // Caption under metric.
+          "badge": string | null,          // Optional small tag
+                                            // (e.g. "Verified",
+                                            // "Trending").
+          "image_url": string | null,      // Optional thumbnail.
           "links": [                       // OPTIONAL — render as
                                             // tap-target buttons next
                                             // to the item. Use this
@@ -262,24 +281,50 @@ prose before/after the JSON.
 }
 
 ================================================================
-SECTION KINDS — what each `kind` field actually means.
+SECTION KINDS — what each `kind` field actually means, and what
+the body text MUST contain.
 ================================================================
 
   * "overview"          — what the subject is (identity, scope).
+                          Body: explains what this aspect of the
+                          subject is, why it defines the subject,
+                          and what context the reader needs.
   * "evidence"          — list of attached evidence items the
                           analysis was based on. Empty if none.
+                          Body: describes what this evidence
+                          contains and how it informed the report.
   * "key_findings"      — 3-6 concrete findings with metrics.
                           EACH finding cites the specific subject
                           by name. No generic SWOT items.
+                          Body: explains WHY this finding matters,
+                          what evidence supports it, what it
+                          means for the user, and what to do with
+                          this information.
   * "activity_trends"   — recent news, posts, campaigns, launches,
                           or market movements. Time-bounded.
+                          Body: explains WHY this trend matters,
+                          what triggered it, what it signals
+                          about the subject's trajectory, and
+                          what to watch next.
   * "competitors"       — direct rivals / comparable entities.
                           For an influencer, list peer creators
                           (NOT competing brands). For a product,
                           list comparable SKUs.
-  * "opportunities"     — growth moves, gaps, underserved angles.
+                          Body: explains WHY this competitor is
+                          notable, how the subject compares (better,
+                          worse, different), and what the
+                          competitive gap or threat implies.
+  * "opportunities"    — growth moves, gaps, underserved angles.
+                          Body: explains WHY this is an opportunity,
+                          what the upside / ROI is, what evidence
+                          suggests it is viable, and what the
+                          first concrete step is to pursue it.
   * "risks"             — concerns, contradictions, things to
                           verify further.
+                          Body: explains WHY this is a risk, what
+                          evidence points to it, what makes it
+                          concerning, and what to verify or monitor
+                          before acting.
   * "recommendations"   — 3-4 concrete next actions tied to the
                           findings.
   * "monitoring"        — what signals to track going forward,
@@ -480,6 +525,8 @@ FINAL RULES — read carefully.
     required List<Evidence> evidence,
     required EntityType entityType,
     required AppLocalizations l,
+    Map<String, dynamic> videoAnalyses =
+        const <String, dynamic>{},
   }) {
     // Output language = UI language always. The UI language is the
     // only signal — query language is deliberately ignored so that
@@ -494,6 +541,8 @@ FINAL RULES — read carefully.
         ? '(no query provided — base the investigation on the entity type below)'
         : query.trim();
     final evidenceDigest = _evidenceDigest(evidence, l);
+    final videoAnalysisDigest =
+        _videoAnalysisDigest(videoAnalyses, evidence);
     final entityLabel = l.t(entityType.l10nKey);
 
     final outputLanguageLabel = _languageName(outputLanguage);
@@ -532,6 +581,7 @@ $instruction
 
 Evidence attached by the user:
 $evidenceDigest
+$videoAnalysisDigest
 
 Write the entire JSON response in $outputLanguageLabel. Return
 the full JSON investigation in the schema defined in the system
@@ -580,6 +630,45 @@ to "$entitySlug".
       buffer.writeln('  ${i + 1}. [${e.kind.name.toUpperCase()}] $ref');
     }
     return buffer.toString().trimRight();
+  }
+
+  /// Renders the structured Gemini analyses as a text block
+  /// the main investigation model can consume. We deliberately
+  /// use `Map<String, dynamic>` here so the prompt builder
+  /// stays independent of the analyzer's Dart types — the
+  /// upstream caller passes the values directly through
+  /// `toContextBlock()`-shaped strings.
+  static String _videoAnalysisDigest(
+    Map<String, dynamic> videoAnalyses,
+    List<Evidence> evidence,
+  ) {
+    if (videoAnalyses.isEmpty) return '';
+    final videos =
+        evidence.where((e) => e.kind == EvidenceKind.video).toList();
+    if (videos.isEmpty) return '';
+    final buf = StringBuffer();
+    buf.writeln();
+    buf.writeln('Pre-analysed video evidence (Xiaomi MiMo v2.5):');
+    buf.writeln('  Each video has already been processed by the');
+    buf.writeln('  Xiaomi MiMo v2.5 video understanding model. Use');
+    buf.writeln('  the structured analysis below as authoritative');
+    buf.writeln('  context for the corresponding `[VIDEO]` evidence');
+    buf.writeln('  row above.');
+    buf.writeln();
+    for (final v in videos) {
+      final analysis = videoAnalyses[v.id];
+      if (analysis == null) continue;
+      // `analysis` is a [GeminiVideoAnalysis] at runtime; the
+      // helper intentionally accepts `dynamic` so the prompt
+      // builder stays usable in tests that pass mock maps.
+      final block = analysis is GeminiVideoAnalysis
+          ? analysis.toContextBlock()
+          : analysis.toString();
+      buf.writeln('--- Video: ${v.displayName} (id ${v.id}) ---');
+      buf.writeln(block);
+      buf.writeln();
+    }
+    return buf.toString().trimRight();
   }
 
   static String _humanSize(int bytes) {
@@ -868,6 +957,13 @@ Section 3 — kind: "key_findings"
     * audience sentiment / content reception (e.g. "comments
       skew positive, high save-rate on tutorial content")
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6 sentences)
+  that explains WHY this finding is significant, what specific
+  evidence or data points to it, what it means for a brand
+  considering a partnership, and what to take away from it.
+  Never write a bare fact or a one-liner as the body.
+
   ACCURACY RULES — read carefully:
     * Use the real public values for the named subject (real
       handles, real brand partners, real milestones). Do NOT
@@ -900,6 +996,12 @@ Section 4 — kind: "activity_trends"
   If you don't have specific dates, say "recently" or "this
   year" — don't fabricate exact dates.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this activity matters, what
+  triggered it or what it signals about the creator's direction,
+  and what a brand partnership manager should watch for next.
+  Be specific about the implication, not just the event.
+
 Section 5 — kind: "competitors"
   4-6 peer creators in the same vertical / region / audience
   size band. For each: name, @handle, primary platform,
@@ -907,6 +1009,13 @@ Section 5 — kind: "competitors"
   from the same niche as the subject (e.g. if the subject is
   a beauty creator, name other beauty creators with similar
   reach). Real public creators only — do not invent handles.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this peer creator is notable,
+  how they compare to the subject in audience size, engagement,
+  or content quality, what makes them a stronger or weaker
+  alternative for brand partnerships, and what the competitive
+  gap implies for the subject's positioning.
 
 Section 6 — kind: "opportunities"
   4-6 growth angles the creator could pursue:
@@ -918,6 +1027,13 @@ Section 6 — kind: "opportunities"
       newsletter, course")
     * region expansion (e.g. "currently English-only — Arabic
       content could expand GCC reach by 30-40%")
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real opportunity
+  (not just a generic idea), what the upside or ROI looks like,
+  what evidence supports this direction (audience data, market
+  signals, competitor precedent), and what the first concrete
+  step is to pursue it.
 
 Section 7 — kind: "risks"
   4-6 concerns a brand or talent scout should monitor:
@@ -931,6 +1047,12 @@ Section 7 — kind: "risks"
       last 6 months")
   Write these as forward-looking watch-items, not as attacks
   on the creator. Keep tone professional.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a genuine risk,
+  what specific evidence or signals point to it (data, events,
+  patterns), what makes it particularly concerning for a brand
+  partnership, and what to verify or monitor before committing.
 
   WEB SEARCH — IMPORTANT:
   Live web search is ENABLED for this investigation. The
@@ -975,24 +1097,56 @@ Section 3 — kind: "key_findings"
   "CAGR", "competitor brands" — those belong to brand / market
   reports.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6 sentences)
+  that explains WHY this finding matters to a buyer, what specific
+  evidence supports it (review data, specs, availability), what
+  it means in practical terms (is it worth the price? should
+  you wait for a restock? how does it compare in daily use?),
+  and what the takeaway is.
+
 Section 4 — kind: "activity_trends"
   Recent news: product updates, firmware updates, recall
   notices, restocks, regional launch dates, price changes.
   Time-bounded (last 30 / 90 days).
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this development matters,
+  who it affects (existing owners, new buyers, specific
+  regions), and what to do in response (buy now, wait for
+  the fix, check warranty coverage).
+
 Section 5 — kind: "competitors"
   3-6 comparable SKUs (not rival brands). For each: name,
   brand, key spec differentiator, price, one-line pros/cons.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this comparable SKU is
+  worth considering, how it stacks up against the subject
+  on price, quality, or features, who should pick the
+  alternative instead, and what the trade-off is.
 
 Section 6 — kind: "opportunities"
   3-6 growth angles: bundle / accessory suggestions,
   cross-sell from the parent brand, region availability gaps,
   price-tier gaps.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real opportunity
+  (not just a generic upsell idea), what evidence suggests it
+  is viable, what the buyer gains, and what the first step is
+  to take advantage of it.
+
 Section 7 — kind: "risks"
   3-6 concerns: counterfeit risk, warranty coverage gaps,
   known defects, upcoming replacement model, region-locked
   SKUs.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this risk is real, what
+  specific evidence points to it (marketplace signals, user
+  reports, supply-chain data), what the buyer stands to lose,
+  and how to verify or mitigate the risk before purchasing.
 ''';
 
       case EntityType.brand:
@@ -1023,24 +1177,57 @@ Section 3 — kind: "key_findings"
   NEVER report "engagement rate" or "audience geography"
   on a brand — those belong to influencer reports.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6 sentences)
+  that explains WHY this finding matters, what evidence supports
+  it, what it means for the brand's trajectory or reputation,
+  and what a brand manager or partner should do with this
+  information.
+
 Section 4 — kind: "activity_trends"
   Recent brand news: campaign launches, ambassador signings,
   product launches, pop-ups, store openings, design collabs.
   Time-bounded (last 30 / 90 days).
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this activity matters, what
+  it signals about the brand's direction or strategy, how it
+  positions the brand against competitors, and what to watch
+  for next.
 
 Section 5 — kind: "competitors"
   3-6 direct rival brands. For each: name, positioning
   one-liner, recent differentiator, estimated market share
   (or order-of-magnitude).
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this rival is significant,
+  how the subject brand compares on positioning, price tier,
+  or consumer perception, what the competitive gap means for
+  the subject's market share, and what threat or opportunity
+  this rivalry creates.
+
 Section 6 — kind: "opportunities"
   3-6 growth angles: brand-extension categories, white-space
   segments, channel gaps, partnership / collab ideas.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real growth
+  opportunity for the brand, what evidence supports it
+  (market gaps, consumer trends, competitor precedent), what
+  the upside looks like, and what the first concrete step
+  is to pursue it.
 
 Section 7 — kind: "risks"
   3-6 concerns: negative campaign backlash, brand-safety
   incidents, category saturation, reputation issues, supply
   chain disruptions.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real brand risk,
+  what specific evidence or signals point to it, what makes
+  it particularly concerning, and what the brand should do
+  to monitor, mitigate, or verify before proceeding.
 ''';
 
       case EntityType.company:
@@ -1068,22 +1255,52 @@ Section 3 — kind: "key_findings"
     * competitive position in its sector
     * leadership stability / changes
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6 sentences)
+  that explains WHY this finding matters, what evidence supports
+  it, what it means for the company's trajectory, and what
+  an investor, partner, or regulator should do with this
+  information.
+
 Section 4 — kind: "activity_trends"
   Recent corporate news: earnings calls, leadership changes,
   M&A filings, regulatory actions, capital raises. Time-bounded
   (last 30 / 90 days).
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this event matters, what
+  it signals about the company's strategy or financial health,
+  what the market reaction suggests, and what to monitor next.
+
 Section 5 — kind: "competitors"
   3-6 peer companies. For each: name, ticker, market cap
   order-of-magnitude, differentiator.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this peer is significant,
+  how the subject compares on size, strategy, or performance,
+  what the competitive landscape means for the subject's
+  positioning, and what opportunity or threat this rivalry
+  creates.
 
 Section 6 — kind: "opportunities"
   3-6 growth angles: M&A targets, market-entry geographies,
   partnership candidates, capital-structure improvements.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real opportunity,
+  what evidence or market logic supports it, what the upside
+  is, and what the first step is to pursue it.
+
 Section 7 — kind: "risks"
   3-6 concerns: governance red flags, regulatory exposure,
   leadership succession, debt / refinancing, audit findings.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real corporate risk,
+  what specific evidence points to it, what makes it particularly
+  concerning, and what an investor or partner should verify or
+  monitor before proceeding.
 ''';
 
       case EntityType.market:
@@ -1110,23 +1327,55 @@ Section 3 — kind: "key_findings"
     * channel shifts (online vs offline, marketplaces, DTC)
     * regulatory risks
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6 sentences)
+  that explains WHY this finding is significant for the sector,
+  what evidence supports it, what it means for market players
+  or investors, and what to watch for next.
+
 Section 4 — kind: "activity_trends"
   Recent sector news: regulatory changes, major launches,
   category expansions, M&A at the sector level. Time-bounded
   (last 30 / 90 days).
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this trend matters to the
+  sector, what triggered it, what it signals about the sector's
+  direction, and what market players or investors should do
+  in response.
+
 Section 5 — kind: "competitors"
   3-6 dominant players in the sector. For each: name,
   market share %, positioning one-liner, recent differentiator.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this player is significant
+  in the sector, what their market share and positioning mean
+  for the competitive landscape, how they compare to peers,
+  and what their dominance implies for new entrants or
+  investors.
 
 Section 6 — kind: "opportunities"
   3-6 growth angles: under-served segments, premium / value
   gaps, channel white-space, regulation tailwinds.
 
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real market
+  opportunity, what evidence supports it (data, trends, player
+  gaps), what the upside is, and what the first step is to
+  enter or capture this opportunity.
+
 Section 7 — kind: "risks"
   3-6 concerns: regulatory headwinds, supply-side shocks,
   demand-side saturation, technology displacement, geopolitical
   exposure.
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST explain WHY this is a real sector risk,
+  what specific evidence or signals point to it, what the
+  potential impact is on market size or player viability,
+  and what market players or investors should do to monitor
+  or mitigate the risk.
 ''';
     }
   }

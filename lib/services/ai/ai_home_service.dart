@@ -159,7 +159,7 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model,
+          model: OpenRouterConfig.model(),
           temperature: 0.7,
           maxTokens: 1800,
           // No responseFormat: web search is permanently on (see
@@ -215,7 +215,7 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model,
+          model: OpenRouterConfig.model(),
           temperature: 0.8,
           maxTokens: 2500,
           // No responseFormat: web search is permanently on (see
@@ -278,7 +278,7 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model,
+          model: OpenRouterConfig.model(),
           temperature: 0.7,
           maxTokens: 3000,
           // No responseFormat: web search is permanently on (see
@@ -346,7 +346,7 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model,
+          model: OpenRouterConfig.model(),
           temperature: 0.7,
           maxTokens: 2500,
           // No responseFormat: web search is permanently on (see

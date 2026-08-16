@@ -11,13 +11,31 @@ import 'openrouter_rate_limiter.dart';
 
 /// A single chat message compatible with the OpenAI / OpenRouter
 /// chat-completions API.
+///
+/// Content can be either:
+///  - a plain [String] (the common case — system prompt, plain
+///    user prompt, assistant reply), or
+///  - a [List] of `content parts`. Each part is a `Map<String,
+///    dynamic>` describing one of:
+///    * `{"type": "text", "text": "..."}` — a text fragment.
+///    * `{"type": "image_url", "image_url": {"url": "..."}}` — an
+///      image (data URL or remote URL).
+///    * `{"type": "video_url", "video_url": {"url": "..."}}` — a
+///      video frame or short clip. Gemini-family models on
+///      OpenRouter accept this for video understanding.
+///
+/// We keep the public surface `Object` so callers don't have to
+/// think about it — the underlying JSON serialiser does.
 @immutable
 class OpenRouterMessage {
   const OpenRouterMessage({required this.role, required this.content});
 
   /// One of: `system`, `user`, `assistant`.
   final String role;
-  final String content;
+
+  /// String for plain text messages; `List<Map<String, dynamic>>`
+  /// for multimodal messages.
+  final Object content;
 
   Map<String, dynamic> toJson() => {
         'role': role,
@@ -189,7 +207,7 @@ class OpenRouterClient {
       _auditLog.record(OpenRouterAuditEntry(
         timestamp: startedAt,
         endpoint: endpoint,
-        model: req.model ?? OpenRouterConfig.model,
+        model: req.model ?? OpenRouterConfig.model(),
         statusCode: 0,
         durationMs: 0,
         success: false,
@@ -242,7 +260,7 @@ class OpenRouterClient {
             _auditLog.record(OpenRouterAuditEntry(
               timestamp: DateTime.now(),
               endpoint: endpoint,
-              model: req.model ?? OpenRouterConfig.model,
+              model: req.model ?? OpenRouterConfig.model(),
               statusCode: status,
               durationMs:
                   DateTime.now().difference(startedAt).inMilliseconds,
@@ -294,7 +312,7 @@ class OpenRouterClient {
     _auditLog.record(OpenRouterAuditEntry(
       timestamp: DateTime.now(),
       endpoint: endpoint,
-      model: req.model ?? OpenRouterConfig.model,
+      model: req.model ?? OpenRouterConfig.model(),
       statusCode: lastStatus ?? 0,
       durationMs: durationMs,
       success: false,
@@ -443,10 +461,22 @@ LIVE WEB SEARCH — MANDATORY:
     var injected = false;
     for (final m in req.messages) {
       if (!injected && m.role == 'system') {
-        out.add({
-          'role': 'system',
-          'content': '$toolHint\n${m.content}',
-        });
+        // Multimodal content is a List of parts — we can't
+        // concatenate a string hint onto it directly, so we
+        // prepend a synthetic text part instead.
+        if (m.content is List) {
+          final parts = List<Map<String, dynamic>>.from(m.content as List);
+          parts.insert(
+            0,
+            <String, dynamic>{'type': 'text', 'text': toolHint},
+          );
+          out.add({'role': 'system', 'content': parts});
+        } else {
+          out.add({
+            'role': 'system',
+            'content': '$toolHint\n${m.content}',
+          });
+        }
         injected = true;
       } else {
         out.add(m.toJson());
@@ -470,7 +500,7 @@ LIVE WEB SEARCH — MANDATORY:
     final override = req.model?.trim();
     final model = (override != null && override.isNotEmpty)
         ? override
-        : OpenRouterConfig.model;
+        : OpenRouterConfig.model();
 
     // Web-search-enabled payload. Per the official OpenRouter docs
     // (https://openrouter.ai/docs/features/web-search), the canonical
@@ -611,7 +641,7 @@ LIVE WEB SEARCH — MANDATORY:
       }
     }
     final model = (json['model'] as String?) ??
-        OpenRouterConfig.model;
+        OpenRouterConfig.model();
     final finishReason = first['finish_reason'] as String?;
 
     int? readTokens(String key) {

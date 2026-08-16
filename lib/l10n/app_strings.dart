@@ -1388,6 +1388,8 @@ class AppLocalizations {
       'ir_evidence_uploading': 'Uploading {name}',
       'ir_evidence_reading_links': 'Reading {n} link(s)',
       'ir_evidence_extracting': 'Extracting text from {n} file(s)',
+      'ir_evidence_video_analysing':
+          'We are processing the video evidence',
       'ir_error_config':
           'AI is not configured. Add OPENROUTER_API_KEY to your .env file.',
       'ir_error_auth': 'AI authentication failed. Check your API key.',
@@ -1539,6 +1541,26 @@ class AppLocalizations {
       'ir_action_report': 'Report',
       'ir_action_save': 'Save',
       'ir_action_share': 'Share link copied.',
+      'ir_action_auto_refresh': 'Auto-refresh',
+      'ir_auto_refresh_title': 'Keep this investigation up to date',
+      'ir_auto_refresh_sub':
+          'KASHF can re-run the same investigation periodically and update the report automatically.',
+      'ir_auto_refresh_off': 'Off',
+      'ir_auto_refresh_off_sub': 'Run only this once — no automatic updates.',
+      'ir_auto_refresh_30': '30 days',
+      'ir_auto_refresh_30_sub': 'Refresh the report automatically for 30 days.',
+      'ir_auto_refresh_60': '60 days',
+      'ir_auto_refresh_60_sub': 'Refresh the report automatically for 60 days.',
+      'ir_auto_refresh_confirm': 'Save',
+      'ir_auto_refresh_toast_off':
+          'Auto-refresh turned off for this investigation.',
+      'ir_auto_refresh_toast_on':
+          'Auto-refresh scheduled for the next {days} days.',
+      'ir_auto_refresh_badge': 'Auto-refresh',
+      'ir_auto_refresh_badge_active': 'Auto-refresh on',
+      'ir_auto_refresh_badge_due': 'Refreshing…',
+      'ir_share_generating': 'Preparing the report…',
+      'ir_export_saved_to': 'Report saved to {path}',
     },
     'ar': {
       'app_title': 'كاشف لايت',
@@ -2789,6 +2811,8 @@ class AppLocalizations {
       'ir_evidence_uploading': 'جاري رفع {name}',
       'ir_evidence_reading_links': 'قراءة {n} رابط',
       'ir_evidence_extracting': 'استخراج النص من {n} ملف',
+      'ir_evidence_video_analysing':
+          'جارٍ معالجة أدلة الفيديو',
       'ir_error_config':
           'الذكاء الاصطناعي غير مُهيّأ. أضف OPENROUTER_API_KEY إلى ملف .env.',
       'ir_error_auth':
@@ -2924,14 +2948,14 @@ class AppLocalizations {
           'استخدم تبويب الرؤى كمدخل لتقرير تحقيق كامل.',
       'ir_rec_badge_priority': 'أولوية',
       'ir_badge_verified': 'موثّق',
-      'ir_tab_overview': 'النظرة العامة',
+      'ir_tab_overview': 'الاستنتاج',
       'ir_tab_evidence': 'الأدلة',
       'ir_tab_insights': 'الرؤى',
       'ir_tab_key_findings': 'النتائج',
       'ir_tab_activity_trends': 'النشاط',
       'ir_tab_competitors': 'المنافسون',
-      'ir_tab_opportunities': 'الفرص',
-      'ir_tab_risks': 'المخاطر',
+      'ir_tab_opportunities': 'الفرص المتاحة',
+      'ir_tab_risks': 'المخاطر والحلول',
       'ir_tab_sources': 'المصادر',
       'ir_tab_recommendations': 'الإجراءات',
       'ir_action_export_pdf': 'تصدير',
@@ -2940,6 +2964,29 @@ class AppLocalizations {
       'ir_action_report': 'تقرير',
       'ir_action_save': 'حفظ',
       'ir_action_share': 'تم نسخ رابط المشاركة.',
+      'ir_action_auto_refresh': 'تحديث تلقائي',
+      'ir_auto_refresh_title': 'حافظ على تحديث هذا التحقيق',
+      'ir_auto_refresh_sub':
+          'سيتم تحديث التقرير تلقائياً حسب الفترة التي تختارها.',
+      'ir_auto_refresh_off': 'إيقاف',
+      'ir_auto_refresh_off_sub':
+          'تشغيل هذا التحقيق مرة واحدة فقط — بدون تحديث تلقائي.',
+      'ir_auto_refresh_30': '30 يوم',
+      'ir_auto_refresh_30_sub':
+          'تحديث التقرير تلقائياً لمدة 30 يوماً.',
+      'ir_auto_refresh_60': '60 يوم',
+      'ir_auto_refresh_60_sub':
+          'تحديث التقرير تلقائياً لمدة 60 يوماً.',
+      'ir_auto_refresh_confirm': 'حفظ',
+      'ir_auto_refresh_toast_off':
+          'تم إيقاف التحديث التلقائي لهذا التحقيق.',
+      'ir_auto_refresh_toast_on':
+          'تم جدولة التحديث التلقائي لمدة {days} يوماً.',
+      'ir_auto_refresh_badge': 'تحديث تلقائي',
+      'ir_auto_refresh_badge_active': 'التحديث التلقائي مفعّل',
+      'ir_auto_refresh_badge_due': 'جارٍ التحديث…',
+      'ir_share_generating': 'جارٍ تجهيز التقرير…',
+      'ir_export_saved_to': 'تم حفظ التقرير في {path}',
     },
   };
 

@@ -127,6 +127,17 @@ class InvestigationArchiveService {
 
   InvestigationWriter get writer => _writer;
 
+  /// Returns every archived row for the currently signed-in user
+  /// (or the local `'anonymous'` slice). Used by the
+  /// auto-refresh scheduler so it can decide which investigations
+  /// are due for a background re-run.
+  Future<List<SavedInvestigation>> allForActiveUser() async {
+    final uid = _currentUserId;
+    final stream = _writer.watchLatest(uid, limit: _kLatestLoadLimit);
+    final first = await stream.first;
+    return List<SavedInvestigation>.unmodifiable(first);
+  }
+
   // =============================== Save ================================
 
   /// Persists a completed investigation.
@@ -139,6 +150,9 @@ class InvestigationArchiveService {
     required EntityType entityType,
     List<String> tags = const [],
     int? evidenceCount,
+    String? originalQuery,
+    String? actionId,
+    String? languageCode,
   }) async {
     final uid = _currentUserId;
     final modelId = _safeModelId();
@@ -192,6 +206,12 @@ class InvestigationArchiveService {
       // Firestore writer persist it as-is. Reconstruction logic
       // lives on [InvestigationResult.fromJson].
       reportJson: result.toJson(),
+      // Persist the inputs that produced this report so the
+      // background auto-refresh can replay the exact same run
+      // without any user input.
+      originalQuery: originalQuery,
+      actionId: actionId,
+      languageCode: languageCode,
     );
 
     try {
@@ -291,7 +311,7 @@ class InvestigationArchiveService {
   /// if anything throws.
   String? _safeModelId() {
     try {
-      return OpenRouterConfig.model;
+      return OpenRouterConfig.model();
     } catch (_) {
       return null;
     }

@@ -77,10 +77,19 @@ dependencies:
   # "Continue with Apple" button. On iOS/macOS it returns a real
   # Apple credential; on every other platform it throws
   # `SignInWithAppleNotSupportedException`, which the auth
-  # service catches and surfaces as a friendly snackbar instead of
-  # silently dropping the user into the home screen.
+  # service catches and surfaces as a friendly snackbar instead
+  # of silently dropping the user into the home screen.
   sign_in_with_apple: ^6.1.4
   flutter_launcher_icons: ^0.14.4
+
+  # Optional: enables the Android background task for the
+  # auto-refresh scheduler. The current implementation uses
+  # `services/workmanager_shim.dart` so the codebase compiles
+  # without the package installed; the foreground Timer in
+  # `AutoRefreshService` is the source of truth on iOS / desktop
+  # and also works on Android. To enable the OS-level background
+  # task, add `workmanager: ^0.5.2` here and re-run `flutter pub get`.
+  # workmanager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

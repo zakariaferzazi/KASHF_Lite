@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/investigation_result.dart';
+import '../../services/report_pdf_writer.dart';
 import '../../theme.dart';
 import '../../utils/text_direction_utils.dart';
 
@@ -91,7 +92,7 @@ class _InvestigationResultsScreenState
                   ],
                 ),
               ),
-              _ActionBar(result: widget.result, l: l),
+              _ExportPdfBar(result: widget.result, l: l),
             ],
           ),
         ),
@@ -101,7 +102,7 @@ class _InvestigationResultsScreenState
 }
 
 // ============================================================================
-// Top bar
+// Top bar — back · title · share (real PDF).
 // ============================================================================
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.l, required this.result});
@@ -139,25 +140,9 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l.t('ir_action_share')),
-                  backgroundColor: KashfColors.gold,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => _shareReport(context),
             icon: Icon(
               Icons.share_outlined,
-              color: KashfPalette.active.textPrimary,
-              size: 20,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.more_vert,
               color: KashfPalette.active.textPrimary,
               size: 20,
             ),
@@ -165,6 +150,36 @@ class _TopBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Generates a PDF, persists it to disk, and hands the file
+  /// off to the platform's share sheet via `url_launcher`.
+  Future<void> _shareReport(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    // Best-effort: surface progress through a snackbar since
+    // PDF generation + I/O can take a beat on slow devices.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.t('ir_share_generating')),
+        backgroundColor: KashfPalette.active.surface,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    try {
+      final writer = ReportPdfWriter();
+      final file = await writer.saveToDisk(result: result);
+      final uri = Uri.file(file.path);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$e'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }
 
@@ -1006,6 +1021,7 @@ class _UrlChipButton extends StatelessWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Icon(
                 iconForLink(label),
@@ -1013,12 +1029,21 @@ class _UrlChipButton extends StatelessWidget {
                 color: palette.textPrimary,
               ),
               SizedBox(width: dense ? 4 : 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: dense ? 11 : 12,
-                  fontWeight: FontWeight.w700,
+              // Wrap in Flexible so a long host (e.g.
+              // "facebook.com/some-long-page") doesn't push the
+              // chip past the surrounding line — the label
+              // ellipsizes instead.
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -1444,123 +1469,98 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ============================================================================
-// Bottom action bar — 4 actions.
+// Bottom action bar — a single Export-PDF button that
+// generates a real PDF on disk and opens it in the platform
+// share sheet.
 // ============================================================================
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.result, required this.l});
+class _ExportPdfBar extends StatefulWidget {
+  const _ExportPdfBar({required this.result, required this.l});
   final InvestigationResult result;
   final AppLocalizations l;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: KashfPalette.active.surface,
-        border: Border(top: BorderSide(color: KashfPalette.active.cardBorder)),
-      ),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.picture_as_pdf_outlined,
-                label: l.t('ir_action_export_pdf'),
-                onTap: () => _toast(context, l, 'ir_action_export_pdf'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.notifications_active_outlined,
-                label: l.t('ir_action_monitor'),
-                onTap: () => _toast(context, l, 'ir_action_monitor_toast'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.assignment_outlined,
-                label: l.t('ir_action_report'),
-                onTap: () => _toast(context, l, 'ir_action_report'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.bookmark_border,
-                label: l.t('ir_action_save'),
-                onTap: () => _toast(context, l, 'ir_action_save'),
-                filled: true,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _toast(BuildContext context, AppLocalizations l, String key) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l.t(key)),
-        backgroundColor: KashfColors.gold,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  State<_ExportPdfBar> createState() => _ExportPdfBarState();
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.filled = false,
-  });
+class _ExportPdfBarState extends State<_ExportPdfBar> {
+  bool _busy = false;
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool filled;
+  Future<void> _exportAndOpen() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final l = widget.l;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final writer = ReportPdfWriter();
+      final file = await writer.saveToDisk(result: widget.result);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l.tp('ir_export_saved_to', {'path': file.path})),
+          backgroundColor: KashfColors.gold,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      final uri = Uri.file(file.path);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: filled
-              ? KashfColors.gold
-              : KashfPalette.active.fieldFill,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: filled ? KashfColors.gold : KashfPalette.active.cardBorder,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: filled ? Colors.black : KashfColors.gold,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: filled ? Colors.black : KashfPalette.active.textPrimary,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
+    final l = widget.l;
+    final palette = KashfPalette.active;
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.surface,
+        border: Border(top: BorderSide(color: palette.cardBorder)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _busy ? null : _exportAndOpen,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: KashfColors.gold,
+              disabledBackgroundColor:
+                  KashfColors.gold.withValues(alpha: 0.4),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ],
+            icon: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation(Colors.black),
+                    ),
+                  )
+                : const Icon(Icons.picture_as_pdf_outlined, size: 18),
+            label: Text(
+              l.t('ir_action_export_pdf'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -3,6 +3,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../settings_preferences.dart';
 import 'ai_model_options.dart';
 
+/// Whether [model] should be overridden to a video-capable
+/// model when the user has uploaded video evidence. `gpt-5.6-luna`
+/// doesn't support video input; `xiaomi/mimo-v2.5` does.
+const String kVideoCapableModelId = 'xiaomi/mimo-v2.5';
+
+/// Whether [model] should be overridden to a video-capable
+/// model when the user has uploaded video evidence.
+bool isVideoCapableModel(String? modelId) =>
+    modelId == kVideoCapableModelId;
+
 /// Centralised configuration for the OpenRouter AI integration.
 ///
 /// All sensitive values (API key, base URL, model) are sourced from a
@@ -92,25 +102,33 @@ class OpenRouterConfig {
   /// Model identifier used by the chat completion.
   ///
   /// Precedence:
-  ///   1. The user's saved pick in [SettingsPreferences]
+  ///   1. If [forceVideoCapable] is true, always return
+  ///      [kVideoCapableModelId] — the user uploaded video
+  ///      evidence and gpt-5.6-luna doesn't support video.
+  ///   2. The user's saved pick in [SettingsPreferences]
   ///      (Settings → AI model). This is the source of truth for
   ///      every user — switching model in Settings MUST be honoured
   ///      on the very next request.
-  ///   2. The bundled default ([kDefaultAiModelId]) when the user
+  ///   3. The bundled default ([kDefaultAiModelId]) when the user
   ///      hasn't picked one yet.
   ///
   /// The `OPENROUTER_MODEL` env var used to be a hard override
   /// here. It was removed: a stray `.env` file silently pinned
   /// every install to the default model regardless of the user's
   /// Settings choice, which made the Settings picker look broken.
-  static String get model {
-  final prefs = SettingsPreferences.instance;
-  final userPick = prefs?.aiModelId.trim();
-  if (userPick != null && userPick.isNotEmpty) {
-    return userPick;
+  static String model({bool forceVideoCapable = false}) {
+    // Video evidence requires a video-capable model. Auto-switch
+    // transparently so the user never has to manually change
+    // their model pick in Settings just because they uploaded
+    // a video.
+    if (forceVideoCapable) return kVideoCapableModelId;
+    final prefs = SettingsPreferences.instance;
+    final userPick = prefs?.aiModelId.trim();
+    if (userPick != null && userPick.isNotEmpty) {
+      return userPick;
+    }
+    return _defaultModel;
   }
-  return _defaultModel;
-}
 
   /// Referer header. Override-able through `OPENROUTER_REFERER`.
   static String get referer {

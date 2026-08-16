@@ -9,6 +9,7 @@ import '../models/evidence.dart';
 import '../models/investigation.dart';
 import '../models/investigation_action.dart';
 import '../models/investigation_result.dart';
+import 'ai/gemini_video_analyzer.dart';
 import 'ai/investigation_thumbnail_resolver.dart';
 import 'ai/openrouter_client.dart';
 import 'ai/openrouter_config.dart';
@@ -57,8 +58,10 @@ class InvestigationProgress {
 class InvestigationService {
   InvestigationService({
     OpenRouterClient? client,
+    GeminiVideoAnalyzer? videoAnalyzer,
     String? region,
   })  : _client = client ?? OpenRouterClient.instance,
+        _videoAnalyzer = videoAnalyzer ?? GeminiVideoAnalyzer(),
         _region = region ?? 'Kuwait';
 
   /// Singleton instance used by the screen. Tests can build their
@@ -66,6 +69,7 @@ class InvestigationService {
   static final InvestigationService instance = InvestigationService();
 
   final OpenRouterClient _client;
+  final GeminiVideoAnalyzer _videoAnalyzer;
   final String _region;
 
   final ValueNotifier<InvestigationProgress> _progress =
@@ -147,6 +151,32 @@ class InvestigationService {
         await _processEvidenceAi(evidence, l, onEvidenceUpdate);
       }
 
+      // Phase 2.5 — Gemini video pre-pass.
+      //
+      // `gpt-5.6-luna` (and most non-Gemini models on
+      // OpenRouter) don't accept video input. We send any
+      // uploaded video clips to Gemini 2.5 first, get back a
+      // structured JSON analysis (summary, transcript, key
+      // moments, entities, sentiment), and inject that text
+      // into the main prompt. The main investigation can then
+      // keep using the user's chosen model without ever
+      // touching the video bytes.
+      Map<String, GeminiVideoAnalysis> videoAnalyses =
+          const <String, GeminiVideoAnalysis>{};
+      final videos =
+          evidence.where((e) => e.kind == EvidenceKind.video).toList();
+      if (videos.isNotEmpty) {
+        _emit(
+          l,
+          InvestigationPhase.evidenceProcessing,
+          l.t('ir_evidence_video_analysing'),
+        );
+        videoAnalyses = await _videoAnalyzer.analyze(
+          evidence: videos,
+          l: l,
+        );
+      }
+
       // Phase 3 — analyze via OpenRouter.
       _emit(l, InvestigationPhase.analyzing, l.t('ir_phase_analyzing'));
 
@@ -158,6 +188,7 @@ class InvestigationService {
         evidence: evidence,
         entityType: entityType,
         l: l,
+        videoAnalyses: videoAnalyses,
       );
 
       final request = OpenRouterRequest(
@@ -166,8 +197,10 @@ class InvestigationService {
         // accidentally pick up a stale value. [OpenRouterConfig.model]
         // is a getter that reads the user's saved choice at request
         // time — meaning a Settings → AI model switch is honoured by
-        // the very next investigation the user starts.
-        model: OpenRouterConfig.model,
+        // the very next investigation the user starts. We do NOT
+        // force the video-capable model any more — the Gemini
+        // pre-pass above converts videos to text before this point.
+        model: OpenRouterConfig.model(),
         temperature: 0.4,
         // Investigation reports emit 7 sections of structured
         // items in two languages. Budget MUST be large enough

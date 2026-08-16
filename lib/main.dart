@@ -17,11 +17,13 @@ import 'services/ai/ai_home_service.dart';
 import 'services/ai/disk_cache.dart';
 import 'services/ai/featured_brand_controller.dart';
 import 'services/archive/firestore_investigation_writer.dart';
+import 'services/auto_refresh_service.dart';
 import 'services/investigation_archive_service.dart';
 import 'services/news/news_content_repository.dart';
 import 'services/news/news_service.dart';
 import 'services/settings_preferences.dart';
 import 'services/settings_scope.dart';
+import 'services/workmanager_shim.dart' as wm;
 import 'theme.dart';
 
 void main() async {
@@ -54,6 +56,21 @@ void main() async {
   InvestigationArchiveService.instance.enableFirestore(
     FirestoreInvestigationWriter(),
   );
+  // Register the workmanager callback before the first frame so
+  // the OS can fire the auto-refresh task while the app is in
+  // the background. The shim is a no-op when the package
+  // isn't installed; the foreground Timer in `AutoRefreshService`
+  // is the source of truth on iOS / desktop.
+  await wm.workmanagerInstance.initialize(
+    _workmanagerDispatcher,
+    isInDebugMode: false,
+  );
+  // Wire the auto-refresh service. The foreground Timer in
+  // `AutoRefreshService` is the source of truth on iOS; on
+  // Android the workmanager task registered above handles the
+  // "app was killed" path.
+  AutoRefreshService.init(archiveService: InvestigationArchiveService.instance)
+      .start();
   final localeController = await LocaleController.load();
   // Build a persisting theme controller so the very first frame
   // already reflects the user's saved preference (no flash of the
@@ -293,3 +310,16 @@ void navigateToWelcome(BuildContext context) {
 
 /// Helper for AppLanguage's locale from a code.
 AppLanguage appLanguageFromCode(String code) => AppLanguage.fromCode(code);
+
+/// Top-level dispatcher used by `workmanager`. Bridges into
+/// the [AutoRefreshService] singleton so the background task
+/// can scan the archive for due investigations. Must be a
+/// top-level / static function — workmanager invokes it from
+/// the background isolate.
+@pragma('vm:entry-point')
+void _workmanagerDispatcher() {
+  wm.executeTaskBridge(
+    kAutoRefreshWorkName,
+    const <String, dynamic>{},
+  );
+}

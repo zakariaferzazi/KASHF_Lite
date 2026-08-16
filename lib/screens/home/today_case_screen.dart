@@ -48,7 +48,7 @@ const Color _tcAccent = Color(0xFFF4C542);
 const Color _tcGreen = Color(0xFF22C55E);
 
 class _TodayCaseScreenState extends State<TodayCaseScreen> {
-  int _tabIndex = 0;
+  final int _tabIndex = 0;
 
   /// Resolved case. Starts equal to whatever the caller passed;
   /// if the caller didn't pass one (or passed null), we fetch

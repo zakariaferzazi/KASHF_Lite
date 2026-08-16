@@ -35,6 +35,20 @@ class SavedInvestigation {
     this.evidenceCount = 0,
     this.thumbnailUrl,
     this.reportJson,
+    this.autoRefreshDays = 0,
+    this.autoRefreshUntil,
+    this.lastRefreshedAt,
+    /// Original free-text query the user typed. Persisted so the
+    /// background auto-refresh can replay the exact same
+    /// investigation without user input.
+    this.originalQuery,
+    /// Original quick-action id (the "lens"). Same reason as
+    /// [originalQuery] — required to reproduce the run.
+    this.actionId,
+    /// Language code (`en` / `ar`) at the time of the run. Used
+    /// by the background re-run to localize the AI prompt so the
+    /// report stays in the user's chosen language.
+    this.languageCode,
   });
 
   /// Firestore document id. Locally-generated UUID for offline
@@ -99,7 +113,56 @@ class SavedInvestigation {
   /// from the card fields).
   final Map<String, dynamic>? reportJson;
 
+  /// Auto-refresh duration chosen by the user. `0` means refresh
+  /// is OFF (no background re-run). `30` or `60` are the only
+  /// supported values.
+  final int autoRefreshDays;
+
+  /// Hard expiry — when the auto-refresh window ends.
+  /// The background scheduler refreshes the report every 72h
+  /// **while** `now < autoRefreshUntil`. Once the expiry passes
+  /// the work is permanently cancelled.
+  final DateTime? autoRefreshUntil;
+
+  /// Wall-clock time of the most recent refresh (initial run or
+  /// auto-refresh). Used by the scheduler to decide whether the
+  /// 72h interval has elapsed since the last refresh.
+  final DateTime? lastRefreshedAt;
+
+  /// Original free-text query the user typed. Persisted so the
+  /// background auto-refresh can replay the exact same
+  /// investigation without user input.
+  final String? originalQuery;
+
+  /// Original quick-action id (the "lens"). Same reason as
+  /// [originalQuery] — required to reproduce the run.
+  final String? actionId;
+
+  /// Language code (`en` / `ar`) at the time of the run. Used
+  /// by the background re-run to localize the AI prompt so the
+  /// report stays in the user's chosen language.
+  final String? languageCode;
+
   String get documentId => id;
+
+  /// Whether the auto-refresh *window* is currently open. We use
+  /// `autoRefreshUntil` (a hard expiry) rather than `autoRefreshDays`
+  /// because the user picks a duration at a point in time and we
+  /// persist the resulting wall-clock cutoff.
+  bool get hasActiveAutoRefresh =>
+      autoRefreshUntil != null && autoRefreshUntil!.isAfter(DateTime.now());
+
+  /// Whether the scheduler should re-run this investigation now.
+  /// Returns `true` when:
+  ///  - the auto-refresh window is still open AND
+  ///  - we don't have a recorded `lastRefreshedAt`, OR
+  ///  - the last refresh is older than [kAutoRefreshInterval].
+  bool get isRefreshDue {
+    if (!hasActiveAutoRefresh) return false;
+    final last = lastRefreshedAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last) >= kAutoRefreshInterval;
+  }
 
   Map<String, dynamic> toFirestore() => <String, dynamic>{
         'userId': userId,
@@ -115,6 +178,14 @@ class SavedInvestigation {
         'evidenceCount': evidenceCount,
         'thumbnailUrl': thumbnailUrl,
         if (reportJson != null) 'report': reportJson,
+        'autoRefreshDays': autoRefreshDays,
+        if (autoRefreshUntil != null)
+          'autoRefreshUntil': autoRefreshUntil!.toUtc().toIso8601String(),
+        if (lastRefreshedAt != null)
+          'lastRefreshedAt': lastRefreshedAt!.toUtc().toIso8601String(),
+        if (originalQuery != null) 'originalQuery': originalQuery,
+        if (actionId != null) 'actionId': actionId,
+        if (languageCode != null) 'languageCode': languageCode,
       };
 
   /// Hydrate from a Firestore document. Falls back to safe
@@ -157,6 +228,12 @@ class SavedInvestigation {
       reportJson: (doc['report'] is Map<String, dynamic>)
           ? doc['report'] as Map<String, dynamic>
           : null,
+      autoRefreshDays: ((doc['autoRefreshDays'] as num?) ?? 0).toInt(),
+      autoRefreshUntil: parseDate(doc['autoRefreshUntil']),
+      lastRefreshedAt: parseDate(doc['lastRefreshedAt']),
+      originalQuery: doc['originalQuery'] as String?,
+      actionId: doc['actionId'] as String?,
+      languageCode: doc['languageCode'] as String?,
     );
   }
 
@@ -177,6 +254,14 @@ class SavedInvestigation {
     InvestigationStatus? status,
     String? thumbnailUrl,
     Map<String, dynamic>? reportJson,
+    int? autoRefreshDays,
+    DateTime? autoRefreshUntil,
+    DateTime? lastRefreshedAt,
+    bool clearAutoRefreshUntil = false,
+    bool clearLastRefreshedAt = false,
+    String? originalQuery,
+    String? actionId,
+    String? languageCode,
   }) {
     return SavedInvestigation(
       id: id,
@@ -193,6 +278,16 @@ class SavedInvestigation {
       evidenceCount: evidenceCount ?? this.evidenceCount,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       reportJson: reportJson ?? this.reportJson,
+      autoRefreshDays: autoRefreshDays ?? this.autoRefreshDays,
+      autoRefreshUntil: clearAutoRefreshUntil
+          ? null
+          : (autoRefreshUntil ?? this.autoRefreshUntil),
+      lastRefreshedAt: clearLastRefreshedAt
+          ? null
+          : (lastRefreshedAt ?? this.lastRefreshedAt),
+      originalQuery: originalQuery ?? this.originalQuery,
+      actionId: actionId ?? this.actionId,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 }
@@ -205,3 +300,12 @@ String confidenceBandFor(int percent) {
   if (percent >= 60) return 'medium';
   return 'low';
 }
+
+/// Interval (in hours) between scheduled auto-refreshes. Each
+/// tracked investigation is re-run on this cadence while the
+/// expiry window is still open.
+const Duration kAutoRefreshInterval = Duration(hours: 72);
+
+/// Fixed choices shown in the auto-refresh picker. `0` means
+/// the auto-refresh is OFF (no background re-run).
+const List<int> kAutoRefreshDayChoices = <int>[0, 30, 60];
