@@ -92,10 +92,13 @@ OUTPUT LANGUAGE — READ CAREFULLY:
   output language — see the override below if it is set.$queryLangClause
 
 ================================================================
-SECTION BLUEPRINT — the report has EXACTLY 7 sections, in this
-order. Each section has a fixed "kind" and a topic list tuned
-to the SELECTED entity type. Use these as the authoritative
-spec; do NOT invent extra sections.
+SECTION BLUEPRINT — the report has 7 OR 8 sections, in this
+order, depending on the entity type. Influencer reports get
+an 8th `action_plan` section ("what to do next") at the end.
+Other entity types have 7 sections. Each section has a fixed
+"kind" and a topic list tuned to the SELECTED entity type.
+Use the per-entity-type spec below as the authoritative
+source; do NOT invent extra sections.
 ================================================================
 
 $sectionSpec
@@ -211,7 +214,8 @@ prose before/after the JSON.
     {
       "kind": "overview" | "evidence" | "key_findings"
               | "activity_trends" | "competitors"
-              | "opportunities" | "risks",
+              | "opportunities" | "risks"
+              | "action_plan",
       "headline": string,
       "summary": string,
       "confidence": number | null,
@@ -261,10 +265,11 @@ prose before/after the JSON.
         }
       ]
     },
-    ... EXACTLY the 7 sections listed in the SECTION BLUEPRINT
-        above, in the blueprint's order. Do NOT omit any
-        section (emit an empty `items` array if you have
-        nothing to put). Do NOT add extra sections.
+    ... EXACTLY the sections listed in the SECTION BLUEPRINT
+        for the SELECTED entity type, in the blueprint's
+        order. Do NOT omit any required section (emit an empty
+        `items` array if you have nothing to put). Do NOT add
+        extra sections.
     ... 3-6 items per section.
   ],
   "sources": [
@@ -325,6 +330,23 @@ the body text MUST contain.
                           evidence points to it, what makes it
                           concerning, and what to verify or monitor
                           before acting.
+  * "action_plan"       — influencer-only "what to do next"
+                          section. 4-6 concrete items covering:
+                            (a) the 30-day plan — concrete,
+                                sequenced moves the user should
+                                execute in the next 30 days
+                                (content pillars, collabs, outreach,
+                                product launches, regional expansion)
+                            (b) things to AVOID in the next 30 days
+                                (mismatched partnerships, content
+                                fatigue signals, risky pivots,
+                                exclusivity conflicts)
+                            (c) suggestions backed by the
+                                attached sources + evidence
+                          Body: explains WHY each action is
+                          prioritised, what evidence / source
+                          supports it, what the expected outcome is
+                          in 30 days, and what risk it mitigates.
   * "recommendations"   — 3-4 concrete next actions tied to the
                           findings.
   * "monitoring"        — what signals to track going forward,
@@ -1067,6 +1089,70 @@ Section 7 — kind: "risks"
   guesses. The creator's profile, audience size, and
   partnerships change frequently; the only accurate report
   is one that pulls live data.
+
+Section 8 — kind: "action_plan"  (INFLUENCER-ONLY)
+  4-6 concrete items covering "what to do next". Each item
+  is a card with a `title` (short label) and a `body` (the
+  plan detail). Cover these three angles in this order:
+    (a) THE 30-DAY PLAN — concrete, sequenced moves the user
+        should execute in the next 30 days. Examples:
+          * "Week 1-2: open the conversation with Brand X —
+            draft outreach referencing the audience-overlap
+            data shown in the key_findings section."
+          * "Week 2: post 2x Arabic Reels to test GCC
+            interest; measure save-rate as the success metric."
+          * "Week 3-4: ship the podcast pilot you teased; use
+            the 3 collaborators named in the activity_trends
+            section as launch guests."
+        Make every step concrete and dated (Week 1 / Week 2,
+        or specific dates relative to today). Sequence them
+        so the user can execute in order.
+    (b) THINGS TO AVOID IN THE NEXT 30 DAYS — moves that look
+        tempting but are risky based on the evidence:
+          * "Do NOT sign an exclusivity deal with Brand X
+            right now — your 3 biggest peer competitors are
+            already locked in with them, the deal would
+            block 60% of the brand-vertical opportunities
+            shown above."
+          * "Do NOT pivot to long-form YouTube content this
+            month — your engagement data shows Reels drive
+            80% of saves; the pivot would dilute your
+            current growth."
+        Be specific about the consequence, not generic.
+    (c) SUGGESTIONS BACKED BY SOURCES + EVIDENCE — explicit
+        "based on..." items that name the source or evidence
+        row that supports them:
+          * "Based on the [Source X] interview where the
+            creator mentioned a Q4 product launch, prep a
+            collab proposal by Nov 15."
+          * "Based on the attached video evidence (Gemini
+            analysis), the creator's most engaged content
+            pillar is GRWM — produce 4 GRWM Reels in the
+            next 30 days."
+        Cite the actual source title or evidence name; do
+        not say "based on recent trends".
+
+  BODY TEXT RULE — REQUIRED for every item:
+  The `body` field MUST be a substantive paragraph (3-6
+  sentences) that explains:
+    * WHY this action is prioritised now,
+    * what evidence or source supports it (cite the actual
+      source title or attached evidence by name),
+    * what the expected outcome is at the end of the 30-day
+      window (the metric that should move),
+    * and what risk this action mitigates or which
+      opportunity from the `opportunities` section it
+      converts.
+  Never write a bare step ("Post more content") — every
+  step must include the why, the evidence anchor, and the
+  measurable outcome.
+
+  TIE-BACK RULE:
+  Every action_plan item MUST reference at least one other
+  section's finding (key_findings / activity_trends /
+  competitors / opportunities / risks) so the plan reads
+  as the natural next step from the evidence above, not a
+  generic checklist.
 ''';
 
       case EntityType.product:

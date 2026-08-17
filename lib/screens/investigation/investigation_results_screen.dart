@@ -1,10 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kashf_lite/widgets/loading_overlay.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/entity_type.dart';
+import '../../models/investigation.dart';
 import '../../models/investigation_result.dart';
+import '../../models/saved_investigation.dart';
+import '../../services/auto_refresh_service.dart';
+import '../../services/investigation_archive_service.dart';
+import '../../services/pdf_media_store.dart';
 import '../../services/report_pdf_writer.dart';
 import '../../theme.dart';
 import '../../utils/text_direction_utils.dart';
@@ -92,7 +101,7 @@ class _InvestigationResultsScreenState
                   ],
                 ),
               ),
-              _ExportPdfBar(result: widget.result, l: l),
+              _BottomActionsRow(result: widget.result, l: l),
             ],
           ),
         ),
@@ -104,6 +113,42 @@ class _InvestigationResultsScreenState
 // ============================================================================
 // Top bar — back · title · share (real PDF).
 // ============================================================================
+
+/// Returns the platform-appropriate directory where reports
+/// should be saved.
+///
+/// On Android we use `getExternalStorageDirectory()` which
+/// points to the app's own external files directory
+/// (`/storage/emulated/0/Android/data/<pkg>/files/` on
+/// Android 10 and below, or a scoped directory on Android 11+).
+/// This path is always writable by this app without any storage
+/// permission — it is the app's private sandbox on external
+/// storage. Files placed here are accessible to the
+/// FileProvider declared in `AndroidManifest.xml`, which
+/// generates a `content://` URI for sharing with PDF viewers.
+Future<Directory> _reportsDirectory() async {
+  Directory base;
+  if (Platform.isAndroid) {
+    try {
+      base = await getExternalStorageDirectory() ??
+          await getTemporaryDirectory();
+    } catch (_) {
+      base = await getTemporaryDirectory();
+    }
+  } else if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+    base = await getDownloadsDirectory() ??
+        await getApplicationDocumentsDirectory();
+  } else {
+    base = await getApplicationDocumentsDirectory();
+  }
+  final sep = Platform.pathSeparator;
+  final reports = Directory('${base.path}${sep}KASHF Lite');
+  if (!await reports.exists()) {
+    await reports.create(recursive: true);
+  }
+  return reports;
+}
+
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.l, required this.result});
   final AppLocalizations l;
@@ -152,13 +197,25 @@ class _TopBar extends StatelessWidget {
     );
   }
 
-  /// Generates a PDF, persists it to disk, and hands the file
-  /// off to the platform's share sheet via `url_launcher`.
+  /// Generates a PDF, writes it to the app's external
+  /// cache, and hands the file off to the platform default
+  /// viewer via `url_launcher`. The FileProvider declared in
+  /// AndroidManifest.xml converts the `file://` URI to a
+  /// `content://` URI with a temporary read grant, so
+  /// external PDF viewers can read the file without
+  /// `FileUriExposedException`.
+  ///
+  /// Every step logs to logcat (`flutter logs`) via
+  /// [debugPrint] so the failure mode is visible in
+  /// `adb logcat | grep flutter`. The SnackBar only shows
+  /// a compact message so the user can read what went
+  /// wrong without us dumping a 500-char stack trace on
+  /// screen.
   Future<void> _shareReport(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    // Best-effort: surface progress through a snackbar since
-    // PDF generation + I/O can take a beat on slow devices.
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    debugPrint('[Kashf/SharePDF] start — id=${result.investigationId}');
+    messenger.showSnackBar(
       SnackBar(
         content: Text(l10n.t('ir_share_generating')),
         backgroundColor: KashfPalette.active.surface,
@@ -167,16 +224,61 @@ class _TopBar extends StatelessWidget {
     );
     try {
       final writer = ReportPdfWriter();
-      final file = await writer.saveToDisk(result: result);
-      final uri = Uri.file(file.path);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
+      final bytes = await writer.buildBytes(result: result);
+      debugPrint('[Kashf/SharePDF] built ${bytes.length} bytes');
+      final fileName = await writer.fileNameFor(result: result);
+      final dir = await _reportsDirectory();
+      debugPrint('[Kashf/SharePDF] reports dir = ${dir.path}');
+      final file = File('${dir.path}${Platform.pathSeparator}$fileName');
+      await file.writeAsBytes(bytes, flush: true);
+      debugPrint('[Kashf/SharePDF] wrote file = ${file.path}');
+      debugPrint('[Kashf/SharePDF] handing off to native openPdf');
+      final result0 = await PdfMediaStore.openPdf(
+        path: file.path,
+        title: result.title,
+      );
+      debugPrint('[Kashf/SharePDF] openPdf -> $result0');
+      if (result0.isNoHandler && context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'PDF saved. The app handler is out of date — '
+              'reinstall the app to enable the preview.',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      } else if (result0.isError && context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'PDF viewer error: ${result0.message ?? result0.code}',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e, st) {
+      // Always log the FULL error + stack trace to logcat.
+      // `debugPrint` is wired to `print` which lands in
+      // `adb logcat | grep flutter` on Android and the
+      // Xcode console on iOS. The SnackBar only shows a
+      // short hint so we don't bury the UI in a 500-char
+      // exception dump.
+      debugPrint('[Kashf/SharePDF] FAILED: $e');
+      debugPrint('[Kashf/SharePDF] STACK: $st');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          content: Text('$e'),
+          content: Text(
+            'PDF error (see logcat): ${e.runtimeType}',
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -1490,23 +1592,210 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
     setState(() => _busy = true);
     final l = widget.l;
     final messenger = ScaffoldMessenger.of(context);
+    debugPrint(
+      '[Kashf/ExportPDF] start — id=${widget.result.investigationId}',
+    );
     try {
       final writer = ReportPdfWriter();
-      final file = await writer.saveToDisk(result: widget.result);
+      final bytes = await writer.buildBytes(result: widget.result);
+      debugPrint('[Kashf/ExportPDF] built ${bytes.length} bytes');
+      final fileName = await writer.fileNameFor(result: widget.result);
+
+      // Save to the app's external cache so the FileProvider
+      // declared in AndroidManifest.xml can convert the
+      // `file://` URI to a `content://` URI with a temporary
+      // read grant — this avoids `FileUriExposedException`.
+      final dir = await _reportsDirectory();
+      debugPrint('[Kashf/ExportPDF] reports dir = ${dir.path}');
+      final file = File('${dir.path}${Platform.pathSeparator}$fileName');
+      await file.writeAsBytes(bytes, flush: true);
+      debugPrint('[Kashf/ExportPDF] wrote file = ${file.path}');
+
+      // Surface a "saved" SnackBar with the leaf path so the
+      // user knows where the PDF landed.
+      final summary =
+          '${dir.path.split(Platform.pathSeparator).where((s) => s.isNotEmpty).last}/$fileName';
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text(l.tp('ir_export_saved_to', {'path': file.path})),
+          content: Text(
+            l.tp('ir_export_saved_to', {'name': summary}),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           backgroundColor: KashfColors.gold,
           behavior: SnackBarBehavior.floating,
         ),
       );
-      final uri = Uri.file(file.path);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      // Open with the default handler. On Android the native
+      // side wraps the `file://` URI in a `content://` URI
+      // via FileProvider + FLAG_GRANT_READ_URI_PERMISSION
+      // so external PDF viewers can read the file without
+      // `FileUriExposedException`. The chooser dialog shows
+      // every installed viewer (Drive, Files, Gmail, Adobe
+      // Acrobat, etc).
+      debugPrint('[Kashf/ExportPDF] handing off to native openPdf');
+      final result0 = await PdfMediaStore.openPdf(
+        path: file.path,
+        title: widget.result.title,
+      );
+      debugPrint('[Kashf/ExportPDF] openPdf -> $result0');
+      if (result0.isNoHandler && mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'PDF saved. The app handler is out of date — '
+              'reinstall the app to enable the preview.',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      } else if (result0.isError && mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'PDF viewer error: ${result0.message ?? result0.code}',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e, st) {
+      // Log the FULL error + stack trace to logcat via
+      // `debugPrint`. The SnackBar only shows a short
+      // hint so the UI stays readable.
+      debugPrint('[Kashf/ExportPDF] FAILED: $e');
+      debugPrint('[Kashf/ExportPDF] STACK: $st');
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'PDF error (see logcat): ${e.runtimeType}',
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = widget.l;
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: _busy ? null : _exportAndOpen,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: KashfColors.gold,
+          disabledBackgroundColor:
+              KashfColors.gold.withValues(alpha: 0.4),
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: _busy
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor:
+                      AlwaysStoppedAnimation(Colors.black),
+                ),
+              )
+            : const Icon(Icons.picture_as_pdf_outlined, size: 18),
+        label: Text(
+          l.t('ir_action_export_pdf'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Auto-refresh bar — shows a small "Auto-refresh on" hint plus
+// a Stop button. Always visible because every new investigation
+// is auto-tracked by the archive service; tapping Stop clears
+// the 60-day window so the background scheduler stops
+// re-running the report.
+// ============================================================================
+class _AutoRefreshBar extends StatefulWidget {
+  const _AutoRefreshBar({required this.result, required this.l});
+  final InvestigationResult result;
+  final AppLocalizations l;
+
+  @override
+  State<_AutoRefreshBar> createState() => _AutoRefreshBarState();
+}
+
+class _AutoRefreshBarState extends State<_AutoRefreshBar> {
+  bool _busy = false;
+
+  Future<void> _stopAutoRefresh() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final l = widget.l;
+    final messenger = ScaffoldMessenger.of(context);
+    final archive = InvestigationArchiveService.instance;
+    SavedInvestigation? saved;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      final rows = await archive.allForActiveUser();
+      for (final r in rows) {
+        if (r.id == widget.result.investigationId) {
+          saved = r;
+          break;
+        }
+      }
+      if (saved != null) break;
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    }
+    saved ??= SavedInvestigation(
+        id: widget.result.investigationId,
+        userId: 'anonymous',
+        title: widget.result.title,
+        subtitle: widget.result.subtitle,
+        entityType: EntityType.brand,
+        status: InvestigationStatus.completed,
+        confidencePercent: 60,
+        confidenceBand: 'medium',
+        tags: const [],
+        createdAt: widget.result.generatedAt,
+      );
+    try {
+      await AutoRefreshService.instance.stopAutoRefresh(saved);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: KashfPalette.active.surface,
+          content: Text(
+            l.t('ir_auto_refresh_stopped_toast'),
+            style: TextStyle(color: KashfPalette.active.textPrimary),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
           backgroundColor: Colors.redAccent,
+          content: Text(e.toString()),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1519,6 +1808,64 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
   Widget build(BuildContext context) {
     final l = widget.l;
     final palette = KashfPalette.active;
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: _busy ? null : _stopAutoRefresh,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: palette.textPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          side: BorderSide(color: palette.cardBorder),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: _busy
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(
+                    KashfColors.gold,
+                  ),
+                ),
+              )
+            : const Icon(
+                Icons.stop,
+                size: 16,
+                color: Colors.red,
+              ),
+        label: Text(
+          l.t('ir_auto_refresh_stop_button'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Single-row wrapper that hosts the Export-PDF button and the
+// Auto-refresh Stop button side-by-side. The two inner widgets
+// are responsible for their own button chrome; this row supplies
+// the shared surface, top border, padding, and SafeArea so the
+// two buttons read as one cohesive action bar rather than two
+// stacked blocks.
+// ============================================================================
+class _BottomActionsRow extends StatelessWidget {
+  const _BottomActionsRow({required this.result, required this.l});
+  final InvestigationResult result;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
     return Container(
       decoration: BoxDecoration(
         color: palette.surface,
@@ -1527,40 +1874,18 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: _busy ? null : _exportAndOpen,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: KashfColors.gold,
-              disabledBackgroundColor:
-                  KashfColors.gold.withValues(alpha: 0.4),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: _ExportPdfBar(result: result, l: l),
             ),
-            icon: _busy
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation(Colors.black),
-                    ),
-                  )
-                : const Icon(Icons.picture_as_pdf_outlined, size: 18),
-            label: Text(
-              l.t('ir_action_export_pdf'),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
-              ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: _AutoRefreshBar(result: result, l: l),
             ),
-          ),
+          ],
         ),
       ),
     );

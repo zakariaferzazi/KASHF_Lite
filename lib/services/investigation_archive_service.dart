@@ -182,6 +182,11 @@ class InvestigationArchiveService {
       }
     }
 
+    // Auto-refresh is ALWAYS on for new investigations. The
+    // background scheduler re-runs the same report on a 72-hour
+    // cadence while the 60-day expiry window is still open. The
+    // user can stop the auto-refresh from the Results screen.
+    final now = DateTime.now();
     final saved = SavedInvestigation(
       id: result.investigationId,
       userId: uid,
@@ -212,6 +217,12 @@ class InvestigationArchiveService {
       originalQuery: originalQuery,
       actionId: actionId,
       languageCode: languageCode,
+      // Stamp the always-on auto-refresh window. `lastRefreshedAt`
+      // = now so the scheduler doesn't fire on the very next
+      // tick; the first re-run lands ~72 hours later.
+      autoRefreshDays: 60,
+      autoRefreshUntil: now.add(const Duration(days: 60)),
+      lastRefreshedAt: now,
     );
 
     try {
@@ -221,6 +232,12 @@ class InvestigationArchiveService {
         '[InvestigationArchiveService] save failed: $e\n$st',
       );
     }
+    // Keep the in-memory auto-refresh cache in sync with the
+    // freshly-saved row. Without this the foreground scheduler
+    // would only see the new row on its next 30-minute tick.
+    // `markTracked` is fire-and-forget and returns void; we
+    // call it directly without `unawaited`.
+    _AutoRefreshBridge.markTracked(saved);
     return saved;
   }
 
@@ -315,5 +332,50 @@ class InvestigationArchiveService {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// Bridge that propagates freshly-saved rows into the
+/// [AutoRefreshService] in-memory cache. Defined as a separate
+/// top-level helper so the archive service can stay focused on
+/// persistence.
+///
+/// The bridge is fire-and-forget — failures are logged and
+/// swallowed. The foreground timer in `AutoRefreshService`
+/// self-corrects on its next 30-minute tick.
+abstract class _AutoRefreshBridge {
+  static void markTracked(SavedInvestigation saved) {
+    try {
+      AutoRefreshBridgeTarget.markTracked(saved);
+    } catch (e, st) {
+      debugPrint(
+        '[InvestigationArchiveService] auto-refresh bridge '
+        'failed: $e\n$st',
+      );
+    }
+  }
+}
+
+/// Concrete target for the auto-refresh bridge. Implemented
+/// directly here to avoid a circular import with the
+/// auto-refresh service while keeping the wiring simple.
+abstract class AutoRefreshBridgeTarget {
+  static void markTracked(SavedInvestigation saved) {
+    // Forward to the impl installed by `AutoRefreshService.init`.
+    // Falls back to a no-op when the auto-refresh service hasn't
+    // initialised yet (e.g. very first cold-start save).
+    final fn = impl;
+    if (fn != null) fn(saved);
+  }
+
+  /// Lets the auto-refresh service install its own
+  /// implementation at startup time.
+  static void Function(SavedInvestigation saved)? impl;
+
+  /// Internal setter used by `AutoRefreshService` during init.
+  static void setImpl(
+    void Function(SavedInvestigation saved)? callback,
+  ) {
+    impl = callback;
   }
 }

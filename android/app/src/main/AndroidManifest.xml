@@ -34,16 +34,39 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-    </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+        <!-- FileProvider — required by the `pdf` package's
+             `launchUrl(file://…)` flow on Android 7+. Without
+             this, sharing a file:// URI to another app throws
+             `FileUriExposedException` (the "black screen" the
+             user was seeing on the PDF download). The provider
+             hands out a temporary `content://` URI scoped to
+             just the PDF file, with read access granted to the
+             receiving app via `FLAG_GRANT_READ_URI_PERMISSION`.
+             The shared paths are configured in `res/xml/file_paths.xml`. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!-- Required for Android 11+ package visibility.
+         Without this, the system refuses to resolve
+         `ACTION_VIEW` with `application/pdf` and the
+         launch silently fails. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf" />
         </intent>
     </queries>
 </manifest>

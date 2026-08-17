@@ -499,6 +499,11 @@ InvestigationResult parseInvestigationResult({
     InvestigationResultKind.competitors,
     InvestigationResultKind.opportunities,
     InvestigationResultKind.risks,
+    // Influencer reports append an "action_plan" section at
+    // the end. Other entity types never emit it, so the
+    // renderer will simply skip it on reports that don't have
+    // an action plan.
+    InvestigationResultKind.actionPlan,
   ];
   final byKind = <InvestigationResultKind, Map<String, dynamic>>{};
   for (final raw in sectionsJson) {
@@ -755,6 +760,11 @@ InvestigationResultKind _kindFromString(
     case 'risks':
     case 'risk':
       return InvestigationResultKind.risks;
+    case 'action_plan':
+    case 'actionplan':
+    case 'plan':
+    case 'next_steps':
+      return InvestigationResultKind.actionPlan;
   }
   // Fallback: tolerate camelCase from older runs.
   for (final k in InvestigationResultKind.values) {
@@ -782,6 +792,8 @@ String _kindL10nSlug(InvestigationResultKind k) {
       return 'opportunities';
     case InvestigationResultKind.risks:
       return 'risks';
+    case InvestigationResultKind.actionPlan:
+      return 'action_plan';
   }
 }
 

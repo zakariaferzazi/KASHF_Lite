@@ -1533,6 +1533,7 @@ class AppLocalizations {
       'ir_tab_competitors': 'Competitors',
       'ir_tab_opportunities': 'Opportunities',
       'ir_tab_risks': 'Risks',
+      'ir_tab_action_plan': 'What to do next',
       'ir_tab_sources': 'Sources',
       'ir_tab_recommendations': 'Actions',
       'ir_action_export_pdf': 'Export',
@@ -1559,8 +1560,11 @@ class AppLocalizations {
       'ir_auto_refresh_badge': 'Auto-refresh',
       'ir_auto_refresh_badge_active': 'Auto-refresh on',
       'ir_auto_refresh_badge_due': 'Refreshing…',
+      'ir_auto_refresh_stop_button': 'Stop auto-refresh',
+      'ir_auto_refresh_stopped_toast':
+          'Auto-refresh turned off for this investigation.',
       'ir_share_generating': 'Preparing the report…',
-      'ir_export_saved_to': 'Report saved to {path}',
+      'ir_export_saved_to': 'Report saved to {name}',
     },
     'ar': {
       'app_title': 'كاشف لايت',
@@ -2956,6 +2960,7 @@ class AppLocalizations {
       'ir_tab_competitors': 'المنافسون',
       'ir_tab_opportunities': 'الفرص المتاحة',
       'ir_tab_risks': 'المخاطر والحلول',
+      'ir_tab_action_plan': 'ماذا نفعل بعد ذلك',
       'ir_tab_sources': 'المصادر',
       'ir_tab_recommendations': 'الإجراءات',
       'ir_action_export_pdf': 'تصدير',
@@ -2985,8 +2990,11 @@ class AppLocalizations {
       'ir_auto_refresh_badge': 'تحديث تلقائي',
       'ir_auto_refresh_badge_active': 'التحديث التلقائي مفعّل',
       'ir_auto_refresh_badge_due': 'جارٍ التحديث…',
+      'ir_auto_refresh_stop_button': 'إيقاف التحقيق',
+      'ir_auto_refresh_stopped_toast':
+          'تم إيقاف التحقيق.',
       'ir_share_generating': 'جارٍ تجهيز التقرير…',
-      'ir_export_saved_to': 'تم حفظ التقرير في {path}',
+      'ir_export_saved_to': 'تم حفظ التقرير في {name}',
     },
   };
 

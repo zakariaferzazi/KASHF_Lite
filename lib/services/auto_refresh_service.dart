@@ -14,7 +14,9 @@ import '../l10n/app_strings.dart';
 import '../models/entity_type.dart';
 import '../models/investigation_action.dart';
 import '../models/saved_investigation.dart';
-import 'investigation_archive_service.dart';
+// Re-exports [AutoRefreshBridgeTarget] from the archive service.
+import 'investigation_archive_service.dart' show AutoRefreshBridgeTarget;
+import 'investigation_archive_service.dart' show InvestigationArchiveService;
 import 'investigation_service.dart';
 
 /// Top-level dispatch name registered with `workmanager`. Must
@@ -112,6 +114,11 @@ class AutoRefreshService {
     if (_instance != null) return _instance!;
     final svc = AutoRefreshService(archiveService: archiveService);
     _instance = svc;
+    // Hook into the archive service's bridge so freshly-saved
+    // rows are mirrored into the in-memory tracked cache
+    // immediately, instead of waiting for the next 30-minute
+    // foreground tick.
+    AutoRefreshBridgeTarget.setImpl(svc._markTrackedFromArchive);
     return svc;
   }
 
@@ -186,6 +193,30 @@ class AutoRefreshService {
     _tracked
       ..clear()
       ..addAll(next);
+  }
+
+  /// Bridge target installed by [init] — called by the archive
+  /// service every time a row is saved so the tracked cache
+  /// mirrors the persisted state without waiting for the next
+  /// 30-minute foreground tick.
+  void _markTrackedFromArchive(SavedInvestigation saved) {
+    if (!saved.hasActiveAutoRefresh) {
+      _tracked.remove(saved.id);
+      return;
+    }
+    _tracked[saved.id] = saved;
+  }
+
+  /// Returns the auto-refresh status of a specific saved row.
+  /// Used by the Results screen to decide whether to render
+  /// the "Stop auto-refresh" button.
+  bool isAutoRefreshActive(String savedId) =>
+      _tracked.containsKey(savedId);
+
+  /// Clears the auto-refresh window for [saved] — used by the
+  /// "Stop auto-refresh" button on the Results screen.
+  Future<void> stopAutoRefresh(SavedInvestigation saved) async {
+    await setAutoRefreshFor(saved: saved, days: 0);
   }
 
   /// Sets the auto-refresh choice for [saved].

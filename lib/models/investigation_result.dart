@@ -13,7 +13,12 @@ enum InvestigationResultKind {
   activityTrends,
   competitors,
   opportunities,
-  risks;
+  risks,
+  // Influencer reports emit an extra section that bundles
+  // "what to do next" — the 30-day plan, the things to avoid
+  // for the next 30 days, and the suggestion backed by the
+  // sources and evidence.
+  actionPlan;
 
   String get l10nKey {
     switch (this) {
@@ -31,6 +36,8 @@ enum InvestigationResultKind {
         return 'ir_tab_opportunities';
       case InvestigationResultKind.risks:
         return 'ir_tab_risks';
+      case InvestigationResultKind.actionPlan:
+        return 'ir_tab_action_plan';
     }
   }
 
@@ -50,6 +57,8 @@ enum InvestigationResultKind {
         return Icons.auto_awesome;
       case InvestigationResultKind.risks:
         return Icons.warning_amber_outlined;
+      case InvestigationResultKind.actionPlan:
+        return Icons.event_note_outlined;
     }
   }
 }

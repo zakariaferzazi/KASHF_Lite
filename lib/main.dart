@@ -21,17 +21,40 @@ import 'services/auto_refresh_service.dart';
 import 'services/investigation_archive_service.dart';
 import 'services/news/news_content_repository.dart';
 import 'services/news/news_service.dart';
+import 'services/report_pdf_writer.dart';
 import 'services/settings_preferences.dart';
 import 'services/settings_scope.dart';
 import 'services/workmanager_shim.dart' as wm;
 import 'theme.dart';
 
 void main() async {
+  // Catch every uncaught zone error so a startup regression
+  // surfaces in `adb logcat | grep flutter` instead of
+  // silently killing the app.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint(
+      '[Kashf/Startup] FlutterError: ${details.exceptionAsString()}',
+    );
+    debugPrint('[Kashf/Startup] LIB: ${details.library}');
+    debugPrint('[Kashf/Startup] STACK: ${details.stack}');
+  };
+
   WidgetsFlutterBinding.ensureInitialized();
   // Load the .env file so `OpenRouterConfig` can read the API key.
   // We tolerate a missing file (missing `.env` should not crash the
   // app — the AI service falls back to demo data instead).
   await _loadEnv();
+  // Pre-load the Arabic font for PDF generation so the first PDF
+  // is generated synchronously with no async latency. The function
+  // already swallows asset errors, but we wrap it again in case
+  // any other startup code path throws.
+  try {
+    await preLoadPdfFont();
+  } catch (e, st) {
+    debugPrint('[Kashf/Startup] preLoadPdfFont crashed: $e');
+    debugPrint('[Kashf/Startup] STACK: $st');
+  }
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paths exposed by the FileProvider declared in AndroidManifest.xml.
+
+  Every <path>-element maps to one of `Context`'s standard
+  storage directories. The FileProvider generates a `content://`
+  URI from these so external apps (Adobe Acrobat, Files, Drive,
+  Gmail, …) can read the PDF without triggering the
+  `FileUriExposedException` that Android 7+ throws when a
+  raw `file://` URI is passed across apps.
+-->
+<paths>
+    <!-- Internal app cache: /data/data/<pkg>/cache -->
+    <cache-path name="cache" path="." />
+    <!-- External app cache: /storage/emulated/0/Android/data/<pkg>/cache -->
+    <external-cache-path name="external_cache" path="." />
+    <!-- Internal app files: /data/data/<pkg>/files -->
+    <files-path name="files" path="." />
+    <!-- External app files: /storage/emulated/0/Android/data/<pkg>/files -->
+    <external-files-path name="external_files" path="." />
+    <!-- KASHF Lite reports: /storage/emulated/0/KASHF Lite/ -->
+    <external-path name="kashf_lite" path="KASHF Lite/" />
+</paths>

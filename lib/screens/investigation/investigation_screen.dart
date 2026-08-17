@@ -8,8 +8,6 @@ import '../../models/entity_type.dart';
 import '../../models/evidence.dart';
 import '../../models/investigation.dart';
 import '../../models/investigation_action.dart';
-import '../../models/saved_investigation.dart';
-import '../../services/auto_refresh_service.dart';
 import '../../services/investigation_archive_service.dart';
 import '../../services/investigation_service.dart';
 import '../../state/investigation_controller.dart';
@@ -72,10 +70,6 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
   final TextEditingController _urlCtrl = TextEditingController();
   final InvestigationArchiveService _archive =
       InvestigationArchiveService.instance;
-
-  /// Auto-refresh window the user picked before running.
-  /// `0` means "no auto-refresh" (default).
-  int _autoRefreshDays = 0;
 
   @override
   void initState() {
@@ -149,7 +143,7 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
     // Persist to Firestore (+ local cache). Fire-and-forget so the
     // navigation is never blocked on the network write; failures
     // are already logged inside the service.
-    final saved = await _archive.save(
+    await _archive.save(
       result: result,
       entityType: entityTypeAtRun,
       evidenceCount: evidenceCountAtRun,
@@ -161,18 +155,9 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
       actionId: actionIdAtRun,
       languageCode: languageCodeAtRun,
     );
-    // Stamp the user's auto-refresh choice onto the freshly
-    // saved row so the background scheduler knows how often to
-    // re-run this investigation. `setAutoRefreshFor` is a
-    // no-op when days == 0 (the default).
-    if (_autoRefreshDays != 0) {
-      unawaited(
-        AutoRefreshService.instance.setAutoRefreshFor(
-          saved: saved,
-          days: _autoRefreshDays,
-        ),
-      );
-    }
+    // The archive service stamps the always-on auto-refresh
+    // window (60 days, 72h cadence) on every save, so no
+    // further work is needed here.
   }
 
   /// Derives 0..3 short tags from the raw query so the saved
@@ -315,12 +300,6 @@ class _InvestigationScreenState extends State<InvestigationScreen> {
                         l: l,
                         searchCtrl: _searchCtrl,
                         onQuickQuestion: _onQuickQuestion,
-                      ),
-                      const SizedBox(height: 8),
-                      _AutoRefreshCard(
-                        l: l,
-                        days: _autoRefreshDays,
-                        onChange: (v) => setState(() => _autoRefreshDays = v),
                       ),
                       const SizedBox(height: 8),
                       _EntityTypeCard(
@@ -808,120 +787,6 @@ class _StartInvestigationButton extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Auto-refresh card — sits right above the start button so the
-// user can opt into periodic re-runs BEFORE kicking off the
-// investigation. The choice is persisted on the saved
-// investigation document after the run completes.
-// ============================================================================
-class _AutoRefreshCard extends StatelessWidget {
-  const _AutoRefreshCard({
-    required this.l,
-    required this.days,
-    required this.onChange,
-  });
-
-  final AppLocalizations l;
-  final int days;
-  final ValueChanged<int> onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SectionHeader(
-            icon: Icons.refresh_rounded,
-            iconColor: KashfColors.gold,
-            title: l.t('ir_auto_refresh_title'),
-            subtitle: l.t('ir_auto_refresh_sub'),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              for (final choice in kAutoRefreshDayChoices) ...[
-                Expanded(
-                  child: _RefreshChip(
-                    label: _labelFor(choice, l),
-                    selected: days == choice,
-                    onTap: () => onChange(choice),
-                  ),
-                ),
-                if (choice != kAutoRefreshDayChoices.last)
-                  const SizedBox(width: 8),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _labelFor(int days, AppLocalizations l) {
-    switch (days) {
-      case 0:
-        return l.t('ir_auto_refresh_off');
-      case 30:
-        return l.t('ir_auto_refresh_30');
-      case 60:
-        return l.t('ir_auto_refresh_60');
-    }
-    return '$days';
-  }
-}
-
-class _RefreshChip extends StatelessWidget {
-  const _RefreshChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = KashfPalette.active;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? KashfColors.gold.withValues(alpha: 0.12)
-                : palette.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected ? KashfColors.gold : palette.cardBorder,
-              width: selected ? 1.4 : 1,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: selected
-                  ? KashfColors.gold
-                  : palette.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
         ),
       ),
     );

@@ -82,6 +82,36 @@ dependencies:
   sign_in_with_apple: ^6.1.4
   flutter_launcher_icons: ^0.14.4
 
+  # PDF generation. The `pdf` package renders text using
+  # embedded TrueType fonts, which correctly handles Arabic
+  # (and any Unicode script) without the font-encoding
+  # bugs that plagued the old hand-rolled PDF writer.
+  pdf: ^3.11.0
+
+  # Pinned override: pdf 3.12.x ships with bidi 2.0.13 which
+  # crashes with RangeError on Arabic text containing certain
+  # combining-mark sequences. We pin to the same 2.0.13 line
+  # and call `logicalToVisual2` ourselves from
+  # `report_pdf_writer.dart` so we drive the bidi algorithm
+  # directly and bypass the package's internal shaper, which
+  # would otherwise re-reverse runs inside RTL paragraphs.
+  bidi: 2.0.13
+
+  # `pdf` package's TTF renderer only applies basic-to-isolated
+  # Arabic substitution, so letters in our generated PDFs end up
+  # rendered in their disconnected isolated forms. `arabic_reshaper`
+  # performs the full Unicode Arabic shaping algorithm
+  # (isolated / initial / medial / final) plus ligature merging
+  # (Lam-Alef, etc.) — we run it on every Arabic-bearing string
+  # before handing it to `pw.Text` so the embedded
+  # `NotoSansArabic` font maps each codepoint to the right
+  # contextual glyph.
+  arabic_reshaper: ^0.0.1
+
+  # Used by the Export-PDF bar to write the report into the
+  # platform's standard Documents / Downloads folder.
+  path_provider: ^2.1.3
+
   # Optional: enables the Android background task for the
   # auto-refresh scheduler. The current implementation uses
   # `services/workmanager_shim.dart` so the codebase compiles
@@ -118,6 +148,7 @@ flutter:
   assets:
     - assets/images/
     - assets/
+    - assets/fonts/
     - assets/Data/
     - .env
   #   - images/a_dot_ham.jpeg
