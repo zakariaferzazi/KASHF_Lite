@@ -348,36 +348,69 @@ class OpenRouterClient {
     // through cleanly and the model emits JSON as plain text.
     final shouldForceJson = enforceJsonObject && !req.enableWebSearch;
     final shouldStripResponseFormat = req.enableWebSearch && req.responseFormat != null;
-    final request = (shouldForceJson || shouldStripResponseFormat)
-        ? OpenRouterRequest(
-            messages: req.messages,
-            model: req.model,
-            temperature: req.temperature,
-            maxTokens: req.maxTokens,
-            responseFormat: shouldForceJson
-                ? const {'type': 'json_object'}
-                : null,
-            extra: req.extra,
-            enableWebSearch: req.enableWebSearch,
-          )
-        : req;
+    OpenRouterRequest buildRequest(int maxTokens) {
+      return (shouldForceJson || shouldStripResponseFormat)
+          ? OpenRouterRequest(
+              messages: req.messages,
+              model: req.model,
+              temperature: req.temperature,
+              maxTokens: maxTokens,
+              responseFormat: shouldForceJson
+                  ? const {'type': 'json_object'}
+                  : null,
+              extra: req.extra,
+              enableWebSearch: req.enableWebSearch,
+            )
+          : OpenRouterRequest(
+              messages: req.messages,
+              model: req.model,
+              temperature: req.temperature,
+              maxTokens: maxTokens,
+              responseFormat: req.responseFormat,
+              extra: req.extra,
+              enableWebSearch: req.enableWebSearch,
+            );
+    }
 
-    final response = await chatCompletion(request);
-    final raw = response.content.trim();
+    // First pass — try with the caller's budget.
+    final first = await chatCompletion(buildRequest(req.maxTokens));
+    final firstDecoded = _tryParseMap(first);
+    if (firstDecoded != null) return firstDecoded;
 
-    // Be generous: the model sometimes wraps the JSON in ```json
-    // fences. Strip them before parsing.
-    final cleaned = _stripCodeFence(raw);
+    // If the model hit the `length` cap, retry once with a
+    // doubled budget (capped at 16 000 so the validator still
+    // accepts it). This costs one extra round-trip but is far
+    // cheaper than failing the whole investigation because
+    // the model's reasoning tokens ate the budget before any
+    // JSON was emitted.
+    if (first.finishReason == 'length' && req.maxTokens < 16000) {
+      final bumped = (req.maxTokens * 2).clamp(1, 16000);
+      debugPrint(
+        '[OpenRouter] JSON truncated at ${req.maxTokens} tokens '
+        '(finish_reason=length) — retrying once with $bumped.',
+      );
+      final retried = await chatCompletion(buildRequest(bumped));
+      final retriedDecoded = _tryParseMap(retried);
+      if (retriedDecoded != null) return retriedDecoded;
+      throw OpenRouterException(
+        message: 'Failed to parse JSON response after retry '
+            '(finish_reason=${retried.finishReason ?? 'unknown'}): '
+            'response hit max_tokens cap and was truncated; '
+            'raise the token budget.',
+        type: OpenRouterErrorType.parse,
+      );
+    }
+
+    // Non-truncation failure — surface the original error with
+    // a useful hint so callers can tell apart "model returned
+    // nothing" from "model truncated mid-JSON".
+    final cleaned = _stripCodeFence(first.content.trim());
     try {
       final decoded = jsonDecode(cleaned);
       if (decoded is Map<String, dynamic>) return decoded;
       throw const FormatException('Expected JSON object at top level.');
     } on FormatException catch (e) {
-      // If the model reported a `length` finish reason, the JSON
-      // was almost certainly truncated by the max_tokens cap —
-      // surface a clearer message so callers know to bump the
-      // token budget.
-      final wasTruncated = response.finishReason == 'length';
+      final wasTruncated = first.finishReason == 'length';
       final hint = wasTruncated
           ? ' (response hit max_tokens cap and was truncated; raise the token budget)'
           : '';
@@ -385,6 +418,20 @@ class OpenRouterClient {
         message: 'Failed to parse JSON response: ${e.message}$hint',
         type: OpenRouterErrorType.parse,
       );
+    }
+  }
+
+  /// Best-effort JSON decode of an [OpenRouterResponse]'s content.
+  /// Returns the parsed map on success or `null` on parse failure
+  /// so the caller can decide whether to retry. Non-Map top-level
+  /// values (lists, primitives) are treated as failures.
+  Map<String, dynamic>? _tryParseMap(OpenRouterResponse response) {
+    final cleaned = _stripCodeFence(response.content.trim());
+    try {
+      final decoded = jsonDecode(cleaned);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
     }
   }
 
@@ -417,9 +464,9 @@ class OpenRouterClient {
         type: OpenRouterErrorType.badRequest,
       );
     }
-    if (req.maxTokens <= 0 || req.maxTokens > 8000) {
+    if (req.maxTokens <= 0 || req.maxTokens > 16000) {
       throw const OpenRouterException(
-        message: 'maxTokens must be between 1 and 8000.',
+        message: 'maxTokens must be between 1 and 16000.',
         type: OpenRouterErrorType.badRequest,
       );
     }

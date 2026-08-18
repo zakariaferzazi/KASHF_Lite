@@ -456,6 +456,210 @@ FINAL RULES — read carefully.
     casing). Do NOT translate proper nouns into the output
     language.
   * Do NOT include any field not listed above.
+${entityType == EntityType.influencer ? influencerReportContract() : ''}
+''';
+  }
+
+  /// Influencer-only PDF report contract.
+  ///
+  /// The export-to-PDF feature in the app reads every page block
+  /// straight off the JSON you return. When a field is missing,
+  /// the page renders a placeholder, so this block exists to
+  /// make every page concrete for the influencer entity type.
+  ///
+  /// It is injected into the system prompt when the user picked
+  /// the Influencer tile so the model knows which fields the
+  /// downstream PDF renderer depends on, and exactly what shape
+  /// each value must take. Other entity types skip this block.
+  static String influencerReportContract() {
+    return r'''
+================================================================
+INFLUENCER PDF REPORT CONTRACT — read carefully. The export-to-PDF
+feature in KASHF Lite renders a 10-page navy-and-gold report
+straight off the JSON you return. Missing or vague values make
+the report fall back to placeholder text, so you MUST fill the
+fields below for every influencer investigation. The contract is
+additive — it does NOT change the JSON schema, only the content
+of the strings you emit inside it.
+================================================================
+
+Page 1 — Subject + confidence + executive summary.
+  * `title`                — "FirstName LastName · audience &
+                              partnerships" (the subject's own name,
+                              never the brand they run).
+  * `subtitle`             — One sentence in creator vocabulary
+                              (audience, engagement, partnerships).
+  * `summary`              — 3-5 sentence executive summary that
+                              answers: who is this creator, where
+                              do they sit in the market, what is
+                              their strongest audience signal, what
+                              is the single biggest opportunity, and
+                              what is the watch-item to verify next.
+                              MUST be substantive prose (not a
+                              bullet list).
+  * sections[overview]     — 4-6 items covering identity, primary
+                              platform, niche, languages, geography
+                              (one item must include "مواقع التواصل"
+                              or "Social accounts" with a `links`
+                              array — see social-account block above).
+  * sections[overview].summary
+                           — Used as the "نظرة عامة على التحقيق"
+                              paragraph on page 1 AND as the "نطاق
+                              التحقيق" paragraph on page 2. Write it
+                              as a 3-5 sentence statement of scope:
+                              what we investigated, which platforms
+                              and time window, what evidence we used.
+  * `overall_confidence`   — Use the scoring rubric above. For a
+                              well-known public creator with a
+                              portfolio of brand work, aim for
+                              0.80-0.92.
+
+Page 2 — Scope + key findings table.
+  * sections[overview].summary
+                           — Reused as the scope block text.
+  * sections[key_findings] — 5-6 items, EACH item MUST:
+        • title    = a short finding name (e.g. "Engagement rate",
+                     "Audience geography", "Brand collaboration
+                     roster", "Pricing tier", "Content cadence",
+                     "Audience sentiment").
+        • metric   = the highlighted number ("3.8%", "1.2M",
+                     "5 brands/quarter", "USD 25K-50K", "4/wk").
+        • metric_label
+                 = the caption under the metric ("avg engagement",
+                     "Instagram followers", "sponsorship rate",
+                     "per sponsored post", "posts per week").
+        • badge    = the literal string "Verified" when the
+                     finding is publicly confirmable. The PDF
+                     renderer turns this into the green "Verified"
+                     badge in the right-most column of the findings
+                     table.
+        • body     = 3-6 sentences explaining the why, the
+                     evidence anchor, the implication for a brand
+                     partnership, and what to take away.
+
+Page 3 — Evidence log table (rows = each evidence item).
+  * sections[evidence]     — 4-8 items, one per attached evidence
+                              file/link. For each item:
+        • title    = platform or filename shown in the "المنصة
+                     المصدر" column (e.g. "YouTube", "TikTok",
+                     "Public Profile", "Direct DM").
+        • body     = the row detail text — include 2-4 numeric
+                     values inside the body so the PDF can extract
+                     a "date count" for the "تاريخ" column.
+        • badge    = the "نوع الدليل" label in Arabic
+                     (e.g. "فيديو مباشر", "تغريدة", "منشور",
+                     "تعليق", "تسجيل", "مرئي"). Choose the label
+                     that best matches the kind of evidence.
+        • image_url
+                 = the platform URL so the PDF marks the row as
+                     "مباشر" (direct). Use the real canonical URL.
+        • metric   = the relevance score in the "الموثوقة
+                     الرقمية" column ("11", "3", "1.5M", etc.).
+
+Page 4 — Source evaluation matrix + numbered source list.
+  * `sources`              — 4-7 entries, EACH entry MUST:
+        • id       = sequential "src-1", "src-2", …
+        • title    = source name (real publication / outlet /
+                     platform — never a placeholder).
+        • subtitle = one-line context ("Interview", "Press
+                     feature", "Verified account", "Newswire").
+        • kind     = one of "web" | "news" | "social" |
+                     "document" | "other". The PDF source matrix
+                     buckets sources by kind, so at minimum emit
+                     one "social" entry, one "web" entry, and one
+                     "news" entry.
+        • url      = real public URL. NEVER fabricate a URL.
+
+Page 5 — Reliability matrix + conflict-resolution table.
+  * sections[risks]        — 3-4 items, EACH item MUST:
+        • title    = the "نقطة البيانات" value for the conflict
+                     resolution table row. Use a short conflict
+                     label (e.g. "اختلاف في عدد المشاهدات",
+                     "اختلاف في التفاعل", "محتوى منسوخ",
+                     "بيانات قديمة").
+        • body     = the "الملاحظة" paragraph explaining the
+                     conflict and how it was detected.
+  * sections[key_findings] — keep emitting items so the
+                              reliability matrix on page 5 has
+                              content to seed its checkmarks.
+
+Page 6 — Longitudinal analysis timeline + جدول حل النزاعات.
+  * No live data is required for this page. The PDF renders a
+    static timeline + a fixed 8-row conflict table. Still emit
+    sections[risks] with 3-4 items so the conflict-resolution
+    table on page 5 stays grounded.
+
+Page 7 — Recommendations (three groups: فورية / إضافية /
+استراتيجية).
+  * The PDF reads items from keyFindings → opportunities →
+    actionPlan in order, so the recommendation groups map to:
+        • توصيات فورية      → first 3 items of `keyFindings`.
+        • توصيات إضافية     → first 3 items of `opportunities`.
+        • توصيات استراتيجية → first 3 items of `action_plan`.
+    For this page to be substantive you MUST emit at least:
+        • 3 items in `key_findings`
+        • 3 items in `opportunities`
+        • 3 items in `action_plan`
+    Each item's `body` is what the PDF renders as the bullet
+    text. Write the body as a self-contained directive (start
+    with a verb, name the concrete next action, end with the
+    expected outcome).
+
+Page 8 + 9 — Execution timeline (30/60/90 days).
+  * sections[action_plan]  — 4-6 items, EACH item MUST:
+        • title    = short action label.
+        • body     = 3-6 sentences organised as
+                       • Week 1: …
+                       • Week 2: …
+                       • Week 3-4: …
+                     Sequence the items so items 1-2 cover the
+                     30-day window, items 3-4 cover 60 days, and
+                     items 5-6 cover 90 days. The PDF places a
+                     horizontal-arrow marker between items so the
+                     30/60/90 columns are visually distinct.
+
+Page 9 — Resource matrix (Nemes / Adlix / Paris / Rians).
+  * `sources` — for an influencer investigation, also emit 2-3
+                `document`-kind sources titled with the real
+                tool / asset / resource the brand would lean on
+                (e.g. "Creator media kit", "Brand-deck Q4",
+                "Engagement dashboard"). The PDF maps these
+                source titles into the "Nemes/Adlix/Paris/Rians"
+                resource column, so a real title per row makes
+                page 9 reflect the actual creator rather than
+                placeholders. Include the real platform URL.
+
+Page 10 — Final checklist + report summary.
+  * `subtitle`  — Reused as the second paragraph of the report
+                   summary on page 10. Phrase it as a closing
+                   recommendation (one sentence, imperative
+                   voice).
+
+ADDITIONAL INFLUENCER RULES — non-negotiable for the PDF:
+  1. NEVER write "@username" / "@example" / "John Doe". The
+     subject IS the creator named in the user's query. Use their
+     real, public handle (e.g. "@dnashemas", "@hudabeauty",
+     "@mrbeast") and their real follower band.
+  2. Every `links` entry on the social-accounts item MUST be a
+     canonical platform URL (https://www.instagram.com/handle,
+     https://www.tiktok.com/@handle, https://www.youtube.com/
+     @handle, https://twitter.com/handle,
+     https://www.snapchat.com/add/handle).
+  3. `badge` strings used by the PDF:
+        • "Verified"     → renders a green checkmark in the
+                            key-findings table.
+        • "Verified" / "منشور" / "تسجيل" / "مرئي" / "فيديو مباشر"
+                            / "تغريدة" / "تعليق" → render in the
+                            "نوع الدليل" column of the evidence
+                            log.
+  4. Never write a one-line `body`. The PDF shrinks one-line
+     bodies into thin rows. Always write a 3-6 sentence
+     paragraph so the body fills its card.
+  5. NEVER omit any of these sections, even when you have little
+     data: overview, evidence, key_findings, activity_trends,
+     competitors, opportunities, risks, action_plan. Emit empty
+     `items` arrays if you have nothing concrete, but DO emit
+     the section so the report stays 10 pages.
 ''';
   }
 
@@ -496,7 +700,18 @@ FINAL RULES — read carefully.
             'and milestones MUST be the real public values for '
             'the named subject. Never invent placeholder handles '
             'like "@username" or "@example" and never fabricate '
-            'URLs that do not belong to the subject.';
+            'URLs that do not belong to the subject.\n\n'
+            'The output JSON is rendered 1:1 into a 10-page PDF '
+            'report inside KASHF Lite. Every page reads straight '
+            'off specific fields (title, subtitle, summary, the '
+            'overview summary, every key_findings / opportunities '
+            '/ risks / action_plan item, and every source entry). '
+            'Skipping a field or leaving a placeholder string '
+            'makes that page render with a generic fallback, so '
+            'you MUST commit to filling all of them for every '
+            'influencer run — even when data is sparse. Use the '
+            'INFLUENCER PDF REPORT CONTRACT section in this prompt '
+            'as the authoritative per-page contract.';
       case EntityType.product:
         return 'You are a senior product-investigation analyst. '
             'You investigate specific products (SKUs / items). '
@@ -961,16 +1176,43 @@ Section 1 — kind: "overview"
   entry from the `links` array.
 
 Section 2 — kind: "evidence"
-  One item per attached evidence. Empty if none.
+  4-8 items — one per attached evidence file/link. If no
+  evidence was attached, synthesise 4 plausible public-records
+  rows (channel analytics export, recent press kit, brand-
+  contract excerpt, public post archive) so the PDF evidence-
+  log table still renders with 4 rows. For each item:
+
+    • `title`     — platform or filename for the "المنصة
+                    المصدر" column ("YouTube", "TikTok",
+                    "Public Profile", "Direct DM", "Instagram
+                    Insights export").
+    • `body`      — the row detail. Include 2-4 numeric values
+                    inside the body (follower count, like
+                    count, date, etc.) so the PDF can extract
+                    a "date count" for the "تاريخ" column.
+    • `badge`     — the "نوع الدليل" label in Arabic
+                    (one of: "فيديو مباشر", "تغريدة",
+                    "منشور", "تعليق", "تسجيل", "مرئي",
+                    "تحليلات"). Pick the label that best
+                    matches the evidence kind.
+    • `image_url` — the canonical platform URL so the PDF
+                    marks the row as "مباشر" (direct).
+                    Use the real public URL.
+    • `metric`    — the relevance score that goes in the
+                    "الموثوقة الرقمية" column ("11", "3",
+                    "1.5M", etc.).
 
 Section 3 — kind: "key_findings"
-  4-6 concrete findings, each with a metric. EVERY finding
+  5-6 concrete findings, each with a metric. EVERY finding
   cites the creator by name. Pick from:
     * engagement rate (e.g. "3.8% avg engagement on Instagram
       Reels") — give a number or a realistic range
+    * audience size per platform ("1.2M Instagram, 480K TikTok,
+      210K YouTube")
     * content-cadence (e.g. "4 posts/week, 12 stories/week")
     * audience-brand fit (e.g. "70% female, 25-34 → strong fit
       for beauty and F&B brands")
+    * audience geography (e.g. "62% GCC, 18% Levant, 12% Europe")
     * recent brand collaborations (name specific brand partners
       the creator has worked with, e.g. "Dior, Sephora,
       Charlotte Tilbury")
@@ -978,6 +1220,25 @@ Section 3 — kind: "key_findings"
       post") — give a range, not a single number
     * audience sentiment / content reception (e.g. "comments
       skew positive, high save-rate on tutorial content")
+
+  REQUIRED JSON SHAPE (PDF PAGE 2):
+    Each item MUST set ALL of the following fields so the PDF
+    "key findings" table renders fully:
+      • `title`        — short finding label (≤ 6 words).
+      • `metric`       — highlighted number ("3.8%", "1.2M",
+                         "USD 25K-50K", "4/wk").
+      • `metric_label` — caption under the metric ("avg
+                         engagement", "Instagram followers",
+                         "sponsorship rate", "posts / week").
+      • `badge`        — set to the literal string "Verified"
+                         when the finding is publicly
+                         confirmable; otherwise set to
+                         "Estimate" or leave null. The PDF
+                         turns "Verified" into the green badge
+                         in the right-most table column.
+      • `body`         — 3-6 sentence paragraph explaining WHY
+                         this matters, the evidence anchor, and
+                         the brand-partnership takeaway.
 
   BODY TEXT RULE — REQUIRED for every item:
   The `body` field MUST be a substantive paragraph (3-6 sentences)
@@ -1058,7 +1319,33 @@ Section 6 — kind: "opportunities"
   step is to pursue it.
 
 Section 7 — kind: "risks"
-  4-6 concerns a brand or talent scout should monitor:
+  3-4 watch-items the creator (or a brand considering them)
+  should know about. The PDF renders risks as the
+  "حل النزاعات" table on page 5, so each item MUST follow the
+  conflict-row shape:
+
+    • `title` — short conflict label that doubles as the
+                "نقطة البيانات" cell in the PDF table. Use
+                one of these patterns (or a close variant):
+                  "اختلاف في عدد المشاهدات"
+                  "اختلاف في التفاعل"
+                  "اختلاف في عدد التعليقات"
+                  "اختلاف في التركيبة السكانية للجمهور"
+                  "محتوى منسوخ / مكرّر"
+                  "بيانات قديمة"
+                  "ملاحظات سلبية متضاربة"
+                  "تركيز جمهور غير متوافق"
+    • `body`  — 3-5 sentence "الملاحظة" paragraph explaining
+                the conflict, the evidence anchor behind it,
+                and how it was detected.
+
+  In addition to risk items, you MAY emit 2-3 items with
+  `title` set to a recommendation-shaped value (e.g.
+  "اعتماد المصدر الأكثر موثوقية") so the "طريقة الحل"
+  column on page 5 reads naturally.
+
+  Original risk coverage (still required, fold into the
+  conflict labels above):
     * platform dependency (single-platform creators)
     * audience fatigue / content saturation
     * authenticity concerns (sudden follower spikes, low
@@ -1153,6 +1440,19 @@ Section 8 — kind: "action_plan"  (INFLUENCER-ONLY)
   competitors / opportunities / risks) so the plan reads
   as the natural next step from the evidence above, not a
   generic checklist.
+
+  PDF PAGE 8 / 9 SHAPE (REQUIRED):
+    The PDF renders the action_plan as a horizontal arrow grid
+    on page 8 (الإجراء / التتبع columns) and as a numbered
+    الإجراء / تتبع table on page 9. Sequence the action_plan
+    items so that:
+      • items 1-2 cover the 30-day window
+      • items 3-4 cover 60 days
+      • items 5-6 cover 90 days
+    Each item's `body` MUST contain a `Week N:` or `Month N:`
+    line so the PDF timeline maps cleanly to the 30/60/90
+    columns. Keep the labels short (≤ 6 words) so the right-
+    side arrow cells stay compact.
 ''';
 
       case EntityType.product:

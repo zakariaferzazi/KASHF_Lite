@@ -202,15 +202,17 @@ class InvestigationService {
         // pre-pass above converts videos to text before this point.
         model: OpenRouterConfig.model(),
         temperature: 0.4,
-        // Investigation reports emit 7 sections of structured
+        // Investigation reports emit 8 sections of structured
         // items in two languages. Budget MUST be large enough
         // for the full schema; truncating mid-JSON is the #1
         // cause of "can't parse the AI response" errors
-        // (observed against `openai/gpt-5.6-luna` with 4000
-        // tokens, which hit the cap and returned 4000 tokens
-        // of partial output). 8000 is the cap accepted by
+        // (observed against `openai/gpt-5.6-luna` with 8000
+        // tokens, which hit the cap and returned 8000 tokens
+        // of partial output). 16000 leaves comfortable
+        // headroom even after reasoning tokens (Claude / Gemini
+        // thinking) eat into the budget. The cap is enforced by
         // [OpenRouterClient._validateRequest].
-        maxTokens: 8000,
+        maxTokens: 16000,
         // NOTE: do NOT set responseFormat here. With web search
         // enabled, OpenRouter silently drops tool calls when
         // `response_format: type=json_object` is present in the
