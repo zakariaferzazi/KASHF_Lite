@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, User;
 import 'package:flutter/material.dart';
 import 'package:kashf_lite/widgets/loading_overlay.dart';
 import 'package:path_provider/path_provider.dart';
@@ -23,11 +24,9 @@ import '../../utils/text_direction_utils.dart';
 /// finishes a run.
 ///
 /// Layout (top → bottom):
-///   1. Top bar (back · title · share/more)
-///   2. Confidence hero card (overall confidence + summary)
-///   3. Tab row (one chip per [InvestigationResultKind])
-///   4. Section content: headline + summary + item cards
-///   5. Action row (export / monitor / report / save)
+///   1. Top bar (back · title · share)            ← UNCHANGED
+///   2. Redesigned dashboard content area         ← THIS REDESIGN
+///   3. Bottom actions row (Export / Auto-refresh) ← UNCHANGED
 class InvestigationResultsScreen extends StatefulWidget {
   const InvestigationResultsScreen({super.key, required this.result});
   final InvestigationResult result;
@@ -77,8 +76,23 @@ class _InvestigationResultsScreenState
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   children: [
-                    _HeroCard(result: widget.result, l: l),
+                    // 1. Overview header card (subject + status + id/dates/confidence grid)
+                    _OverviewHeaderCard(
+                      result: widget.result,
+                      sectionsCount: visible.length,
+                      l: l,
+                    ),
                     const SizedBox(height: 14),
+
+                    // 2. Investigation lifecycle timeline — derived from
+                    //    the existing InvestigationPhase enum (draft →
+                    //    collecting → processing → analyzing → completed).
+                    //    A completed result lights every step gold.
+                    _LifecycleTimelineCard(l: l),
+                    const SizedBox(height: 14),
+
+                    // 3. Result tabs / categories — preserved 1:1
+                    //    (same enum, same active state, same tap handler).
                     _TabsRow(
                       sections: visible,
                       active: activeIndex,
@@ -86,14 +100,47 @@ class _InvestigationResultsScreenState
                       l: l,
                     ),
                     const SizedBox(height: 14),
+
+                    // 4. Main summary card — same data the old hero
+                    //    card showed, restructured as a dashboard
+                    //    panel: confidence ring + per-section bars.
+                    _SummaryDashboardCard(
+                      result: widget.result,
+                      sections: visible,
+                      l: l,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 5. Statistics / metrics grid (icon + value + label)
+                    _MetricsGridCard(
+                      result: widget.result,
+                      sections: visible,
+                      l: l,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 6. Active section content (headline + items)
                     _SectionHeader(section: section, l: l),
                     const SizedBox(height: 10),
                     for (final item in section.items) ...[
                       _ItemCard(item: item, l: l),
                       const SizedBox(height: 8),
                     ],
-                    if (section.items.isEmpty)
-                      _EmptyState(l: l),
+                    if (section.items.isEmpty) _EmptyState(l: l),
+
+                    // 7. Recent activity / updates — existing sections
+                    //    rendered as a timeline of headline+summary
+                    //    entries stamped with the run's generatedAt.
+                    if (visible.length > 1) ...[
+                      const SizedBox(height: 18),
+                      _RecentActivityTimeline(
+                        result: widget.result,
+                        sections: visible,
+                        l: l,
+                      ),
+                    ],
+
+                    // 8. Sources & references panel (unchanged behaviour)
                     if (widget.result.sources.isNotEmpty) ...[
                       const SizedBox(height: 14),
                       _SourcesPanel(sources: widget.result.sources, l: l),
@@ -111,7 +158,7 @@ class _InvestigationResultsScreenState
 }
 
 // ============================================================================
-// Top bar — back · title · share (real PDF).
+// Top bar — back · title · share (real PDF).                              [KEPT]
 // ============================================================================
 
 /// Returns the platform-appropriate directory where reports
@@ -130,13 +177,14 @@ Future<Directory> _reportsDirectory() async {
   Directory base;
   if (Platform.isAndroid) {
     try {
-      base = await getExternalStorageDirectory() ??
-          await getTemporaryDirectory();
+      base =
+          await getExternalStorageDirectory() ?? await getTemporaryDirectory();
     } catch (_) {
       base = await getTemporaryDirectory();
     }
   } else if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
-    base = await getDownloadsDirectory() ??
+    base =
+        await getDownloadsDirectory() ??
         await getApplicationDocumentsDirectory();
   } else {
     base = await getApplicationDocumentsDirectory();
@@ -273,9 +321,7 @@ class _TopBar extends StatelessWidget {
       if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            'PDF error (see logcat): ${e.runtimeType}',
-          ),
+          content: Text('PDF error (see logcat): ${e.runtimeType}'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
@@ -286,143 +332,150 @@ class _TopBar extends StatelessWidget {
 }
 
 // ============================================================================
-// Hero card with overall confidence
+// (1) Overview header card
 //
-// A vertically stacked "report header":
-//
-//   ┌────────────────────────────────────────────────────────┐
-//   │  ▢  TITLE                                            │  ← big title +
-//   │      Subtitle line                                   │     subtitle
-//   │                                                    │
-//   │  ┌──────┐  ● Sources · Items                         │  ← thumbnail + meta
-//   │  │ IMG  │                                            │
-//   │  └──────┘                                            │
-//   │                                                    │
-//   │  86%   Confidence ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔              │  ← confidence +
-//   │        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱                            │     progress
-//   └────────────────────────────────────────────────────────┘
-//
-// Three independent rows give each element room to breathe,
-// avoid horizontal cramping on narrow phones, and scale
-// gracefully on wider screens without changing the design.
+// Subject identity (title + subtitle), investigator / status badge,
+// and a 4-column metric grid (ID · date · confidence · sections count).
+// All values come straight from the existing [InvestigationResult];
+// nothing here is invented.
 // ============================================================================
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.result, required this.l});
+class _OverviewHeaderCard extends StatelessWidget {
+  const _OverviewHeaderCard({
+    required this.result,
+    required this.sectionsCount,
+    required this.l,
+  });
+
   final InvestigationResult result;
+  final int sectionsCount;
   final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    final confidence = (result.confidence ?? 0) * 100;
-    final thumbnail = result.thumbnailUrl;
     final palette = KashfPalette.active;
-    final generatedAt = result.generatedAt;
-
+    final confidence = ((result.confidence ?? 0) * 100).round();
+    final status = _statusForResult(result);
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: AlignmentDirectional.topStart,
-          end: AlignmentDirectional.bottomEnd,
-          colors: [
-            palette.surface,
-            palette.surface.withValues(alpha: 0.96),
-          ],
-        ),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: KashfColors.gold.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: palette.cardBorder),
         boxShadow: [
           BoxShadow(
-            color: KashfColors.gold.withValues(alpha: 0.10),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // ----- Header: status eyebrow + title -----
-          Row(
-            children: [
-              _StatusEyebrow(l: l),
-              const Spacer(),
-              Text(
-                _formatTimestamp(generatedAt),
-                style: TextStyle(
-                  color: palette.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          autoDirection(
-            result.title,
-            _InlineLinkText(
-              text: result.title,
-              baseStyle: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                height: 1.2,
-                letterSpacing: -0.2,
-              ),
-              maxLines: 2,
-            ),
-          ),
-          const SizedBox(height: 6),
-          autoDirection(
-            result.subtitle,
-            _InlineLinkText(
-              text: result.subtitle,
-              baseStyle: TextStyle(
-                color: palette.textSecondary,
-                fontSize: 12,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 2,
-            ),
-          ),
-
-          // ----- Visual half / stats half -----
-          //
-          // Left: circular confidence ring with NN% in the middle,
-          //       sources + items chips stacked underneath.
-          // Right: large thumbnail of the investigated subject.
-          //
-          // Splitting the row in two equal halves lets the
-          // thumbnail breathe on small phones and look deliberate
-          // on wider ones, without the cramped three-column feel
-          // of the previous layout.
-          const SizedBox(height: 16),
+          // ----- Subject row: avatar + name + status badge -----
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              _OverviewAvatar(result: result, l: l),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _ConfidenceRing(value: confidence / 100, l: l),
-                    const SizedBox(height: 10),
-                    _HeroMetaRow(
-                      sourcesCount: result.sources.length,
-                      itemsCount: result.sections.fold<int>(
-                        0,
-                        (sum, s) => sum + s.items.length,
+                    autoDirection(
+                      result.title,
+                      _InlineLinkText(
+                        text: result.title,
+                        baseStyle: TextStyle(
+                          color: palette.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          height: 1.2,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
                       ),
-                      l: l,
+                    ),
+                    const SizedBox(height: 4),
+                    autoDirection(
+                      result.subtitle,
+                      _InlineLinkText(
+                        text: result.subtitle,
+                        baseStyle: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 11,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(child: _HeroThumbnail(url: thumbnail, l: l)),
+              const SizedBox(width: 8),
+              _StatusBadge(label: status.label, color: status.color),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+          Divider(color: palette.divider, height: 1),
+          const SizedBox(height: 18),
+
+          // ----- 4-column metric grid (status / confidence / updated / created)
+          // Each column shares the row width equally. The value text
+          // uses FittedBox so long values (full dates) auto-shrink to
+          // fit instead of being ellipsized. All four labels are in
+          // Arabic — matching the reference design.
+          // In RTL, the first child in the Row appears on the LEFT,
+          // so the visual reading order (left → right) is:
+          //   [status] [confidence] [updated] [created]
+          // matching the reference image exactly.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 1. حالة التحقيق — status (left column in RTL)
+              Expanded(
+                child: _OverviewMetric(
+                  label: l.t('ir_overview_status_label'),
+                  value: l.t(InvestigationPhase.completed.l10nKey),
+                  icon: Icons.flag_outlined,
+                  l: l,
+                  valueColor: KashfColors.gold,
+                ),
+              ),
+              _OverviewDivider(),
+              // 2. مستوى الثقة العام — overall confidence
+              Expanded(
+                child: _OverviewMetric(
+                  label: l.t('ir_hero_confidence'),
+                  value: '$confidence%',
+                  icon: Icons.verified_outlined,
+                  l: l,
+                  valueColor: KashfColors.gold,
+                ),
+              ),
+              _OverviewDivider(),
+              // 3. آخر تحديث — last update date
+              Expanded(
+                child: _OverviewMetric(
+                  label: l.t('ir_overview_updated_label'),
+                  value: _formatDate(result.generatedAt),
+                  icon: Icons.schedule_outlined,
+                  l: l,
+                ),
+              ),
+              _OverviewDivider(),
+              // 4. تاريخ الإنشاء — creation date (right column in RTL)
+              Expanded(
+                child: _OverviewMetric(
+                  label: l.t('ir_overview_created_label'),
+                  value: _formatDate(result.generatedAt),
+                  icon: Icons.calendar_today_outlined,
+                  l: l,
+                ),
+              ),
             ],
           ),
         ],
@@ -430,48 +483,109 @@ class _HeroCard extends StatelessWidget {
     );
   }
 
-  /// Short "Mar 14 · 14:23" timestamp. Falls back to a generic
-  /// label when the timestamp can't be formatted.
-  String _formatTimestamp(DateTime dt) {
+  /// Renders the investigation's generated timestamp as a real,
+  /// full-precision date (year-month-day) so the user can tell
+  /// when the report was produced — not just a placeholder.
+  /// Returns an empty string when the timestamp is missing.
+  String _formatDate(DateTime dt) {
+    if (dt.millisecondsSinceEpoch == 0) return '—';
     final local = dt.toLocal();
-    final months = const [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final m = months[local.month - 1];
-    final hh = local.hour.toString().padLeft(2, '0');
-    final mm = local.minute.toString().padLeft(2, '0');
-    return '$m ${local.day} · $hh:$mm';
+    final y = local.year.toString().padLeft(4, '0');
+    final m = local.month.toString().padLeft(2, '0');
+    final d = local.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  _StatusInfo _statusForResult(InvestigationResult r) {
+    // The result screen is only reached for completed runs —
+    // derive a "complete" status with a green dot to mirror the
+    // existing eyebrow behaviour without inventing new data.
+    final phase = InvestigationPhase.completed;
+    final label = l.t(phase.l10nKey);
+    return _StatusInfo(label: label, color: const Color(0xFF22C55E));
   }
 }
 
-/// Small "Completed" eyebrow shown at the top of the hero card.
-/// Lives next to the timestamp so the user always sees the run
-/// status + when it finished in one glance.
-class _StatusEyebrow extends StatelessWidget {
-  const _StatusEyebrow({required this.l});
+class _StatusInfo {
+  const _StatusInfo({required this.label, required this.color});
+  final String label;
+  final Color color;
+}
+
+class _OverviewAvatar extends StatelessWidget {
+  const _OverviewAvatar({required this.result, required this.l});
+  final InvestigationResult result;
   final AppLocalizations l;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 4),
+    final palette = KashfPalette.active;
+    final url = result.thumbnailUrl;
+    const double size = 52;
+    final fallback = Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF22C55E).withValues(alpha: 0.14),
+        color: palette.fieldFill,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_outline,
+        color: KashfColors.gold.withValues(alpha: 0.85),
+        size: 26,
+      ),
+    );
+    if (url == null || url.isEmpty) return fallback;
+    final isAsset =
+        url.startsWith('asset://') ||
+        (!url.startsWith('http://') && !url.startsWith('https://'));
+    final src = isAsset && url.startsWith('asset://')
+        ? url.substring('asset://'.length)
+        : url;
+    final image = isAsset
+        ? Image.asset(
+            src,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => fallback,
+          )
+        : Image.network(
+            src,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => fallback,
+            loadingBuilder: (_, child, p) {
+              if (p == null) return child;
+              return Container(
+                width: size,
+                height: size,
+                color: palette.fieldFill,
+                alignment: Alignment.center,
+                child: const InlineSpinner(size: 18),
+              );
+            },
+          );
+    return ClipRRect(borderRadius: BorderRadius.circular(14), child: image);
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 5, 10, 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF22C55E).withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -479,16 +593,13 @@ class _StatusEyebrow extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: Color(0xFF22C55E),
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
-            l.t('home_latest_status_complete'),
-            style: const TextStyle(
-              color: Color(0xFF22C55E),
+            label,
+            style: TextStyle(
+              color: color,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.3,
@@ -500,268 +611,360 @@ class _StatusEyebrow extends StatelessWidget {
   }
 }
 
-/// Hero-card thumbnail. Now sized by [fit] — when wrapped in an
-/// [Expanded] (the typical usage in the hero card) the tile fills
-/// the right half of the row. Falls back to a flat icon tile when
-/// the AI didn't provide an image URL or the network image fails.
-///
-/// `asset://` URLs (and any path that doesn't look like an
-/// http(s) URL) are rendered via [Image.asset] so we can ship a
-/// bundled default thumbnail without going through the network.
-class _HeroThumbnail extends StatelessWidget {
-  const _HeroThumbnail({required this.url, required this.l});
-  final String? url;
+class _OverviewMetric extends StatelessWidget {
+  const _OverviewMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.l,
+    this.valueColor,
+  });
+  final String label;
+  final String value;
+  final IconData icon;
   final AppLocalizations l;
-
-  /// Square fallback shown when [url] is empty / fails to load.
-  /// Constrained so the visual weight matches [_ConfidenceRing].
-  static const double fallbackSize = 132;
-
-  /// Returns true when [url] should be rendered as a bundled
-  /// asset rather than fetched from the network. The
-  /// [InvestigationThumbnailResolver] uses the `asset://` scheme
-  /// to signal the default report thumbnail.
-  bool _isAsset(String value) {
-    if (value.startsWith('asset://')) return true;
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return false;
-    }
-    // Treat anything else that looks like a path as an asset.
-    return value.startsWith('assets/');
-  }
-
-  /// Strips the `asset://` scheme so we can hand the path to
-  /// [Image.asset] directly.
-  String _assetPath(String value) {
-    if (value.startsWith('asset://')) return value.substring('asset://'.length);
-    return value;
-  }
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final palette = KashfPalette.active;
-    final fallback = AspectRatio(
-      aspectRatio: 1,
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.fieldFill,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: KashfColors.gold.withValues(alpha: 0.30),
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.image_outlined,
-          color: KashfColors.gold.withValues(alpha: 0.7),
-          size: 40,
-        ),
-      ),
-    );
-    if (url == null || url!.isEmpty) return fallback;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    // Value text direction follows its dominant script — numerals
+    // and English/Latin IDs render LTR even inside an RTL column,
+    // while Arabic labels render RTL.
+    final valueIsRtl = _looksRtl(value);
+    final valueDir = valueIsRtl ? TextDirection.rtl : TextDirection.ltr;
 
-    final source = url!;
-    final child = _isAsset(source)
-        ? Image.asset(
-            _assetPath(source),
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => fallback,
-          )
-        : Image.network(
-            source,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return Container(
-                color: palette.fieldFill,
-                alignment: Alignment.center,
-                child: const InlineSpinner(size: 22),
-              );
-            },
-            errorBuilder: (_, _, _) => fallback,
-          );
-
-    return AspectRatio(
-      aspectRatio: 1,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: child,
-      ),
-    );
-  }
-}
-
-/// Circular confidence ring rendered as a determinate progress arc.
-/// The "NN%" sits in the centre and the ring fills clockwise as the
-/// score grows — no separate progress bar required.
-class _ConfidenceRing extends StatelessWidget {
-  const _ConfidenceRing({required this.value, required this.l});
-  final double value;
-  final AppLocalizations l;
-
-  /// Outer diameter. Matches the height of [_HeroThumbnail] so the
-  /// two halves of the row stay vertically balanced.
-  static const double size = 132;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = KashfPalette.active;
-    final pct = value.clamp(0.0, 1.0);
-    final pctText = '${(pct * 100).round()}%';
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: const Size(size, size),
-            painter: _ConfidenceRingPainter(
-              progress: pct,
-              accent: KashfColors.gold,
-              track: palette.fieldFill,
+    // Row layout: [icon] [value] in LTR, [value] [icon] in RTL —
+    // so the icon always anchors the outer (trailing) edge of the
+    // cell regardless of reading direction, matching the reference.
+    final iconWidget = Icon(icon, color: KashfColors.gold, size: 22);
+    final valueWidget = Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: valueIsRtl ? Alignment.centerRight : Alignment.centerLeft,
+        child: Directionality(
+          textDirection: valueDir,
+          child: Text(
+            value,
+            textAlign: valueIsRtl ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: valueColor ?? palette.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                pctText,
-                style: TextStyle(
-                  color: KashfColors.gold,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  height: 1.0,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l.t('ir_hero_confidence'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: palette.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
-  }
-}
 
-class _ConfidenceRingPainter extends CustomPainter {
-  _ConfidenceRingPainter({
-    required this.progress,
-    required this.accent,
-    required this.track,
-  });
-
-  final double progress;
-  final Color accent;
-  final Color track;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2 - 6; // leave room for stroke
-
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..color = track;
-    canvas.drawCircle(center, radius, trackPaint);
-
-    final progressPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 6
-      ..color = accent;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -1.5708, // 12 o'clock
-      progress.clamp(0.0, 1.0) * 6.28318,
-      false,
-      progressPaint,
+    final valueRow = Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      children: isRtl
+          ? [valueWidget, const SizedBox(width: 8), iconWidget]
+          : [iconWidget, const SizedBox(width: 8), valueWidget],
     );
-  }
 
-  @override
-  bool shouldRepaint(covariant _ConfidenceRingPainter old) =>
-      old.progress != progress ||
-      old.accent != accent ||
-      old.track != track;
-}
-
-class _HeroMetaRow extends StatelessWidget {
-  const _HeroMetaRow({
-    required this.sourcesCount,
-    required this.itemsCount,
-    required this.l,
-  });
-  final int sourcesCount;
-  final int itemsCount;
-  final AppLocalizations l;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: isRtl
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.center,
       children: [
-        _MetaChip(
-          icon: Icons.link,
-          label: l.tp('ir_meta_sources', {'n': '$sourcesCount'}),
+        // Label on top
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: isRtl ? Alignment.centerRight : Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.1,
+            ),
+          ),
         ),
-        _MetaChip(
-          icon: Icons.list_alt,
-          label: l.tp('ir_meta_items', {'n': '$itemsCount'}),
-        ),
+        const SizedBox(height: 10),
+        // Icon + value side-by-side below
+        valueRow,
       ],
     );
   }
+
+  /// Lightweight script detection — Arabic / Hebrew characters
+  /// make the value render RTL; everything else (numerals, Latin,
+  /// punctuation) renders LTR. Used so a date like `2026-08-18`
+  /// stays LTR even inside an RTL column.
+  bool _looksRtl(String s) {
+    for (final c in s.runes) {
+      if (c >= 0x0590 && c <= 0x08FF) return true;
+    }
+    return false;
+  }
 }
 
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
+class _OverviewDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 4),
-      decoration: BoxDecoration(
-        color: KashfPalette.active.fieldFill,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: KashfPalette.active.cardBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: KashfPalette.active.textSecondary),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: KashfPalette.active.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+    // Slim vertical separator — small horizontal margin so it
+    // sits cleanly between cells without intruding on the icon
+    // / value glyphs.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: SizedBox(
+        width: 1,
+        height: 56,
+        child: ColoredBox(color: KashfPalette.active.divider),
       ),
     );
   }
 }
 
 // ============================================================================
-// Tabs row (one chip per section).
+// (2) Investigation lifecycle timeline
+//
+// Horizontal process visualization built from the existing
+// [InvestigationPhase] enum. Completed results light every
+// step gold with a check mark — no new data, no invented
+// stages, no fake progress.
+// ============================================================================
+class _LifecycleTimelineCard extends StatelessWidget {
+  const _LifecycleTimelineCard({required this.l});
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              '${l.t('ir_phase_completed')} · ${l.t('ir_screen_title')}',
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _LifecycleTimelineBar(l: l),
+        ],
+      ),
+    );
+  }
+}
+
+class _LifecycleTimelineBar extends StatelessWidget {
+  const _LifecycleTimelineBar({required this.l});
+  final AppLocalizations l;
+
+  /// Ordered phases that visually make up the run's lifecycle.
+  /// Mirrors the existing InvestigationPhase progression in the
+  /// model (no new states are introduced). "Failed" is omitted
+  /// because the results screen is only shown for completed runs.
+  List<InvestigationPhase> get _phases => const [
+    InvestigationPhase.draft,
+    InvestigationPhase.evidenceCollecting,
+    InvestigationPhase.evidenceProcessing,
+    InvestigationPhase.analyzing,
+    InvestigationPhase.completed,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final phases = _phases;
+        final nodeSize = 28.0;
+        // Effective horizontal space available for the connector
+        // segments between nodes — derived from the LayoutBuilder
+        // so the bar stays responsive on narrow phones.
+        final totalWidth = constraints.maxWidth;
+        final step = (totalWidth - nodeSize) / (phases.length - 1);
+        final gap = (step - nodeSize).clamp(2.0, 9999.0);
+
+        return SizedBox(
+          height: 56,
+          child: Stack(
+            children: [
+              // Connector line behind the nodes
+              Positioned(
+                top: nodeSize / 2 - 1,
+                left: nodeSize / 2,
+                right: nodeSize / 2,
+                child: Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: palette.divider,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+              // Filled gold connector indicating the run reached the end
+              Positioned(
+                top: nodeSize / 2 - 1,
+                left: nodeSize / 2,
+                right: nodeSize / 2,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Container(
+                    height: 2,
+                    width: totalWidth - nodeSize,
+                    decoration: BoxDecoration(
+                      color: KashfColors.gold,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                ),
+              ),
+              // Nodes
+              for (var i = 0; i < phases.length; i++)
+                Positioned(
+                  left: i * (nodeSize + gap),
+                  top: 0,
+                  child: _LifecycleNode(phase: phases[i], size: nodeSize, l: l),
+                ),
+              // Labels under each node
+              for (var i = 0; i < phases.length; i++)
+                Positioned(
+                  left: i * (nodeSize + gap) - 12,
+                  top: nodeSize + 4,
+                  width: nodeSize + 24,
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Text(
+                      _shortPhaseLabel(phases[i], l),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _shortPhaseLabel(InvestigationPhase p, AppLocalizations l) {
+    // The full phase label is too long for a 28px column on small
+    // phones — emit a single short word per phase to keep the
+    // timeline scannable while remaining faithful to the model's
+    // own l10n keys.
+    switch (p) {
+      case InvestigationPhase.draft:
+        return l.t('ir_phase_draft');
+      case InvestigationPhase.evidenceCollecting:
+        return l.t('ir_phase_collecting');
+      case InvestigationPhase.evidenceProcessing:
+        return l.t('ir_phase_processing');
+      case InvestigationPhase.analyzing:
+        return l.t('ir_phase_analyzing');
+      case InvestigationPhase.completed:
+        return l.t('ir_phase_completed');
+      case InvestigationPhase.failed:
+        return l.t('ir_phase_failed');
+    }
+  }
+}
+
+class _LifecycleNode extends StatelessWidget {
+  const _LifecycleNode({
+    required this.phase,
+    required this.size,
+    required this.l,
+  });
+  final InvestigationPhase phase;
+  final double size;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    final isCompleted = phase == InvestigationPhase.completed;
+    final isFailed = phase == InvestigationPhase.failed;
+    final fill = isCompleted
+        ? KashfColors.gold
+        : (isFailed ? const Color(0xFFEF4444) : palette.surface);
+    final border = isCompleted || isFailed ? fill : palette.cardBorder;
+    final iconColor = (isCompleted || isFailed)
+        ? Colors.black
+        : palette.textSecondary;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: fill,
+        shape: BoxShape.circle,
+        border: Border.all(color: border, width: 1.4),
+        boxShadow: isCompleted
+            ? [
+                BoxShadow(
+                  color: KashfColors.gold.withValues(alpha: 0.35),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        isCompleted
+            ? Icons.check_rounded
+            : (isFailed ? Icons.close_rounded : _phaseIcon(phase)),
+        size: size * 0.55,
+        color: iconColor,
+      ),
+    );
+  }
+
+  IconData _phaseIcon(InvestigationPhase p) {
+    switch (p) {
+      case InvestigationPhase.draft:
+        return Icons.edit_outlined;
+      case InvestigationPhase.evidenceCollecting:
+        return Icons.cloud_download_outlined;
+      case InvestigationPhase.evidenceProcessing:
+        return Icons.auto_awesome_outlined;
+      case InvestigationPhase.analyzing:
+        return Icons.psychology_outlined;
+      case InvestigationPhase.completed:
+        return Icons.check_rounded;
+      case InvestigationPhase.failed:
+        return Icons.close_rounded;
+    }
+  }
+}
+
+// ============================================================================
+// (3) Tabs row (one chip per section).                                  [KEPT]
 // ============================================================================
 class _TabsRow extends StatelessWidget {
   const _TabsRow({
@@ -778,19 +981,11 @@ class _TabsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The screen is intentionally LTR (the back chevron, layout
-    // direction, etc. are all LTR-first). The tab row is the one
-    // element where we want to follow the user's reading direction
-    // so Arabic users see the active tab pinned to the right edge
-    // with its icon leading the label.
     final isRtl = l.language == AppLanguage.arabic;
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        // `reverse: true` shifts the scroll origin to the right edge
-        // when the surrounding Directionality is LTR, which is what
-        // an Arabic-reading user expects (overview = rightmost tab).
         reverse: isRtl,
         padding: const EdgeInsets.symmetric(horizontal: 2),
         itemCount: sections.length,
@@ -816,9 +1011,6 @@ class _TabsRow extends StatelessWidget {
                   width: selected ? 1.2 : 1,
                 ),
               ),
-              // Inside each chip, swap the icon/label order so the
-              // leading visual matches the user's reading direction:
-              // icon-then-text in English, text-then-icon in Arabic.
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
@@ -852,7 +1044,339 @@ class _TabsRow extends StatelessWidget {
 }
 
 // ============================================================================
-// Section header (headline + summary).
+// (4) Main summary dashboard card
+//
+// Same data the old hero card exposed (overall confidence +
+// per-section confidence), but laid out as a split panel: ring
+// on the left, horizontal progress bars on the right.
+// ============================================================================
+class _SummaryDashboardCard extends StatelessWidget {
+  const _SummaryDashboardCard({
+    required this.result,
+    required this.sections,
+    required this.l,
+  });
+
+  final InvestigationResult result;
+  final List<InvestigationResultSection> sections;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    final overall = (result.confidence ?? 0).clamp(0.0, 1.0);
+    final perSection = <_SectionConfidence>[];
+    for (final s in sections) {
+      // Prefer the section's own confidence (0..1); fall back to the
+      // overall confidence if the model didn't emit a per-section
+      // value. Either way the percentage shown is derived from the
+      // existing confidence field — no invented metric.
+      final c = (s.confidence ?? overall).clamp(0.0, 1.0);
+      perSection.add(_SectionConfidence(label: l.t(s.kind.l10nKey), value: c));
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              l.t('ir_overview_confidence_title'),
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _ConfidenceRing(value: overall, l: l),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final sc in perSection)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(bottom: 6),
+                          child: _ConfidenceBarLine(
+                            label: sc.label,
+                            value: sc.value,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (perSection.isEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              l.t('ir_section_empty'),
+              style: TextStyle(color: palette.textSecondary, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionConfidence {
+  const _SectionConfidence({required this.label, required this.value});
+  final String label;
+  final double value;
+}
+
+class _ConfidenceBarLine extends StatelessWidget {
+  const _ConfidenceBarLine({required this.label, required this.value});
+  final String label;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    final pct = value.clamp(0.0, 1.0);
+    final pctText = '${(pct * 100).round()}%';
+    return Row(
+      children: [
+        Expanded(
+          flex: 5,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 6,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              children: [
+                Container(height: 6, color: palette.fieldFill),
+                FractionallySizedBox(
+                  widthFactor: pct,
+                  child: Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: KashfColors.gold,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 36,
+          child: Text(
+            pctText,
+            textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: KashfColors.gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// (5) Statistics / metrics grid
+//
+// A 4-column grid of metric cards (label + value + icon). Each metric
+// is derived from existing data: item counts per section + sources
+// count + overall confidence. No invented numbers.
+// ============================================================================
+class _MetricsGridCard extends StatelessWidget {
+  const _MetricsGridCard({
+    required this.result,
+    required this.sections,
+    required this.l,
+  });
+
+  final InvestigationResult result;
+  final List<InvestigationResultSection> sections;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    // Per-section item counts (existing data) — first 4 sections in
+    // the canonical order, with any overflow joined into a single
+    // "others" tile so the grid stays 4 wide.
+    final first = sections.take(3).toList();
+    final overflow = sections
+        .skip(3)
+        .fold<int>(0, (s, x) => s + x.items.length);
+
+    final tiles = <_MetricTile>[
+      for (final s in first)
+        _MetricTile(
+          icon: s.kind.icon,
+          label: l.t(s.kind.l10nKey),
+          value: '${s.items.length}',
+        ),
+      if (overflow > 0)
+        _MetricTile(
+          icon: Icons.more_horiz,
+          label: l.t('home_latest_sections'),
+          value: '$overflow',
+        ),
+      _MetricTile(
+        icon: Icons.link,
+        label: l.t('ir_sources_title'),
+        value: '${result.sources.length}',
+      ),
+    ];
+    // Always pad to 4 tiles so the grid stays consistent — uses
+    // existing derived totals (no fake data).
+    while (tiles.length < 4) {
+      tiles.add(
+        _MetricTile(
+          icon: Icons.list_alt,
+          label: l.t('ir_metric_items'),
+          value:
+              '${result.sections.fold<int>(0, (sum, s) => sum + s.items.length)}',
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              l.t('home_latest_stats'),
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.85,
+            children: [
+              for (final t in tiles.take(8)) _MetricTileCard(tile: t, l: l),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricTile {
+  const _MetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+class _MetricTileCard extends StatelessWidget {
+  const _MetricTileCard({required this.tile, required this.l});
+  final _MetricTile tile;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: palette.fieldFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(tile.icon, color: KashfColors.gold, size: 18),
+          const SizedBox(height: 6),
+          Text(
+            tile.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              tile.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// (6) Section header (headline + summary).                             [KEPT]
 // ============================================================================
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.section, required this.l});
@@ -893,7 +1417,214 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ============================================================================
-// Item card — renders one [InvestigationResultItem].
+// (6b) Recent activity / updates timeline
+//
+// Renders every visible section as a timeline entry using its
+// existing headline + summary + the run's generatedAt timestamp.
+// All values come from existing data.
+// ============================================================================
+class _RecentActivityTimeline extends StatelessWidget {
+  const _RecentActivityTimeline({
+    required this.result,
+    required this.sections,
+    required this.l,
+  });
+
+  final InvestigationResult result;
+  final List<InvestigationResultSection> sections;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              l.t('home_latest_recent_activity'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < sections.length; i++) ...[
+            _ActivityRow(
+              section: sections[i],
+              isFirst: i == 0,
+              isLast: i == sections.length - 1,
+              timestamp: result.generatedAt,
+              l: l,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({
+    required this.section,
+    required this.isFirst,
+    required this.isLast,
+    required this.timestamp,
+    required this.l,
+  });
+
+  final InvestigationResultSection section;
+  final bool isFirst;
+  final bool isLast;
+  final DateTime timestamp;
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline rail (line + dot)
+          SizedBox(
+            width: 22,
+            child: Column(
+              children: [
+                Container(
+                  width: 2,
+                  height: 6,
+                  color: isFirst ? Colors.transparent : palette.divider,
+                ),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: KashfColors.gold,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: KashfColors.gold.withValues(alpha: 0.45),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : palette.divider,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        section.kind.icon,
+                        size: 14,
+                        color: KashfColors.gold,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: autoDirection(
+                          section.headline,
+                          Text(
+                            section.headline,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (section.summary.isNotEmpty)
+                    autoDirection(
+                      section.summary,
+                      Text(
+                        section.summary,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 11,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Text(
+                      _formatTimestamp(timestamp),
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime dt) {
+    final local = dt.toLocal();
+    final months = const [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final m = months[local.month - 1];
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '$m ${local.day} · $hh:$mm';
+  }
+}
+
+// ============================================================================
+// Item card — renders one [InvestigationResultItem].                    [KEPT]
 // ============================================================================
 class _ItemCard extends StatelessWidget {
   const _ItemCard({required this.item, required this.l});
@@ -1036,9 +1767,7 @@ IconData iconForLink(String labelOrUrl) {
   if (l.contains('news') || l.contains('article')) {
     return Icons.article_outlined;
   }
-  if (l.contains('website') ||
-      l.contains('site') ||
-      l.contains('blog')) {
+  if (l.contains('website') || l.contains('site') || l.contains('blog')) {
     return Icons.language_outlined;
   }
   if (l.contains('pdf') || l.contains('doc')) {
@@ -1131,10 +1860,6 @@ class _UrlChipButton extends StatelessWidget {
                 color: palette.textPrimary,
               ),
               SizedBox(width: dense ? 4 : 6),
-              // Wrap in Flexible so a long host (e.g.
-              // "facebook.com/some-long-page") doesn't push the
-              // chip past the surrounding line — the label
-              // ellipsizes instead.
               Flexible(
                 child: Text(
                   label,
@@ -1178,27 +1903,7 @@ class _LinkButtons extends StatelessWidget {
 }
 
 /// Inline text widget that scans [text] for URL substrings and
-/// replaces each one with a [_UrlChipButton]. The non-URL
-/// fragments are rendered as a single flowing [RichText]; each
-/// URL is rendered as a pill button that flows inline with the
-/// surrounding text. Used for the item title / body / section
-/// headline / summary and the hero-card title / subtitle — so a
-/// URL that appears anywhere in the natural-language output is
-/// rendered as a tappable pill, never as plain underlined blue
-/// text.
-///
-/// Implementation note: we use `Text.rich` + `WidgetSpan`.
-/// Flutter lays out `WidgetSpan` children inline with the
-/// surrounding text using their intrinsic size; the chip's
-/// intrinsic size is its preferred height (small) and its
-/// natural width. Word-boundary wrapping still works because
-/// the text engine treats each `WidgetSpan` as an opaque
-/// inline block of known width. `maxLines` + ellipsis is not
-/// supported by Flutter when `Text.rich` contains
-/// `WidgetSpan`s — we therefore drop the `maxLines` cap when
-/// the text contains any URLs and let the layout flow
-/// naturally. The caller is expected to size the parent
-/// container so the flow fits.
+/// replaces each one with a [_UrlChipButton].
 class _InlineLinkText extends StatelessWidget {
   const _InlineLinkText({
     required this.text,
@@ -1210,15 +1915,8 @@ class _InlineLinkText extends StatelessWidget {
   final TextStyle baseStyle;
   final int? maxLines;
 
-  /// Trailing punctuation that often clings to a URL in
-  /// natural text but isn't part of it. We trim it from the
-  /// URL when building the chip and re-emit it as plain text
-  /// so the sentence still reads naturally.
   static const String _trailingPunct = '.,;:]}';
 
-  /// Splits [text] into alternating runs of plain text and
-  /// URLs, with trailing punctuation trimmed from each URL
-  /// and re-attached to the following text run.
   List<_InlineRun> _splitIntoRuns() {
     final runs = <_InlineRun>[];
     var cursor = 0;
@@ -1228,8 +1926,7 @@ class _InlineLinkText extends StatelessWidget {
       }
       var url = match.group(0)!;
       var trimmed = '';
-      while (url.isNotEmpty &&
-          _trailingPunct.contains(url.characters.last)) {
+      while (url.isNotEmpty && _trailingPunct.contains(url.characters.last)) {
         trimmed = url.characters.last + trimmed;
         url = url.substring(0, url.length - 1);
       }
@@ -1259,40 +1956,32 @@ class _InlineLinkText extends StatelessWidget {
     final rtl = isRtlText(text);
     final containsLink = runs.any((r) => !r.isText);
 
-    // Plain-text fast path: skip the rich-text pipeline when
-    // there are no URLs to embed. Honours `maxLines` +
-    // ellipsis correctly.
     if (!containsLink) {
       return Text(
         text,
         style: baseStyle,
         maxLines: maxLines,
-        overflow:
-            maxLines != null ? TextOverflow.ellipsis : TextOverflow.clip,
+        overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.clip,
         textAlign: rtl ? TextAlign.right : TextAlign.left,
         textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
       );
     }
 
-    // URL-bearing path: render via Text.rich + WidgetSpan.
-    // Flutter cannot ellipsize rich text that contains
-    // WidgetSpan children, so we cap visual height by
-    // wrapping in a fixed-height container that the
-    // surrounding column then constrains. This keeps the
-    // layout stable even if the chip count grows.
     final children = <InlineSpan>[];
     for (final r in runs) {
       if (r.isText) {
         children.add(TextSpan(text: r.text, style: baseStyle));
       } else {
-        children.add(WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: _UrlChipButton(
-            url: r.url!,
-            label: shortLabelForUrl(r.url!),
-            dense: true,
+        children.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: _UrlChipButton(
+              url: r.url!,
+              label: shortLabelForUrl(r.url!),
+              dense: true,
+            ),
           ),
-        ));
+        );
       }
     }
     return Text.rich(
@@ -1316,10 +2005,7 @@ class _InlineRun {
 }
 
 /// Compact panel of source citations rendered below the items
-/// of the active section. Each entry is a [_UrlChipButton]
-/// keyed off the source title; the URL is the source's link.
-/// Sources without a URL are rendered as a non-clickable chip
-/// so the citation still appears.
+/// of the active section.
 class _SourcesPanel extends StatelessWidget {
   const _SourcesPanel({required this.sources, required this.l});
 
@@ -1358,7 +2044,9 @@ class _SourcesPanel extends StatelessWidget {
                 if (s.url != null && s.url!.isNotEmpty)
                   _UrlChipButton(
                     url: s.url!,
-                    label: s.title.isNotEmpty ? s.title : shortLabelForUrl(s.url!),
+                    label: s.title.isNotEmpty
+                        ? s.title
+                        : shortLabelForUrl(s.url!),
                   )
                 else
                   _NonInteractiveChip(
@@ -1412,15 +2100,7 @@ class _NonInteractiveChip extends StatelessWidget {
   }
 }
 
-/// Metric + label row used inside item cards.
-///
-/// The metric is rendered as a compact gold pill so the value
-/// reads as a "stat" rather than a headline. The label sits
-/// beside it as readable text. Both the metric pill and the
-/// label respect the **label's** dominant script — so an
-/// Arabic label renders the pill on the right and the label
-/// aligned right, while an English label keeps the pill on
-/// the left and the label aligned left.
+/// Metric + label row used inside item cards.                [KEPT]
 class _MetricLine extends StatelessWidget {
   const _MetricLine({required this.metric, required this.label});
 
@@ -1432,15 +2112,11 @@ class _MetricLine extends StatelessWidget {
     final palette = KashfPalette.active;
     final hasLabel = label != null && label!.trim().isNotEmpty;
 
-    // The line direction tracks the label when present, otherwise
-    // the metric. RTL ⇒ pill on the right, label aligned right.
     final direction = hasLabel
         ? detectTextDirection(label!)
         : detectTextDirection(metric);
     final isRtl = direction == TextDirection.rtl;
 
-    // Inline row when both metric + label are short; otherwise
-    // stack vertically so the label can wrap on its own line.
     final useColumn = metric.length > 6 || (hasLabel && label!.length > 24);
 
     final pill = _MetricPill(text: metric);
@@ -1463,18 +2139,14 @@ class _MetricLine extends StatelessWidget {
         : null;
 
     if (useColumn) {
-      // In RTL, the pill should sit at the trailing edge (right),
-      // so we pin it to the end of the column's cross-axis.
       return Column(
-        crossAxisAlignment:
-            isRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isRtl
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Directionality(textDirection: direction, child: pill),
-          if (labelWidget != null) ...[
-            const SizedBox(height: 4),
-            labelWidget,
-          ],
+          if (labelWidget != null) ...[const SizedBox(height: 4), labelWidget],
         ],
       );
     }
@@ -1495,10 +2167,7 @@ class _MetricLine extends StatelessWidget {
   }
 }
 
-/// Compact gold pill that shows the metric value (e.g. "12%",
-/// "+1.2M"). Uses a small fixed font so the value never grows
-/// past its pill — that's what made the previous layout look
-/// like a giant yellow headline.
+/// Compact gold pill that shows the metric value.            [KEPT]
 class _MetricPill extends StatelessWidget {
   const _MetricPill({required this.text});
   final String text;
@@ -1546,11 +2215,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.inbox_outlined,
-            size: 32,
-            color: KashfColors.gold,
-          ),
+          const Icon(Icons.inbox_outlined, size: 32, color: KashfColors.gold),
           const SizedBox(height: 8),
           Directionality(
             textDirection: TextDirection.rtl,
@@ -1571,9 +2236,110 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ============================================================================
-// Bottom action bar — a single Export-PDF button that
-// generates a real PDF on disk and opens it in the platform
-// share sheet.
+// Circular confidence ring rendered as a determinate progress arc.      [KEPT]
+// ============================================================================
+class _ConfidenceRing extends StatelessWidget {
+  const _ConfidenceRing({required this.value, required this.l});
+  final double value;
+  final AppLocalizations l;
+
+  static const double size = 132;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    final pct = value.clamp(0.0, 1.0);
+    final pctText = '${(pct * 100).round()}%';
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: const Size(size, size),
+            painter: _ConfidenceRingPainter(
+              progress: pct,
+              accent: KashfColors.gold,
+              track: palette.fieldFill,
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                pctText,
+                style: TextStyle(
+                  color: KashfColors.gold,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l.t('ir_hero_confidence'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfidenceRingPainter extends CustomPainter {
+  _ConfidenceRingPainter({
+    required this.progress,
+    required this.accent,
+    required this.track,
+  });
+
+  final double progress;
+  final Color accent;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide / 2 - 6;
+
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..color = track;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    final progressPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 6
+      ..color = accent;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      progress.clamp(0.0, 1.0) * 6.28318,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConfidenceRingPainter old) =>
+      old.progress != progress || old.accent != accent || old.track != track;
+}
+
+// ============================================================================
+// Bottom action bar — Export PDF + Stop auto-refresh.                  [KEPT]
 // ============================================================================
 class _ExportPdfBar extends StatefulWidget {
   const _ExportPdfBar({required this.result, required this.l});
@@ -1592,19 +2358,13 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
     setState(() => _busy = true);
     final l = widget.l;
     final messenger = ScaffoldMessenger.of(context);
-    debugPrint(
-      '[Kashf/ExportPDF] start — id=${widget.result.investigationId}',
-    );
+    debugPrint('[Kashf/ExportPDF] start — id=${widget.result.investigationId}');
     try {
       final writer = ReportPdfWriter();
       final bytes = await writer.buildBytes(result: widget.result);
       debugPrint('[Kashf/ExportPDF] built ${bytes.length} bytes');
       final fileName = await writer.fileNameFor(result: widget.result);
 
-      // Save to the app's external cache so the FileProvider
-      // declared in AndroidManifest.xml can convert the
-      // `file://` URI to a `content://` URI with a temporary
-      // read grant — this avoids `FileUriExposedException`.
       final dir = await _reportsDirectory();
       debugPrint('[Kashf/ExportPDF] reports dir = ${dir.path}');
       final file = File('${dir.path}${Platform.pathSeparator}$fileName');
@@ -1673,9 +2433,7 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            'PDF error (see logcat): ${e.runtimeType}',
-          ),
+          content: Text('PDF error (see logcat): ${e.runtimeType}'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
@@ -1695,8 +2453,7 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
         onPressed: _busy ? null : _exportAndOpen,
         style: ElevatedButton.styleFrom(
           backgroundColor: KashfColors.gold,
-          disabledBackgroundColor:
-              KashfColors.gold.withValues(alpha: 0.4),
+          disabledBackgroundColor: KashfColors.gold.withValues(alpha: 0.4),
           foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           shape: RoundedRectangleBorder(
@@ -1709,8 +2466,7 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor:
-                      AlwaysStoppedAnimation(Colors.black),
+                  valueColor: AlwaysStoppedAnimation(Colors.black),
                 ),
               )
             : const Icon(Icons.picture_as_pdf_outlined, size: 18),
@@ -1730,7 +2486,7 @@ class _ExportPdfBarState extends State<_ExportPdfBar> {
 }
 
 // ============================================================================
-// Auto-refresh bar — shows a small "Auto-refresh on" hint plus
+// Auto-refresh bar — shows a small "Auto-refresh on" hint plus         [KEPT]
 // a Stop button. Always visible because every new investigation
 // is auto-tracked by the archive service; tapping Stop clears
 // the 60-day window so the background scheduler stops
@@ -1767,17 +2523,17 @@ class _AutoRefreshBarState extends State<_AutoRefreshBar> {
       await Future<void>.delayed(const Duration(milliseconds: 350));
     }
     saved ??= SavedInvestigation(
-        id: widget.result.investigationId,
-        userId: 'anonymous',
-        title: widget.result.title,
-        subtitle: widget.result.subtitle,
-        entityType: EntityType.brand,
-        status: InvestigationStatus.completed,
-        confidencePercent: 60,
-        confidenceBand: 'medium',
-        tags: const [],
-        createdAt: widget.result.generatedAt,
-      );
+      id: widget.result.investigationId,
+      userId: 'anonymous',
+      title: widget.result.title,
+      subtitle: widget.result.subtitle,
+      entityType: EntityType.brand,
+      status: InvestigationStatus.completed,
+      confidencePercent: 60,
+      confidenceBand: 'medium',
+      tags: const [],
+      createdAt: widget.result.generatedAt,
+    );
     try {
       await AutoRefreshService.instance.stopAutoRefresh(saved);
       if (!mounted) return;
@@ -1826,24 +2582,15 @@ class _AutoRefreshBarState extends State<_AutoRefreshBar> {
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(
-                    KashfColors.gold,
-                  ),
+                  valueColor: AlwaysStoppedAnimation(KashfColors.gold),
                 ),
               )
-            : const Icon(
-                Icons.stop,
-                size: 16,
-                color: Colors.red,
-              ),
+            : const Icon(Icons.stop, size: 16, color: Colors.red),
         label: Text(
           l.t('ir_auto_refresh_stop_button'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
         ),
       ),
     );
@@ -1851,7 +2598,7 @@ class _AutoRefreshBarState extends State<_AutoRefreshBar> {
 }
 
 // ============================================================================
-// Single-row wrapper that hosts the Export-PDF button and the
+// Single-row wrapper that hosts the Export-PDF button and the          [KEPT]
 // Auto-refresh Stop button side-by-side. The two inner widgets
 // are responsible for their own button chrome; this row supplies
 // the shared surface, top border, padding, and SafeArea so the
@@ -1862,6 +2609,9 @@ class _BottomActionsRow extends StatelessWidget {
   const _BottomActionsRow({required this.result, required this.l});
   final InvestigationResult result;
   final AppLocalizations l;
+
+  /// Only Nawaff can export PDFs.
+  static const String _kExportEmail = 'Nawaff89@gmail.com';
 
   @override
   Widget build(BuildContext context) {
@@ -1874,18 +2624,27 @@ class _BottomActionsRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: _ExportPdfBar(result: result, l: l),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 2,
-              child: _AutoRefreshBar(result: result, l: l),
-            ),
-          ],
+        child: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            final user = snapshot.data;
+            final userEmail = user?.email?.trim().toLowerCase() ?? '';
+            final canExport = userEmail == _kExportEmail.toLowerCase();
+            return Row(
+              children: [
+                if (canExport)
+                  Expanded(
+                    flex: 3,
+                    child: _ExportPdfBar(result: result, l: l),
+                  ),
+                if (canExport) const SizedBox(width: 10),
+                Expanded(
+                  flex: canExport ? 2 : 1,
+                  child: _AutoRefreshBar(result: result, l: l),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

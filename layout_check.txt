@@ -1,0 +1,25 @@
+Analyzing report_pdf_layouts.dart...
+
+  error - report_pdf_layouts.dart:792:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:793:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:794:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:816:21 - The returned type 'MultiPage' isn't returnable from a 'Widget' function, as required by the closure's context. - return_of_invalid_type_from_closure
+  error - report_pdf_layouts.dart:1026:23 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1031:23 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1032:23 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1112:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1117:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1258:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1259:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1260:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1490:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1491:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1492:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1539:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1544:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1570:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+  error - report_pdf_layouts.dart:1574:17 - The element type 'List<String>' can't be assigned to the list type 'String'. - list_element_type_not_assignable
+warning - report_pdf_layouts.dart:41:7 - The declaration '_slate600' isn't referenced. Try removing the declaration of '_slate600'. - unused_element
+warning - report_pdf_layouts.dart:44:7 - The declaration '_slate100' isn't referenced. Try removing the declaration of '_slate100'. - unused_element
+
+21 issues found.

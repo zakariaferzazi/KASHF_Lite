@@ -28,8 +28,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildTypes {
@@ -41,7 +41,7 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -61,7 +61,12 @@ configurations.all {
         force(
             "androidx.core:core:1.15.0",
             "androidx.core:core-ktx:1.15.0",
-            "androidx.browser:browser:1.8.0"
+            "androidx.browser:browser:1.8.0",
+            // image_picker_android pulls in androidx.activity:1.12.x
+            // which requires AGP 8.9.1+. Pin to 1.10.1 (the last
+            // release that's happy on AGP 8.7.0).
+            "androidx.activity:activity:1.10.1",
+            "androidx.activity:activity-ktx:1.10.1"
         )
     }
 }

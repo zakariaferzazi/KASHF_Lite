@@ -1,0 +1,16 @@
+﻿Analyzing services...
+
+  error - report_pdf_layouts.dart:1308:13 - Undefined name 'opps'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - report_pdf_layouts.dart:1317:15 - Undefined name 'opps'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+warning - archive\composite_investigation_writer.dart:39:28 - The value of the field '_latest' isn't used. Try removing the field, or using it. - unused_field
+warning - report_pdf_layouts.dart:822:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:895:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:990:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1142:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1282:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1286:9 - The value of the local variable 'headline' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1363:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1612:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1772:29 - The declaration '_firstSection' isn't referenced. Try removing the declaration of '_firstSection'. - unused_element
+
+12 issues found.

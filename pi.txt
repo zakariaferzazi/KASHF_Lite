@@ -1,0 +1,18 @@
+Analyzing personal_info_screen.dart...
+
+  error - personal_info_screen.dart:2:8 - Target of URI doesn't exist: 'package:image_picker/image_picker.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - personal_info_screen.dart:5:8 - Target of URI doesn't exist: '../../l10n/user_profile_scope.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - personal_info_screen.dart:25:19 - The method 'ImagePicker' isn't defined for the type '_PersonalInfoScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ImagePicker'. - undefined_method
+  error - personal_info_screen.dart:45:15 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:59:17 - Undefined name 'ImageSource'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:64:13 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:74:17 - Undefined name 'ImageSource'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:79:13 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:159:11 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:228:19 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:240:11 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:265:18 - Undefined name 'UserProfileScope'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - personal_info_screen.dart:291:21 - The method 'UserAvatar' isn't defined for the type '_PersonalInfoScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'UserAvatar'. - undefined_method
+   info - personal_info_screen.dart:2:8 - The imported package 'image_picker' isn't a dependency of the importing package. Try adding a dependency for 'image_picker' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+
+14 issues found.

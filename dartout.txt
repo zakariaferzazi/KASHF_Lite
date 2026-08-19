@@ -1,0 +1,29 @@
+Analyzing report_pdf_writer.dart...
+
+  error - report_pdf_writer.dart:1:1 - Illegal character '65279'. - illegal_character
+  error - report_pdf_writer.dart:1815:7 - The named parameter 'columnWeights' is required, but there's no corresponding argument. Try adding the required argument. - missing_required_argument
+  error - report_pdf_writer.dart:1815:7 - The named parameter 'rows' is required, but there's no corresponding argument. Try adding the required argument. - missing_required_argument
+  error - report_pdf_writer.dart:1816:37 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1816:37 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - report_pdf_writer.dart:1816:37 - Undefined name 's'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - report_pdf_writer.dart:1816:39 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1816:39 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - report_pdf_writer.dart:1816:39 - Undefined name 'Claims'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - report_pdf_writer.dart:1816:45 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1816:49 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1816:49 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - report_pdf_writer.dart:1816:49 - Undefined name 'Status'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - report_pdf_writer.dart:1816:55 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1816:57 - Unterminated string literal. - unterminated_string_literal
+  error - report_pdf_writer.dart:1817:9 - Expected to find ','. - expected_token
+  error - report_pdf_writer.dart:1817:9 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - report_pdf_writer.dart:1817:9 - Undefined name 'rows'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - report_pdf_writer.dart:1817:13 - Expected to find ')'. - expected_token
+  error - report_pdf_writer.dart:1817:13 - Expected to find ']'. - expected_token
+  error - report_pdf_writer.dart:2063:68 - 4 positional arguments expected by 'withValues', but 0 found. Try adding the missing arguments. - not_enough_positional_arguments
+  error - report_pdf_writer.dart:2063:68 - The named parameter 'alpha' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'alpha'. - undefined_named_parameter
+warning - report_pdf_writer.dart:875:21 - The diagnostic 'unused_element' doesn't need to be ignored here because it's already being ignored. Try removing the name from the list, or removing the whole comment if this is the only name in the list. - duplicate_ignore
+warning - report_pdf_writer.dart:1023:21 - The diagnostic 'unused_element' doesn't need to be ignored here because it's already being ignored. Try removing the name from the list, or removing the whole comment if this is the only name in the list. - duplicate_ignore
+warning - report_pdf_writer.dart:1268:21 - The diagnostic 'unused_element' doesn't need to be ignored here because it's already being ignored. Try removing the name from the list, or removing the whole comment if this is the only name in the list. - duplicate_ignore
+
+25 issues found.

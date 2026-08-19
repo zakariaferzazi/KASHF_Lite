@@ -1,0 +1,5 @@
+Analyzing report_pdf_writer.dart...
+
+  error - report_pdf_writer.dart:2055:57 - The method 'withOpacity' isn't defined for the type 'PdfColor'. Try correcting the name to the name of an existing method, or defining a method named 'withOpacity'. - undefined_method
+
+1 issue found.

@@ -1,0 +1,12 @@
+﻿Analyzing report_pdf_layouts.dart...
+
+warning - report_pdf_layouts.dart:822:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:895:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:990:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1142:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1286:9 - The value of the local variable 'headline' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1363:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1612:9 - The value of the local variable 'summary' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - report_pdf_layouts.dart:1772:29 - The declaration '_firstSection' isn't referenced. Try removing the declaration of '_firstSection'. - unused_element
+
+8 issues found.

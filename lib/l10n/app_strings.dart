@@ -49,8 +49,7 @@ class AppLocalizations {
       'auth_signup_fullname_hint': 'Full name',
       'auth_signup_email_hint': 'Email address',
       'auth_signup_country_hint': 'Country / region',
-      'auth_signup_country_required':
-          'Please select your country or region.',
+      'auth_signup_country_required': 'Please select your country or region.',
       'auth_signup_phone_hint': 'Phone (optional)',
       'auth_signup_password_hint': 'Create password',
       'auth_signup_confirm_hint': 'Confirm password',
@@ -118,6 +117,7 @@ class AppLocalizations {
       'home_active_investigations': 'Active investigations',
       'home_market_pulse': 'Weekly market pulse',
       'home_recent_activity': 'Latest facts',
+      'home_latest_recent_activity': 'آخر الأنشط',
       // ---------- Latest Investigations (live, from Firestore cache) ----------
       'home_latest_investigations': 'Latest investigations',
       'home_latest_empty_title': 'No saved investigations yet',
@@ -132,6 +132,13 @@ class AppLocalizations {
       'home_latest_since_hours': '%{n}h ago',
       'home_latest_since_days': '%{n}d ago',
       'home_latest_evidence': '%{n} evidence files',
+      'home_latest_id_label': 'ID',
+      'home_latest_date_label': 'Date',
+      'home_latest_stats_label': 'Statistics',
+      'home_latest_sections_label': 'Sections',
+      'ir_overview_created_label': 'تاريخ الإنشاء',
+      'ir_overview_updated_label': 'آخر تحديث',
+      'ir_overview_status_label': 'حالة التحقيق',
       'home_user_menu': 'Menu',
       'home_branch_filter': 'branches',
       'home_featured_today': "Today's case",
@@ -309,7 +316,8 @@ class AppLocalizations {
       'home_update_yasmine_time': '3 days ago',
       'home_update_yasmine_score': '45',
       'home_update_placeholder_title': 'No recent investigations yet',
-      'home_update_placeholder_subtitle': 'Run an investigation to see live updates here.',
+      'home_update_placeholder_subtitle':
+          'Run an investigation to see live updates here.',
       'home_fab_new': 'New',
       'explore_title': 'Explore',
       'explore_subtitle':
@@ -389,7 +397,8 @@ class AppLocalizations {
       'explore_discover_title': 'Discover by medium',
       'explore_recent_title': 'Recent investigations',
       'explore_news_empty': 'No trending news right now. Pull down to refresh.',
-      'explore_news_error': 'Couldn\'t load trending news. Tap refresh to retry.',
+      'explore_news_error':
+          'Couldn\'t load trending news. Tap refresh to retry.',
       'explore_news_tap_hint': 'Tap to see latest articles',
       'explore_recent_complete': 'Complete investigation',
       'explore_recent_empty':
@@ -777,7 +786,8 @@ class AppLocalizations {
       'settings_security_sessions_sub': 'Manage signed-in devices',
       'settings_security_sessions_action': 'View sessions',
       'settings_security_danger_title': 'Delete account',
-      'settings_security_danger_sub': 'Permanently remove your account and data',
+      'settings_security_danger_sub':
+          'Permanently remove your account and data',
       'settings_security_danger_action': 'Delete account',
       'settings_security_change_pw_title': 'Change password',
       'settings_security_current_pw': 'Current password',
@@ -788,19 +798,17 @@ class AppLocalizations {
           'Password must be at least 6 characters.',
       'settings_security_pw_mismatch': 'Passwords do not match.',
       'settings_security_pw_wrong_current': 'Current password is incorrect.',
-      'settings_security_pw_updated':
-          'Password updated. Please sign in again.',
-      'settings_security_pw_failed':
-          'Could not update your password.',
+      'settings_security_pw_updated': 'Password updated. Please sign in again.',
+      'settings_security_pw_failed': 'Could not update your password.',
       'settings_security_reauth_required':
           'Please re-enter your current password to continue.',
       'settings_security_sessions_title_screen': 'Active sessions',
-      'settings_security_sessions_empty':
-          'No other devices are signed in.',
+      'settings_security_sessions_empty': 'No other devices are signed in.',
       'settings_security_sessions_this': 'This device',
       'settings_security_sessions_sign_out': 'Sign out',
       'settings_security_sessions_sign_out_all': 'Sign out all other devices',
-      'settings_security_sessions_confirm_title': 'Sign out of all other devices?',
+      'settings_security_sessions_confirm_title':
+          'Sign out of all other devices?',
       'settings_security_sessions_confirm_body':
           'We will end every other active session for your account. You will stay signed in on this device.',
       'settings_security_sessions_confirm_action': 'Sign out others',
@@ -831,17 +839,14 @@ class AppLocalizations {
       // ---------- Settings → Notifications ----------
       'settings_notifications_title': 'Notifications',
       'settings_notifications_push': 'Push notifications',
-      'settings_notifications_push_sub':
-          'Receive alerts on this device.',
+      'settings_notifications_push_sub': 'Receive alerts on this device.',
       'settings_notifications_email': 'Email updates',
       'settings_notifications_email_sub':
           'Weekly summaries and product news by email.',
-      'settings_notifications_investigation':
-          'Investigation alerts',
+      'settings_notifications_investigation': 'Investigation alerts',
       'settings_notifications_investigation_sub':
           'Get notified when an investigation completes.',
-      'settings_notifications_monitor':
-          'Monitoring alerts',
+      'settings_notifications_monitor': 'Monitoring alerts',
       'settings_notifications_monitor_sub':
           'Alerts when a monitored entity spikes.',
       'settings_notifications_saved': 'Notification preferences saved.',
@@ -1388,27 +1393,22 @@ class AppLocalizations {
       'ir_evidence_uploading': 'Uploading {name}',
       'ir_evidence_reading_links': 'Reading {n} link(s)',
       'ir_evidence_extracting': 'Extracting text from {n} file(s)',
-      'ir_evidence_video_analysing':
-          'We are processing the video evidence',
+      'ir_evidence_video_analysing': 'We are processing the video evidence',
       'ir_error_config':
           'AI is not configured. Add OPENROUTER_API_KEY to your .env file.',
       'ir_error_auth': 'AI authentication failed. Check your API key.',
       'ir_error_rate_limit':
           'AI rate limit reached. Please wait a moment and try again.',
-      'ir_error_timeout':
-          'AI request timed out. Please try again.',
+      'ir_error_timeout': 'AI request timed out. Please try again.',
       'ir_error_network':
           'Network error reaching the AI. Check your connection.',
       'ir_error_parse': 'Could not parse the AI response. Please try again.',
       'ir_error_server': 'AI service is temporarily unavailable.',
-      'ir_error_unknown':
-          'Something went wrong. Please try again.',
-      'inv_action_compare_query':
-          'Compare Nike and Adidas in the Gulf market',
+      'ir_error_unknown': 'Something went wrong. Please try again.',
+      'inv_action_compare_query': 'Compare Nike and Adidas in the Gulf market',
       'inv_action_monitor_query':
           'Monitor Dior Sauvage weekly mentions across platforms',
-      'inv_action_match_query':
-          'Find identity matches for the attached image',
+      'inv_action_match_query': 'Find identity matches for the attached image',
       'inv_action_campaign_query':
           'Analyse the Adidas Gulf spring campaign performance',
       'inv_action_influencer_query':
@@ -1427,25 +1427,17 @@ class AppLocalizations {
       'ir_phase_completed': 'Completed',
       'ir_phase_failed': 'Failed',
       'ir_title_with_name': 'Investigation · {name}',
-      'ir_subtitle':
-          'Profile overview, insights and sources for your query.',
-      'ir_subtitle_company':
-          '{name} · ownership, financials and strategy',
-      'ir_subtitle_brand':
-          '{name} · positioning, awareness and recent moves',
-      'ir_subtitle_product':
-          '{name} · specs, price tier and alternatives',
-      'ir_subtitle_influencer':
-          '{name} · audience, engagement and brand-fit',
-      'ir_subtitle_market':
-          '{name} · size, growth, players and regulation',
+      'ir_subtitle': 'Profile overview, insights and sources for your query.',
+      'ir_subtitle_company': '{name} · ownership, financials and strategy',
+      'ir_subtitle_brand': '{name} · positioning, awareness and recent moves',
+      'ir_subtitle_product': '{name} · specs, price tier and alternatives',
+      'ir_subtitle_influencer': '{name} · audience, engagement and brand-fit',
+      'ir_subtitle_market': '{name} · size, growth, players and regulation',
       'ir_hero_confidence': 'Overall confidence',
       'ir_meta_sources': '{n} sources',
       'ir_meta_items': '{n} insights',
-      'ir_summary_placeholder_query':
-          'AI summary for the query "{query}".',
-      'ir_summary_placeholder_entity':
-          'AI summary for the {entity} sector.',
+      'ir_summary_placeholder_query': 'AI summary for the query "{query}".',
+      'ir_summary_placeholder_entity': 'AI summary for the {entity} sector.',
       'ir_evidence_summary_files': '{files} file(s) attached.',
       'ir_evidence_summary_urls': '{urls} link(s) attached.',
       'ir_evidence_summary_both':
@@ -1492,8 +1484,7 @@ class AppLocalizations {
       'ir_section_sources_title': 'Sources',
       'ir_section_sources_sub': 'Where the findings came from.',
       'ir_section_recs_title': 'Recommendations',
-      'ir_section_recs_sub':
-          'Next actions the AI suggests based on this run.',
+      'ir_section_recs_sub': 'Next actions the AI suggests based on this run.',
       'ir_section_empty': 'Nothing here yet.',
       'ir_ins_trend_title': 'Top trend',
       'ir_ins_trend_body':
@@ -1584,8 +1575,7 @@ class AppLocalizations {
       'auth_apple_not_supported':
           '.تسجيل الدخول عبر Apple متاح فقط على نظامي iOS وmacOS',
       'auth_apple_cancelled': '.تم إلغاء تسجيل الدخول',
-      'auth_apple_failed':
-          '.تعذّر تسجيل الدخول عبر Apple. حاول مرة أخرى',
+      'auth_apple_failed': '.تعذّر تسجيل الدخول عبر Apple. حاول مرة أخرى',
       'auth_signin_title': 'أهلاً بعودتك',
       'auth_signin_subtitle': 'سجّل الدخول بالبريد الإلكتروني',
       'auth_signin_email_hint': 'البريد الإلكتروني',
@@ -1627,7 +1617,8 @@ class AppLocalizations {
           '."اضغط على "إرسال الرمز" أولًا لاستلام رمز التحقق',
       'auth_phone_need_code': '.الرجاء إدخال رمز التحقق الذي استلمته',
       'auth_email_invalid': '.الرجاء إدخال عنوان بريد إلكتروني صالح',
-      'auth_password_too_short': '.يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
+      'auth_password_too_short':
+          '.يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
       'auth_password_mismatch': '.كلمتا المرور غير متطابقتين',
       'auth_signin_missing_credentials':
           '.الرجاء إدخال بريدك الإلكتروني وكلمة المرور',
@@ -1642,7 +1633,8 @@ class AppLocalizations {
       'auth_phone_resend': 'إعادة إرسال الرمز',
       'auth_phone_resend_in': '.إعادة الإرسال خلال {seconds} ثانية',
       'auth_phone_change_number': 'تغيير الرقم',
-      'auth_phone_otp_prompt': '.أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى {phone}',
+      'auth_phone_otp_prompt':
+          '.أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى {phone}',
       'auth_phone_change_country': 'الدولة',
       // ---------- شريط التنقل ----------
       'nav_home_lbl': 'الرئيسية',
@@ -1666,7 +1658,8 @@ class AppLocalizations {
       'home_search_hint': 'ابحث عن أي شيء: شركة، منتج، مؤثر، فكرة، بودكاست...',
       'home_active_investigations': 'الكشوفات النشطة',
       'home_market_pulse': 'نبض السوق',
-      'home_recent_activity': 'أخر التحقيقات',
+      'home_recent_activity': 'آخر الأنشط',
+      'home_latest_recent_activity': 'آخر الأنشط',
       // ---------- آخر التحقيقات (محفوظة محلياً ومزامنتها مع Firestore) ----------
       'home_latest_investigations': 'آخر التحقيقات',
       'home_latest_empty_title': 'لا توجد تحقيقات محفوظة بعد',
@@ -1681,11 +1674,19 @@ class AppLocalizations {
       'home_latest_since_hours': 'منذ %{n} ساعة',
       'home_latest_since_days': 'منذ %{n} يوم',
       'home_latest_evidence': '%{n} ملفات دليل',
+      'home_latest_id_label': 'المعرّف',
+      'home_latest_date_label': 'التاريخ',
+      'home_latest_stats_label': 'الإحصائيات',
+      'home_latest_sections_label': 'الأقسام',
+      'ir_overview_created_label': 'تاريخ الإنشاء',
+      'ir_overview_updated_label': 'آخر تحديث',
+      'ir_overview_status_label': 'حالة التحقيق',
       'home_user_menu': 'القائمة',
       'home_branch_filter': 'الفروع',
       'home_featured_today': 'قضية اليوم',
       'home_featured_title': 'تحليل صعود Lattafa في الأسواق العالمية',
-      'home_featured_title_with_brand_ar': 'تحليل صعود {brand} في الأسواق العالمية',
+      'home_featured_title_with_brand_ar':
+          'تحليل صعود {brand} في الأسواق العالمية',
       'home_featured_title_with_brand_en':
           'تحليل صعود {brand} في الأسواق العالمية',
       'home_featured_subtitle':
@@ -2167,8 +2168,7 @@ class AppLocalizations {
       'reports_kpi_high': 'ثقة عالية',
       'reports_kpi_medium': 'ثقة متوسطة',
       'reports_empty_title': 'لا توجد تقارير بعد',
-      'reports_empty_sub':
-          'شغّل تحقيقاً وسيظهر التقرير هنا بمجرد حفظه.',
+      'reports_empty_sub': 'شغّل تحقيقاً وسيظهر التقرير هنا بمجرد حفظه.',
       'reports_sector_images': 'الصور',
       'reports_sector_company': 'شركة',
       'reports_sector_brand': 'علامة',
@@ -2211,7 +2211,8 @@ class AppLocalizations {
       'settings_account_verified': 'موثّق',
       'settings_account_unverified': 'غير موثّق',
       'settings_change_country': 'تغيير الدولة',
-      'settings_change_country_sub': 'اختر المنطقة المستخدمة في جميع أنحاء التطبيق',
+      'settings_change_country_sub':
+          'اختر المنطقة المستخدمة في جميع أنحاء التطبيق',
       'settings_change_country_title': 'تغيير الدولة',
       'settings_change_country_done': 'تم تحديث الدولة',
       'settings_profile': 'الملف الشخصي',
@@ -2319,17 +2320,14 @@ class AppLocalizations {
       'settings_security_pw_too_short':
           'يجب أن تكون كلمة المرور 6 أحرف على الأقل.',
       'settings_security_pw_mismatch': 'كلمتا المرور غير متطابقتين.',
-      'settings_security_pw_wrong_current':
-          'كلمة المرور الحالية غير صحيحة.',
+      'settings_security_pw_wrong_current': 'كلمة المرور الحالية غير صحيحة.',
       'settings_security_pw_updated':
           '.تم تحديث كلمة المرور. الرجاء تسجيل الدخول مجدداً',
-      'settings_security_pw_failed':
-          '.تعذّر تحديث كلمة المرور',
+      'settings_security_pw_failed': '.تعذّر تحديث كلمة المرور',
       'settings_security_reauth_required':
           '.الرجاء إعادة إدخال كلمة المرور الحالية للمتابعة',
       'settings_security_sessions_title_screen': 'الجلسات النشطة',
-      'settings_security_sessions_empty':
-          'لا توجد أجهزة أخرى مسجّل دخولها.',
+      'settings_security_sessions_empty': 'لا توجد أجهزة أخرى مسجّل دخولها.',
       'settings_security_sessions_this': 'هذا الجهاز',
       'settings_security_sessions_sign_out': 'تسجيل الخروج',
       'settings_security_sessions_sign_out_all':
@@ -2346,18 +2344,15 @@ class AppLocalizations {
       'settings_security_delete_body':
           '.سيؤدي ذلك إلى حذف حسابك وكشوفاتك وتفضيلاتك نهائياً. لا يمكن التراجع عن هذا الإجراء',
       'settings_security_delete_confirm': 'حذف حسابي',
-      'settings_security_delete_failed':
-          '.تعذّر حذف الحساب. حاول مرة أخرى',
+      'settings_security_delete_failed': '.تعذّر حذف الحساب. حاول مرة أخرى',
       // ---------- الإعدادات → النسخ الاحتياطي ----------
       'settings_backup_title': 'النسخ الاحتياطي والاستيراد',
       'settings_backup_export_title': 'تصدير بياناتك',
-      'settings_backup_export_sub':
-          '.حمّل نسخة من كشوفاتك وتقاريرك وتفضيلاتك',
+      'settings_backup_export_sub': '.حمّل نسخة من كشوفاتك وتقاريرك وتفضيلاتك',
       'settings_backup_export_action': 'تصدير البيانات',
       'settings_backup_export_in_progress': '…جارٍ تجهيز التصدير',
       'settings_backup_export_done': 'التصدير جاهز',
-      'settings_backup_export_failed':
-          '.تعذّر تجهيز التصدير. حاول مرة أخرى',
+      'settings_backup_export_failed': '.تعذّر تجهيز التصدير. حاول مرة أخرى',
       'settings_backup_cache_title': 'مسح البيانات المخزّنة',
       'settings_backup_cache_sub':
           '.إزالة الأخبار والرسوم وردود الذكاء الاصطناعي المخزّنة محلياً',
@@ -2367,17 +2362,13 @@ class AppLocalizations {
       // ---------- الإعدادات → الإشعارات ----------
       'settings_notifications_title': 'الإشعارات',
       'settings_notifications_push': 'الإشعارات الفورية',
-      'settings_notifications_push_sub':
-          '.استلام التنبيهات على هذا الجهاز',
+      'settings_notifications_push_sub': '.استلام التنبيهات على هذا الجهاز',
       'settings_notifications_email': 'تحديثات البريد الإلكتروني',
       'settings_notifications_email_sub':
           '.ملخصات أسبوعية وأخبار المنتج عبر البريد',
-      'settings_notifications_investigation':
-          'تنبيهات الكشوفات',
-      'settings_notifications_investigation_sub':
-          '.تنبيهك عند اكتمال أي تحقيق',
-      'settings_notifications_monitor':
-          'تنبيهات المراقبة',
+      'settings_notifications_investigation': 'تنبيهات الكشوفات',
+      'settings_notifications_investigation_sub': '.تنبيهك عند اكتمال أي تحقيق',
+      'settings_notifications_monitor': 'تنبيهات المراقبة',
       'settings_notifications_monitor_sub':
           '.تنبيهات عند رصد ارتفاع غير عادي لكيان تحت المراقبة',
       'settings_notifications_saved': '.تم حفظ تفضيلات الإشعارات',
@@ -2386,8 +2377,7 @@ class AppLocalizations {
       'settings_search_default_entity': 'نوع الجهة الافتراضي',
       'settings_search_default_region': 'المنطقة الافتراضية',
       'settings_search_safe': 'البحث الآمن',
-      'settings_search_safe_sub':
-          '.تصفية المحتوى الحساس من النتائج',
+      'settings_search_safe_sub': '.تصفية المحتوى الحساس من النتائج',
       'settings_search_saved': '.تم حفظ تفضيلات البحث',
       'settings_region_global': 'العالم',
       'settings_region_gulf': 'منطقة الخليج',
@@ -2406,26 +2396,26 @@ class AppLocalizations {
       'settings_help_subtitle':
           '.إجابات سريعة على الأسئلة الشائعة حول كاشف لايت',
       'settings_help_contact_action': 'تواصل مع الدعم',
-  'settings_help_q1': 'كيف أبدأ تحقيقًا جديدًا؟',
-'settings_help_a1':
-    'اضغط على زر "+" الذهبي في الشريط السفلي، وأدخل استعلامًا أو ارفع أدلة، ثم اضغط على "ابدأ التحقيق".',
+      'settings_help_q1': 'كيف أبدأ تحقيقًا جديدًا؟',
+      'settings_help_a1':
+          'اضغط على زر "+" الذهبي في الشريط السفلي، وأدخل استعلامًا أو ارفع أدلة، ثم اضغط على "ابدأ التحقيق".',
 
-'settings_help_q2': 'أين تقاريري المحفوظة؟',
-'settings_help_a2':
-    'افتح تبويب "التقارير" في أسفل التطبيق. يمكنك التصفية حسب المفضلة أو المشتركة أو الأرشيف.',
+      'settings_help_q2': 'أين تقاريري المحفوظة؟',
+      'settings_help_a2':
+          'افتح تبويب "التقارير" في أسفل التطبيق. يمكنك التصفية حسب المفضلة أو المشتركة أو الأرشيف.',
 
-'settings_help_q3': 'كيف أغيّر اللغة؟',
-'settings_help_a3':
-    'اذهب إلى الإعدادات ← اللغة، واختر العربية أو الإنجليزية. يُطبّق التطبيق التغيير فورًا.',
+      'settings_help_q3': 'كيف أغيّر اللغة؟',
+      'settings_help_a3':
+          'اذهب إلى الإعدادات ← اللغة، واختر العربية أو الإنجليزية. يُطبّق التطبيق التغيير فورًا.',
 
-'settings_help_q4': 'كيف تُحمى بياناتي؟',
-'settings_help_a4':
-    'تُؤمَّن الحسابات عبر Firebase Authentication. تبقى تحقيقاتك في حسابك، ولا تتم مشاركتها إلا باختيارك.',
+      'settings_help_q4': 'كيف تُحمى بياناتي؟',
+      'settings_help_a4':
+          'تُؤمَّن الحسابات عبر Firebase Authentication. تبقى تحقيقاتك في حسابك، ولا تتم مشاركتها إلا باختيارك.',
 
-'settings_help_q5':
-    'كيف أتنقل بين الوضع الداكن والفاتح وسمة العلامة الرئيسية؟',
-'settings_help_a5':
-    'افتح الإعدادات ← المظهر لاختيار الوضع الداكن أو الفاتح أو سمة العلامة الرئيسية. يُحفظ اختيارك للجلسة القادمة.',
+      'settings_help_q5':
+          'كيف أتنقل بين الوضع الداكن والفاتح وسمة العلامة الرئيسية؟',
+      'settings_help_a5':
+          'افتح الإعدادات ← المظهر لاختيار الوضع الداكن أو الفاتح أو سمة العلامة الرئيسية. يُحفظ اختيارك للجلسة القادمة.',
       // ---------- الإعدادات → الدعم المباشر ----------
       'settings_support_title': 'تواصل مع الدعم',
       'settings_support_subtitle':
@@ -2449,8 +2439,7 @@ class AppLocalizations {
           '.الرجاء إدخال عنوان بريد إلكتروني صالح',
       // ---------- الإعدادات → الملاحظات ----------
       'settings_feedback_title': 'إرسال ملاحظات',
-      'settings_feedback_subtitle':
-          '.أخبرنا بما تحبّه أو بما يمكننا تحسينه',
+      'settings_feedback_subtitle': '.أخبرنا بما تحبّه أو بما يمكننا تحسينه',
       'settings_feedback_category': 'الفئة',
       'settings_feedback_cat_bug': 'الإبلاغ عن خطأ',
       'settings_feedback_cat_idea': 'اقتراح',
@@ -2458,12 +2447,9 @@ class AppLocalizations {
       'settings_feedback_message': 'ملاحظاتك',
       'settings_feedback_send': 'إرسال الملاحظات',
       'settings_feedback_sending': '…جارٍ الإرسال',
-      'settings_feedback_sent':
-          '!شكراً على ملاحظاتك — نقرأ كل رسالة',
-      'settings_feedback_failed':
-          '.تعذّر إرسال ملاحظاتك. حاول مرة أخرى',
-      'settings_feedback_validation':
-          '.الرجاء كتابة رسالة قصيرة قبل الإرسال',
+      'settings_feedback_sent': '!شكراً على ملاحظاتك — نقرأ كل رسالة',
+      'settings_feedback_failed': '.تعذّر إرسال ملاحظاتك. حاول مرة أخرى',
+      'settings_feedback_validation': '.الرجاء كتابة رسالة قصيرة قبل الإرسال',
       // ---------- الإعدادات → حول التطبيق ----------
       'settings_about_title': 'عن كاشف لايت',
       'settings_about_version_label': 'الإصدار',
@@ -2480,8 +2466,7 @@ class AppLocalizations {
       'settings_about_view': 'عرض',
       // ---------- الإعدادات → جرس الإشعارات ----------
       'settings_bell_title': 'الإشعارات',
-      'settings_bell_empty':
-          '.أنت على اطّلاع بكل جديد. ستظهر التنبيهات هنا',
+      'settings_bell_empty': '.أنت على اطّلاع بكل جديد. ستظهر التنبيهات هنا',
       'settings_bell_mark_all': 'تحديد الكل كمقروء',
       'settings_bell_marked': '.تم تحديد كل الإشعارات كمقروءة',
       // ---------- المستندات القانونية ----------
@@ -2532,8 +2517,7 @@ class AppLocalizations {
       'legal_terms_section7_body':
           '.استفساراتك حول هذه الشروط؟ راسلنا على Nawaff89@gmail.com',
       'settings_privacy_legal': 'الخصوصية والشروط',
-      'settings_privacy_legal_sub':
-          '.اطّلع على سياسة الخصوصية وشروط الخدمة',
+      'settings_privacy_legal_sub': '.اطّلع على سياسة الخصوصية وشروط الخدمة',
       'settings_privacy_legal_action_view': 'عرض',
       'settings_privacy_action_terms': 'شروط الخدمة',
       'settings_privacy_action_privacy': 'سياسة الخصوصية',
@@ -2801,8 +2785,7 @@ class AppLocalizations {
       'settings_system_overview_sub':
           'لوحة مؤشرات، استوديو المحتوى وإجراءات سريعة',
       // ---------- Investigation flow (AR) ----------
-      'inv_validation_empty':
-          'أضف استعلاماً، أو وضعاً، أو دليلاً للمتابعة.',
+      'inv_validation_empty': 'أضف استعلاماً، أو وضعاً، أو دليلاً للمتابعة.',
       'inv_url_hint': 'الصق رابطاً (https://…)',
       'inv_url_add': 'إضافة',
       'inv_url_invalid': 'الرجاء إدخال رابط صالح.',
@@ -2815,38 +2798,27 @@ class AppLocalizations {
       'ir_evidence_uploading': 'جاري رفع {name}',
       'ir_evidence_reading_links': 'قراءة {n} رابط',
       'ir_evidence_extracting': 'استخراج النص من {n} ملف',
-      'ir_evidence_video_analysing':
-          'جارٍ معالجة أدلة الفيديو',
+      'ir_evidence_video_analysing': 'جارٍ معالجة أدلة الفيديو',
       'ir_error_config':
           'الذكاء الاصطناعي غير مُهيّأ. أضف OPENROUTER_API_KEY إلى ملف .env.',
-      'ir_error_auth':
-          'فشل التحقق من الذكاء الاصطناعي. تحقق من مفتاح API.',
-      'ir_error_rate_limit':
-          'تم تجاوز حد الاستخدام. انتظر لحظة وحاول مجدداً.',
+      'ir_error_auth': 'فشل التحقق من الذكاء الاصطناعي. تحقق من مفتاح API.',
+      'ir_error_rate_limit': 'تم تجاوز حد الاستخدام. انتظر لحظة وحاول مجدداً.',
       'ir_error_timeout': 'انتهت مهلة الطلب. حاول مرة أخرى.',
-      'ir_error_network':
-          'خطأ في الشبكة مع الذكاء الاصطناعي. تحقق من الاتصال.',
-      'ir_error_parse':
-          'تعذّر فهم رد الذكاء الاصطناعي. حاول مرة أخرى.',
+      'ir_error_network': 'خطأ في الشبكة مع الذكاء الاصطناعي. تحقق من الاتصال.',
+      'ir_error_parse': 'تعذّر فهم رد الذكاء الاصطناعي. حاول مرة أخرى.',
       'ir_error_server': 'خدمة الذكاء الاصطناعي غير متاحة مؤقتاً.',
       'ir_error_unknown': 'حدث خطأ ما. حاول مرة أخرى.',
-      'inv_action_compare_query':
-          'قارن بين Nike و Adidas في سوق الخليج',
-      'inv_action_monitor_query':
-          'راقب ذِكر Dior Sauvage الأسبوعي على المنصات',
-      'inv_action_match_query':
-          'ابحث عن مطابقات هوية للصورة المرفقة',
-      'inv_action_campaign_query':
-          'حلل أداء حملة Adidas ربيعية في الخليج',
-      'inv_action_influencer_query':
-          'حلل أبرز مؤثر الجمال في الكويت',
+      'inv_action_compare_query': 'قارن بين Nike و Adidas في سوق الخليج',
+      'inv_action_monitor_query': 'راقب ذِكر Dior Sauvage الأسبوعي على المنصات',
+      'inv_action_match_query': 'ابحث عن مطابقات هوية للصورة المرفقة',
+      'inv_action_campaign_query': 'حلل أداء حملة Adidas ربيعية في الخليج',
+      'inv_action_influencer_query': 'حلل أبرز مؤثر الجمال في الكويت',
       'ir_screen_title': 'نتائج التحقيق',
       'ir_processing_title': 'جاري تشغيل التحقيق',
       'ir_processing_failed': 'فشل التحقيق — حاول مجدداً.',
       'ir_processing_failed_title': 'فشل التحقيق',
       'ir_processing_failed_hint': 'جاري الإغلاق — يمكنك المحاولة مجدداً.',
-      'ir_error_generic':
-          'تعذّر بدء التحقيق. حاول مرة أخرى.',
+      'ir_error_generic': 'تعذّر بدء التحقيق. حاول مرة أخرى.',
       'ir_phase_draft': 'تجهيز',
       'ir_phase_collecting': 'جمع الأدلة',
       'ir_phase_processing': 'معالجة الأدلة',
@@ -2854,29 +2826,21 @@ class AppLocalizations {
       'ir_phase_completed': 'اكتمل',
       'ir_phase_failed': 'فشل',
       'ir_title_with_name': 'تحقيق · {name}',
-      'ir_subtitle':
-          'نظرة عامة، رؤى ومصادر لاستفسارك.',
-      'ir_subtitle_company':
-          '{name} · الملكية والتمويل والاستراتيجية',
-      'ir_subtitle_brand':
-          '{name} · التموضع والانتشار والتحركات الأخيرة',
-      'ir_subtitle_product':
-          '{name} · المواصفات والسعر والبدائل',
-      'ir_subtitle_influencer':
-          '{name} · الجمهور والتفاعل وملاءمة العلامات',
-      'ir_subtitle_market':
-          '{name} · الحجم والنمو واللاعبون والتنظيم',
+      'ir_subtitle': 'نظرة عامة، رؤى ومصادر لاستفسارك.',
+      'ir_subtitle_company': '{name} · الملكية والتمويل والاستراتيجية',
+      'ir_subtitle_brand': '{name} · التموضع والانتشار والتحركات الأخيرة',
+      'ir_subtitle_product': '{name} · المواصفات والسعر والبدائل',
+      'ir_subtitle_influencer': '{name} · الجمهور والتفاعل وملاءمة العلامات',
+      'ir_subtitle_market': '{name} · الحجم والنمو واللاعبون والتنظيم',
       'ir_hero_confidence': 'مستوى الثقة الإجمالي',
       'ir_meta_sources': '{n} مصدر',
       'ir_meta_items': '{n} نتيجة',
       'ir_summary_placeholder_query':
           'ملخص الذكاء الاصطناعي للاستعلام «{query}».',
-      'ir_summary_placeholder_entity':
-          'ملخص الذكاء الاصطناعي لقطاع {entity}.',
+      'ir_summary_placeholder_entity': 'ملخص الذكاء الاصطناعي لقطاع {entity}.',
       'ir_evidence_summary_files': '{files} ملف مرفق.',
       'ir_evidence_summary_urls': '{urls} رابط مرفق.',
-      'ir_evidence_summary_both':
-          '{files} ملف و{urls} رابط مرفق.',
+      'ir_evidence_summary_both': '{files} ملف و{urls} رابط مرفق.',
       'ir_evidence_status_pending': 'بالانتظار',
       'ir_evidence_status_uploading': 'جاري الرفع',
       'ir_evidence_status_processing': 'قيد المعالجة',
@@ -2896,14 +2860,11 @@ class AppLocalizations {
       'ir_section_overview_title': 'النظرة العامة',
       'ir_section_overview_sub': 'ملخص أعلى مستوى لهذا التشغيل.',
       'ir_section_evidence_title': 'الأدلة المرفقة',
-      'ir_section_evidence_sub':
-          'كل ملف أو رابط قمنا بمعالجته في هذا التحقيق.',
+      'ir_section_evidence_sub': 'كل ملف أو رابط قمنا بمعالجته في هذا التحقيق.',
       'ir_section_insights_title': 'الرؤى',
-      'ir_section_insights_sub':
-          'اتجاهات وفرص ومخاطر كشفها الذكاء الاصطناعي.',
+      'ir_section_insights_sub': 'اتجاهات وفرص ومخاطر كشفها الذكاء الاصطناعي.',
       'ir_section_key_findings_title': 'النتائج الرئيسية',
-      'ir_section_key_findings_sub':
-          'نتائج ملموسة مع مقاييس، محددة للموضوع.',
+      'ir_section_key_findings_sub': 'نتائج ملموسة مع مقاييس، محددة للموضوع.',
       'ir_section_activity_trends_title': 'النشاط والاتجاهات',
       'ir_section_activity_trends_sub':
           'أخبار ومنشورات وإطلاقات وتحركات سوقية حديثة.',
@@ -2914,8 +2875,7 @@ class AppLocalizations {
       'ir_section_opportunities_sub':
           'زوايا نمو وفجوات ومجالات غير مخدومة تستحق المتابعة.',
       'ir_section_risks_title': 'المخاطر والقضايا',
-      'ir_section_risks_sub':
-          'مخاوف وتناقضات وأمور تستحق تحققاً إضافياً.',
+      'ir_section_risks_sub': 'مخاوف وتناقضات وأمور تستحق تحققاً إضافياً.',
       'ir_section_sources_title': 'المصادر',
       'ir_section_sources_sub': 'من أين جاءت النتائج.',
       'ir_section_recs_title': 'التوصيات',
@@ -2932,8 +2892,7 @@ class AppLocalizations {
       'ir_ins_opportunity_body_with_evidence':
           'الأدلة المرفقة تتوافق مع فرضية إطلاق الربع الثالث.',
       'ir_ins_risk_title': 'مؤشر المخاطرة',
-      'ir_ins_risk_body':
-          'المشاعر مستقرة ومخاطر السمعة منخفضة هذا الأسبوع.',
+      'ir_ins_risk_body': 'المشاعر مستقرة ومخاطر السمعة منخفضة هذا الأسبوع.',
       'ir_ins_risk_metric': 'درجة المخاطرة',
       'ir_sources_title': 'المصادر والمراجع',
       'ir_src_news_title': 'ملخص أخبار القطاع',
@@ -2948,8 +2907,7 @@ class AppLocalizations {
       'ir_rec_2_body':
           'اضبط مراقبة آلية لأبرز 3 منافسين لرصد الإشارات المبكرة.',
       'ir_rec_3_title': 'أنشئ تقريراً معمّقاً',
-      'ir_rec_3_body':
-          'استخدم تبويب الرؤى كمدخل لتقرير تحقيق كامل.',
+      'ir_rec_3_body': 'استخدم تبويب الرؤى كمدخل لتقرير تحقيق كامل.',
       'ir_rec_badge_priority': 'أولوية',
       'ir_badge_verified': 'موثّق',
       'ir_tab_overview': 'الاستنتاج',
@@ -2977,22 +2935,18 @@ class AppLocalizations {
       'ir_auto_refresh_off_sub':
           'تشغيل هذا التحقيق مرة واحدة فقط — بدون تحديث تلقائي.',
       'ir_auto_refresh_30': '30 يوم',
-      'ir_auto_refresh_30_sub':
-          'تحديث التقرير تلقائياً لمدة 30 يوماً.',
+      'ir_auto_refresh_30_sub': 'تحديث التقرير تلقائياً لمدة 30 يوماً.',
       'ir_auto_refresh_60': '60 يوم',
-      'ir_auto_refresh_60_sub':
-          'تحديث التقرير تلقائياً لمدة 60 يوماً.',
+      'ir_auto_refresh_60_sub': 'تحديث التقرير تلقائياً لمدة 60 يوماً.',
       'ir_auto_refresh_confirm': 'حفظ',
-      'ir_auto_refresh_toast_off':
-          'تم إيقاف التحديث التلقائي لهذا التحقيق.',
+      'ir_auto_refresh_toast_off': 'تم إيقاف التحديث التلقائي لهذا التحقيق.',
       'ir_auto_refresh_toast_on':
           'تم جدولة التحديث التلقائي لمدة {days} يوماً.',
       'ir_auto_refresh_badge': 'تحديث تلقائي',
       'ir_auto_refresh_badge_active': 'التحديث التلقائي مفعّل',
       'ir_auto_refresh_badge_due': 'جارٍ التحديث…',
       'ir_auto_refresh_stop_button': 'إيقاف التحقيق',
-      'ir_auto_refresh_stopped_toast':
-          'تم إيقاف التحقيق.',
+      'ir_auto_refresh_stopped_toast': 'تم إيقاف التحقيق.',
       'ir_share_generating': 'جارٍ تجهيز التقرير…',
       'ir_export_saved_to': 'تم حفظ التقرير في {name}',
     },

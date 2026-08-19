@@ -1,0 +1,10 @@
+# OpenRouter API configuration.
+# Local development only. Replace `OPENROUTER_API_KEY` with your
+# real key from https://openrouter.ai/keys. Do NOT commit this
+# file.
+
+OPENROUTER_API_KEY=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
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=inclusionai/ling-2.6-flash
+OPENROUTER_REFERER=https://kashf-lite.app
+OPENROUTER_APP_TITLE=KASHF Lite
