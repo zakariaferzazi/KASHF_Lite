@@ -16,6 +16,7 @@ class OpenRouterAuditEntry {
     required this.statusCode,
     required this.durationMs,
     required this.success,
+    this.purpose,
     this.errorType,
     this.errorMessage,
     this.promptTokens,
@@ -30,6 +31,13 @@ class OpenRouterAuditEntry {
   final int durationMs;
   final bool success;
 
+  /// Short tag identifying which app feature triggered the call
+  /// (e.g. `home.summary`, `home.news`, `script.reel`,
+  /// `script.podcast`, `video.prepass`). Helps correlate the
+  /// entries the user sees on the OpenRouter dashboard with the
+  /// in-app screen that produced them.
+  final String? purpose;
+
   final String? errorType;
   final String? errorMessage;
 
@@ -41,6 +49,7 @@ class OpenRouterAuditEntry {
         'ts': timestamp.toIso8601String(),
         'endpoint': endpoint,
         'model': model,
+        'purpose': purpose,
         'status': statusCode,
         'duration_ms': durationMs,
         'success': success,

@@ -34,10 +34,12 @@ class HomeDataState {
     Object? lastError,
     DateTime? lastUpdated,
     bool clearError = false,
+    bool clearMarketPulse = false,
   }) {
     return HomeDataState(
       status: status ?? this.status,
-      marketPulse: marketPulse ?? this.marketPulse,
+      marketPulse:
+          clearMarketPulse ? null : (marketPulse ?? this.marketPulse),
       quickActions: quickActions ?? this.quickActions,
       lastError: clearError ? null : (lastError ?? this.lastError),
       lastUpdated: lastUpdated ?? this.lastUpdated,
@@ -94,8 +96,12 @@ class HomeDataController extends ChangeNotifier {
 
   /// Hydrate the controller from in-memory cache without hitting
   /// the network. Called once from `HomeScreen.initState`.
-  /// If the cache is empty, the screen falls back to the
-  /// localized demo data until the user requests a refresh.
+  ///
+  /// Market Pulse and Quick Actions both come from disk-mirrored
+  /// Firestore docs (`NewsContentRepository`), so once the
+  /// service has hydrated from disk the in-memory cache is
+  /// populated and we don't need to hit the network on first
+  /// paint.
   Future<void> bootstrap({
     required String language,
     String? region,
@@ -126,9 +132,14 @@ class HomeDataController extends ChangeNotifier {
   /// Force a fresh fetch. Safe to call from anywhere — typically
   /// from the refresh icon in the app bar or pull-to-refresh.
   ///
-  /// Only the Market Pulse section is AI-driven. The Quick
-  /// Actions section renders hardcoded demo data and does not
-  /// touch the API.
+  /// Market Pulse flow (see
+  /// [AiHomeService.fetchMarketPulse]):
+  ///   1. In-memory cache hit if same locale + not expired.
+  ///   2. Read persisted doc (disk → Firestore).
+  ///   3. If expired / missing / `forceRefresh`, hit Gemini and
+  ///      persist back.
+  ///   4. On any failure, return `null` so the home panel shows
+  ///      the clean empty state.
   Future<void> refreshNow({String? language, String? region}) async {
     if (_state.status == HomeDataStatus.loading) {
       // Already refreshing — don't double-fire.
@@ -152,6 +163,7 @@ class HomeDataController extends ChangeNotifier {
       _updateState(_state.copyWith(
         status: HomeDataStatus.ready,
         marketPulse: data,
+        clearMarketPulse: data == null,
         lastUpdated: DateTime.now(),
         clearError: true,
       ));

@@ -39,6 +39,24 @@ service cloud.firestore {
     // owning authenticated user may read or write their own slice.
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+      // The admin account (nawaff89@gmail.com) may read every user's
+      // investigations so the "System Overview" can show all users'
+      // rows. Reads only, never writes, to other users' data.
+      allow read: if request.auth != null
+                  && request.auth.token.email != null
+                  && request.auth.token.email.lower()
+                     == 'nawaff89@gmail.com';
+    }
+
+    // Collection-group rule backing the admin "System Overview", which
+    // streams across users/{anyUid}/investigations via
+    // `collectionGroup('investigations')`. Denied for everyone except
+    // the admin; the admin also inherits the allow above for reads.
+    match /{path=**}/investigations/{docId} {
+      allow read: if request.auth != null
+                  && request.auth.token.email != null
+                  && request.auth.token.email.lower()
+                     == 'nawaff89@gmail.com';
     }
 
     // Deny everything else by default.

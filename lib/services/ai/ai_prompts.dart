@@ -18,6 +18,13 @@ class AiPrompts {
 
   /// System prompt used for every Market Pulse request. We force
   /// the model to return JSON in the exact schema the UI expects.
+  ///
+  /// IMPORTANT: each locale has its own Firestore doc
+  /// (`aiContent/home_pulse/regions/{lang}_{region}`), so the
+  /// model is asked for ONE locale per call. The app issues
+  /// separate requests when the user flips language; the doc
+  /// layout (one language × region per file) means the cached
+  /// payload never mixes scripts.
   static String marketPulseSystemPrompt({
     required String language,
     required String region,

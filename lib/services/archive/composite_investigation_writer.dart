@@ -48,15 +48,29 @@ class CompositeInvestigationWriter implements InvestigationWriter {
   /// Builds the merged, deduped, newest-first list used by
   /// `relay`. `id` is the natural key — duplicate ids prefer the
   /// remote copy (which carries the latest server timestamp).
+  ///
+  /// Each input list is also deduped internally. Without that
+  /// step, if either source emitted the same snapshot twice in
+  /// quick succession (Firestore re-attaching on auth tick, local
+  /// cache re-flush) the merged list would carry the duplicate
+  /// forward and the home screen would render the same row
+  /// twice — which is what the admin reported when generating
+  /// reel/podcast scripts.
   List<SavedInvestigation> _merge(
     List<SavedInvestigation> local,
     List<SavedInvestigation> remote,
   ) {
+    final remoteById = <String, SavedInvestigation>{
+      for (final r in remote) r.id: r,
+    };
+    final localById = <String, SavedInvestigation>{
+      for (final l in local) l.id: l,
+    };
     final byId = <String, SavedInvestigation>{};
-    for (final r in remote) {
+    for (final r in remoteById.values) {
       byId[r.id] = r;
     }
-    for (final l in local) {
+    for (final l in localById.values) {
       byId.putIfAbsent(l.id, () => l);
     }
     final merged = byId.values.toList()
@@ -169,5 +183,53 @@ class CompositeInvestigationWriter implements InvestigationWriter {
     // Flush any "anonymous" rows from the local mirror into Firestore.
     final flushed = await _local.commitPendingForUser(userId);
     return flushed;
+  }
+
+  @override
+  Future<int> clearAllForUser(String userId) async {
+    // Wipe both halves so the local cache AND the cloud archive
+    // stay in sync after the destructive "delete all" flow.
+    final localRemoved = await _local.clearAllForUser(userId);
+    final remoteRemoved = await _remote.clearAllForUser(userId);
+    return localRemoved + remoteRemoved;
+  }
+
+  /// Removes a single investigation by [id] from BOTH halves:
+  ///   1. Remote first — the cloud is the source of truth for
+  ///      the admin's investigations table, so a failed remote
+  ///      delete should propagate up so the UI can show a snackbar.
+  ///      We propagate the exception rather than swallowing so the
+  ///      admin actually sees what went wrong.
+  ///   2. Local mirror afterwards so the offline cache stays in
+  ///      sync with the cloud. Local failures are logged but
+  ///      swallowed — the next reload will reconcile.
+  ///
+  /// Returns `true` when the row was found in either store.
+  @override
+  Future<bool> deleteOneForUser(String userId, String id) async {
+    bool removed = false;
+    // 1. Cloud first (source of truth). Errors bubble up so the
+    //    admin UI can render a real diagnostic.
+    try {
+      removed = await _remote.deleteOneForUser(userId, id);
+    } catch (e, st) {
+      debugPrint(
+        '[CompositeInvestigationWriter] remote deleteOne failed '
+        'for userId=$userId id=$id: $e\n$st',
+      );
+      rethrow;
+    }
+    // 2. Local mirror. Best-effort — failures here don't undo the
+    //    remote delete, they just delay the local reconciliation.
+    try {
+      final localRemoved = await _local.deleteOneForUser(userId, id);
+      removed = removed || localRemoved;
+    } catch (e, st) {
+      debugPrint(
+        '[CompositeInvestigationWriter] local deleteOne failed '
+        'for userId=$userId id=$id: $e\n$st',
+      );
+    }
+    return removed;
   }
 }

@@ -132,12 +132,26 @@ service cloud.firestore {
         .snapshots()
         .listen(
       (snap) {
-        final items = snap.docs
-            .map((d) => SavedInvestigation.fromFirestore({
-                  'id': d.id,
-                  ...d.data(),
-                }))
-            .toList();
+        // Defensive dedup by id. Firestore guarantees unique doc
+        // ids inside a collection, but the upstream collection can
+        // briefly surface a doc twice when an offline-cached entry
+        // is reconciled with a freshly-arrived server copy and the
+        // two momentarily overlap. Without dedup the same id gets
+        // pushed into `_watchCtrl` twice and every subscriber's
+        // UI renders the same row twice — exactly the symptom the
+        // admin saw when generating reel/podcast scripts. Newest-
+        // first ordering is preserved by the `.orderBy` above; we
+        // keep the first occurrence (which IS the newest by that
+        // ordering) and drop the rest.
+        final byId = <String, SavedInvestigation>{};
+        for (final d in snap.docs) {
+          final item = SavedInvestigation.fromFirestore({
+            'id': d.id,
+            ...d.data(),
+          });
+          byId.putIfAbsent(item.id, () => item);
+        }
+        final items = List<SavedInvestigation>.unmodifiable(byId.values);
         _latestByUser[userId] = items;
         _watchCtrl.add(items);
       },
@@ -233,10 +247,121 @@ service cloud.firestore {
     );
   }
 
+  /// Admin-only: streams completed investigations from EVERY user
+  /// by querying the `investigations` collection group, i.e.
+  /// `users/{anyUid}/investigations/{docId}`. Newest first, capped
+  /// at [limit].
+  ///
+  /// The underlying query is only satisfied for the admin account
+  /// (email `nawaff89@gmail.com`) by the Firestore rules — every
+  /// other signed-in user is still restricted to their own slice,
+  /// so the SDK surfaces a permission error for them instead of
+  /// leaking data. Callers should treat non-admin usage as
+  /// unsupported and only invoke this after an [AdminGate.isAdmin]
+  /// check.
+  Stream<List<SavedInvestigation>> watchAllUsers({
+    int limit = _kCap,
+  }) async* {
+    final ctrl = StreamController<List<SavedInvestigation>>();
+    final sub = _db
+        .collectionGroup('investigations')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .listen(
+      (snap) {
+        final items = snap.docs
+            .map((d) => SavedInvestigation.fromFirestore({
+                  'id': d.id,
+                  ...d.data(),
+                }))
+            .toList();
+        if (!ctrl.isClosed) {
+          ctrl.add(List<SavedInvestigation>.unmodifiable(items));
+        }
+      },
+      onError: (Object e, StackTrace st) {
+        debugPrint(
+          '[FirestoreInvestigationWriter] watchAllUsers error: $e\n$st',
+        );
+        _onError?.call(e, st);
+      },
+    );
+    ctrl.onCancel = () => sub.cancel();
+    yield* ctrl.stream;
+  }
+
   @override
   Future<int> commitPendingForUser(String userId) async {
     // Firestore is the source of truth — nothing to flush.
     return 0;
+  }
+
+  /// Removes a single investigation doc by id from
+  /// `users/{uid}/investigations/{docId}`. Propagates the error
+  /// so the caller (the admin-only delete action) can surface it
+  /// via a snackbar. Also drops the per-user cache entry and
+  /// re-emits a fresh snapshot on `_watchCtrl` so the home +
+  /// overview screens update immediately without waiting for the
+  /// Firestore listener to deliver the next natural snapshot
+  /// (which can take a few hundred ms).
+  @override
+  Future<bool> deleteOneForUser(String userId, String id) async {
+    try {
+      await _userCol(userId).doc(id).delete();
+    } catch (e, st) {
+      // The composite writer still needs to know whether to
+      // invalidate its own local copy. We propagate so the admin
+      // UI can show a meaningful error message.
+      debugPrint(
+        '[FirestoreInvestigationWriter] deleteOne failed for '
+        'userId=$userId id=$id: $e\n$st',
+      );
+      rethrow;
+    }
+    // Optimistically drop the cached copy so the live watchers
+    // re-emit a list that no longer includes the deleted row, even
+    // if the Firestore snapshot listener hasn't ticked yet.
+    final cached = _latestByUser[userId];
+    if (cached != null) {
+      final filtered = cached.where((it) => it.id != id).toList();
+      _latestByUser[userId] = List<SavedInvestigation>.unmodifiable(
+        filtered,
+      );
+      if (!_watchCtrl.isClosed) {
+        _watchCtrl.add(_latestByUser[userId]!);
+      }
+    }
+    return true;
+  }
+
+  @override
+  Future<int> clearAllForUser(String userId) async {
+    // Best-effort batch delete. We paginate through every
+    // `investigations` doc and delete them in chunks of 500 (the
+    // Firestore batch limit). Failures are propagated so the caller
+    // (the System Overview destructive action) can surface them
+    // to the admin via the snackbar.
+    int removed = 0;
+    while (true) {
+      final snap = await _userCol(userId).limit(500).get();
+      if (snap.docs.isEmpty) break;
+      final batch = _db.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      removed += snap.docs.length;
+      if (snap.docs.length < 500) break;
+    }
+    // Drop the cached snapshot so live watchers re-emit an empty
+    // list immediately instead of waiting for the next Firestore
+    // event.
+    _latestByUser.remove(userId);
+    if (!_watchCtrl.isClosed) {
+      _watchCtrl.add(const <SavedInvestigation>[]);
+    }
+    return removed;
   }
 
   /// Cancels the underlying Firestore listener and closes the

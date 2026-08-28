@@ -202,6 +202,7 @@ class InvestigationService {
         // pre-pass above converts videos to text before this point.
         model: OpenRouterConfig.model(),
         temperature: 0.4,
+        purpose: 'investigation.main',
         // Investigation reports emit 8 sections of structured
         // items in two languages. Budget MUST be large enough
         // for the full schema; truncating mid-JSON is the #1

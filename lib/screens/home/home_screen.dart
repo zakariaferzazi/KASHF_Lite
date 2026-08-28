@@ -1253,15 +1253,25 @@ class _MarketPulsePanel extends StatelessWidget {
     ThemeScope.of(context);
     final palette = KashfPalette.active;
     // Color tokens used across the panel. The semantic colours
-    // (green/blue/red/gold) are status indicators and intentionally
-    // do NOT flip with the theme; only the *surfaces* adapt.
+    // (green/blue) are status indicators and intentionally do NOT
+    // flip with the theme; only the *surfaces* adapt.
     const green = Color(0xFF22C55E);
     const blue = Color(0xFF38BDF8);
-    const red = Color(0xFFEF4444);
-    const gold = Color(0xFFF4C542);
+
+    // Genuine empty state: no real saved investigations AND the
+    // AI path returned nothing (or failed). Render a single
+    // honest "no data yet" tile rather than fabricating fake
+    // percentages for brands the user never investigated. The
+    // loading spinner is rendered separately by the parent
+    // `_MarketPulseList` so we don't double-render spinners here.
+    final hasRealAiData =
+        aiMetrics != null && aiMetrics!.isNotEmpty && aiActivity != null;
+    if (!hasRealAiData && !isLoading) {
+      return _MarketPulseEmptyState(l: l);
+    }
 
     final List<_PulseCardData> cards;
-    if (aiMetrics != null && aiMetrics!.isNotEmpty) {
+    if (hasRealAiData) {
       cards = aiMetrics!.take(4).map((m) {
         return _PulseCardData(
           label: m.label,
@@ -1274,8 +1284,8 @@ class _MarketPulsePanel extends StatelessWidget {
       }).toList();
       while (cards.length < 4) {
         cards.add(_PulseCardData(
-          label: 'â€”',
-          value: 'â€”',
+          label: '—',
+          value: '—',
           sub: '',
           color: blue,
           bg: palette.surfaceLight,
@@ -1283,40 +1293,22 @@ class _MarketPulsePanel extends StatelessWidget {
         ));
       }
     } else {
-      cards = <_PulseCardData>[
-        _PulseCardData(
-          label: l.t('home_pulse_top_gainers'),
-          value: l.t('home_pulse_gainers_val'),
-          sub: l.t('home_pulse_gainers_sub'),
-          color: green,
-          bg: green.withValues(alpha: 0.10),
-          points: _kSparkUp,
-        ),
-        _PulseCardData(
-          label: l.t('home_pulse_top_traded'),
-          value: l.t('home_pulse_traded_val'),
-          sub: l.t('home_pulse_traded_sub'),
-          color: blue,
-          bg: blue.withValues(alpha: 0.10),
+      // Loading state — keep the same shape but render muted
+      // placeholders so the layout doesn't jump when the real
+      // data lands. We deliberately do NOT show the demo numbers
+      // (`Top Gainers +42% Lattafa` etc.) because the user
+      // explicitly does not want invented data on the dashboard.
+      cards = List<_PulseCardData>.generate(4, (i) {
+        const muted = Color(0xFF475569);
+        return _PulseCardData(
+          label: '—',
+          value: '—',
+          sub: '',
+          color: muted,
+          bg: palette.surfaceLight,
           points: _kSparkWave1,
-        ),
-        _PulseCardData(
-          label: l.t('home_pulse_top_losers'),
-          value: l.t('home_pulse_losers_val'),
-          sub: l.t('home_pulse_losers_sub'),
-          color: red,
-          bg: red.withValues(alpha: 0.10),
-          points: _kSparkDown,
-        ),
-        _PulseCardData(
-          label: l.t('home_pulse_top_campaigns'),
-          value: l.t('home_pulse_campaigns_val'),
-          sub: l.t('home_pulse_campaigns_sub'),
-          color: gold,
-          bg: gold.withValues(alpha: 0.10),
-          points: _kSparkWave2,
-        ),
-      ];
+        );
+      });
     }
 
     return Column(
@@ -1468,6 +1460,80 @@ class _PulseCardData {
   final List<double> points;
 }
 
+/// Empty-state placeholder for the Market Pulse strip. Rendered
+/// when the user has no saved investigations AND the AI path
+/// returned nothing. We deliberately keep this small and
+/// honest — no fake numbers, no "Top Gainers +42%" placeholders.
+/// Just a brief message + a CTA pointing at the investigation
+/// screen so the user knows how to fill the panel with real
+/// data.
+class _MarketPulseEmptyState extends StatelessWidget {
+  const _MarketPulseEmptyState({required this.l});
+
+  final AppLocalizations l;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: KashfColors.gold.withValues(alpha: 0.16),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.insights_outlined,
+              size: 18,
+              color: KashfColors.gold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l.t('home_pulse_empty_title'),
+                  style: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l.t('home_pulse_empty_sub'),
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PulseMetricCard extends StatelessWidget {
   const _PulseMetricCard({
     required this.data,
@@ -1614,22 +1680,10 @@ const List<double> _kSparkUp = <double>[
   0.80, 0.88, 0.92, 0.86, 0.78, 0.66, 0.54, 0.46,
 ];
 
-const List<double> _kSparkDown = <double>[
-  0.78, 0.72, 0.64, 0.58, 0.50, 0.42, 0.36, 0.32,
-  0.30, 0.36, 0.44, 0.50, 0.58, 0.62, 0.66, 0.58,
-  0.48, 0.40, 0.34, 0.30, 0.28, 0.34, 0.42, 0.50,
-];
-
 const List<double> _kSparkWave1 = <double>[
   0.50, 0.62, 0.74, 0.82, 0.78, 0.66, 0.54, 0.42,
   0.34, 0.40, 0.52, 0.64, 0.74, 0.82, 0.88, 0.80,
   0.68, 0.56, 0.44, 0.36, 0.42, 0.54, 0.66, 0.76,
-];
-
-const List<double> _kSparkWave2 = <double>[
-  0.70, 0.60, 0.48, 0.38, 0.32, 0.40, 0.52, 0.64,
-  0.74, 0.80, 0.74, 0.64, 0.52, 0.42, 0.36, 0.42,
-  0.54, 0.66, 0.78, 0.86, 0.82, 0.72, 0.60, 0.50,
 ];
 
 // ============================ Recent Updates ============================

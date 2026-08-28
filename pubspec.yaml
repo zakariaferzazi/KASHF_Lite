@@ -154,6 +154,13 @@ flutter:
     - assets/
     - assets/fonts/
     - assets/Data/
+    # OpenRouter / Firebase runtime configuration. The `.env` file
+    # is bundled as an asset so `flutter_dotenv` can read the API
+    # key in production builds (release mode strips the working
+    # directory, so a project-root .env won't be found without this).
+    # If you don't have a .env locally, copy `.env.example` to
+    # `.env` and fill in your real key.
+    - .env
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

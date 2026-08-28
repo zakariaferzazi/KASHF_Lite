@@ -53,7 +53,23 @@ class LatestInvestigationsController extends ChangeNotifier {
     final source = _archive.watchLatestFromFirestore(limit: _limit);
     _sub = source.listen(
       (list) {
-        _items = List<SavedInvestigation>.unmodifiable(list);
+        // Defensive dedup by id. Firestore guarantees one doc per
+        // id inside a collection, but the upstream broadcast stream
+        // can re-emit the same snapshot multiple times in quick
+        // succession (e.g. when the Firestore listener re-attaches
+        // on auth state change, or when the home tab is rebuilt and
+        // a new LatestInvestigationsController subscribes while the
+        // previous one is still tearing down). Without dedup the
+        // picker and the Recent Updates list would render the same
+        // row twice — which is exactly what the admin reported when
+        // generating reel/podcast scripts. Newest-first order is
+        // preserved by iterating the source list in order; we keep
+        // the first occurrence we see for any given id.
+        final byId = <String, SavedInvestigation>{};
+        for (final item in list) {
+          byId.putIfAbsent(item.id, () => item);
+        }
+        _items = List<SavedInvestigation>.unmodifiable(byId.values);
         _isLoading = false;
         _error = null;
         notifyListeners();

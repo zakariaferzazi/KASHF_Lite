@@ -72,7 +72,7 @@ class OpenRouterConfig {
   /// [OpenRouterConfigException] when missing so callers can
   /// surface a clear error instead of silently using an empty key.
   static String get apiKey {
-    final key = dotenv.maybeGet('OPENROUTER_API_KEY');
+    final key = _safeRead('OPENROUTER_API_KEY');
     if (key == null || key.trim().isEmpty) {
       throw const OpenRouterConfigException(
         'OPENROUTER_API_KEY is missing. Add it to your .env file.',
@@ -84,15 +84,30 @@ class OpenRouterConfig {
   /// Whether the API key is configured. Use this in UI to disable
   /// the AI features without crashing.
   static bool get isConfigured {
-    final key = dotenv.maybeGet('OPENROUTER_API_KEY');
+    final key = _safeRead('OPENROUTER_API_KEY');
     return key != null && key.trim().isNotEmpty;
+  }
+
+  /// Wraps [dotenv.maybeGet] so we never leak the underlying
+  /// `flutter_dotenv` `NotInitializedError` to the UI. If the
+  /// `.env` failed to load at startup, every subsequent read would
+  /// throw — we instead return `null` so the configured check
+  /// falls through to a clean "API key not configured" message.
+  static String? _safeRead(String key) {
+    try {
+      return dotenv.maybeGet(key);
+    } catch (_) {
+      // Either `NotInitializedError` (dotenv.load never ran) or any
+      // other access error from the package — treat as "missing".
+      return null;
+    }
   }
 
   /// Base URL for the OpenRouter API. Override-able through the
   /// `OPENROUTER_BASE_URL` env var for testing against the
   /// OpenRouter-compatible mock servers.
   static String get baseUrl {
-    final override = dotenv.maybeGet('OPENROUTER_BASE_URL');
+    final override = _safeRead('OPENROUTER_BASE_URL');
     if (override != null && override.trim().isNotEmpty) {
       return override.trim();
     }
@@ -132,7 +147,7 @@ class OpenRouterConfig {
 
   /// Referer header. Override-able through `OPENROUTER_REFERER`.
   static String get referer {
-    final override = dotenv.maybeGet('OPENROUTER_REFERER');
+    final override = _safeRead('OPENROUTER_REFERER');
     if (override != null && override.trim().isNotEmpty) {
       return override.trim();
     }
@@ -141,7 +156,7 @@ class OpenRouterConfig {
 
   /// App title header. Override-able through `OPENROUTER_APP_TITLE`.
   static String get appTitle {
-    final override = dotenv.maybeGet('OPENROUTER_APP_TITLE');
+    final override = _safeRead('OPENROUTER_APP_TITLE');
     if (override != null && override.trim().isNotEmpty) {
       return override.trim();
     }

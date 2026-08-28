@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -310,55 +312,137 @@ class NewsContentRepository {
   /// JSON (or null on miss / expiry). The payload is the same
   /// shape that [AiHomeService] parses, so callers can hand the
   /// value straight to the existing parsers.
+  ///
+  /// Read order:
+  ///   1. **Disk cache** (instant). If a payload is present and
+  ///      within the 24-hour refresh window, return it directly.
+  ///   2. **Firestore server** (the source of truth). We
+  ///      deliberately do NOT pin to `Source.cache` here —
+  ///      cold installs (where the local cache has never been
+  ///      primed for this user) would otherwise return `null`
+  ///      even though the data sits in Firestore, and the user
+  ///      would be forced to hit the refresh button on every
+  ///      app launch. We always check the server so a payload
+  ///      that was written by a previous session is picked up
+  ///      immediately.
+  ///   3. **Network error / offline** — fall back to whatever
+  ///      is in the Firestore disk cache (the legacy
+  ///      `Source.cache` path) so the home screen still has
+  ///      something to render if we got disconnected.
+  ///   4. On a successful server read, mirror the doc into the
+  ///      disk cache so subsequent launches are instant.
   Future<Map<String, dynamic>?> readAiContent({
     required AiContentKind kind,
     required String language,
     required String region,
   }) async {
     final disk = _disk;
+    final docRef = _firestore
+        .collection('aiContent')
+        .doc(kind.docKey)
+        .collection('regions')
+        .doc('${language}_${region.toLowerCase()}');
+
+    // Disk first — instant path for warm launches.
     if (disk != null) {
       final raw = await disk.readJson(_aiDiskKey(kind, language, region));
       if (raw != null) {
         final payload = raw['payload'];
-        if (payload is Map<String, dynamic>) return payload;
+        if (payload is Map<String, dynamic>) {
+          // Also kick off a background server read so the disk
+          // cache stays in sync if a manual refresh happened
+          // on another device.
+          _refreshDiskFromServer(
+            docRef: docRef,
+            diskKey: _aiDiskKey(kind, language, region),
+          );
+          return payload;
+        }
       }
     }
+
+    // Server next — source of truth.
     try {
-      final snap = await _firestore
-          .collection('aiContent')
-          .doc(kind.docKey)
-          .collection('regions')
-          .doc('${language}_${region.toLowerCase()}')
-          .get(const GetOptions(source: Source.cache))
-          .timeout(const Duration(seconds: 3));
+      final snap = await docRef.get().timeout(const Duration(seconds: 3));
       if (!snap.exists) return null;
       final data = snap.data();
       if (data == null) return null;
       final payload = data['payload'];
       if (payload is Map<String, dynamic>) {
-        // Mirror into disk so subsequent launches are instant.
         if (disk != null) {
           await disk.writeJson(_aiDiskKey(kind, language, region), data);
         }
         return payload;
       }
       return null;
-    } catch (e) {
-      _warnFirestoreOnce('ai-read', e);
-      return null;
+    } catch (serverErr) {
+      // Offline / timeout — fall back to whatever the Firestore
+      // local cache has. This is the legacy path; it survives
+      // cold-cache + offline scenarios.
+      try {
+        final cachedSnap = await docRef
+            .get(const GetOptions(source: Source.cache))
+            .timeout(const Duration(seconds: 2));
+        if (!cachedSnap.exists) return null;
+        final data = cachedSnap.data();
+        if (data == null) return null;
+        final payload = data['payload'];
+        if (payload is Map<String, dynamic>) return payload;
+        return null;
+      } catch (_) {
+        _warnFirestoreOnce('ai-read', serverErr);
+        return null;
+      }
     }
+  }
+
+  /// Fire-and-forget background sync of the disk cache from
+  /// Firestore. We don't await this from [readAiContent] so the
+  /// caller gets an instant response from disk on warm
+  /// launches. Errors are silent — the next foreground read
+  /// will retry.
+  void _refreshDiskFromServer({
+    required DocumentReference<Map<String, dynamic>> docRef,
+    required String diskKey,
+  }) {
+    unawaited(() async {
+      try {
+        final snap = await docRef.get().timeout(const Duration(seconds: 3));
+        if (!snap.exists) return;
+        final data = snap.data();
+        if (data == null) return;
+        final disk = _disk;
+        if (disk != null) {
+          await disk.writeJson(diskKey, data);
+        }
+      } catch (_) {
+        // Silent — best effort.
+      }
+    }());
   }
 
   /// `true` when the AI payload for [kind] / [language] / [region]
   /// is older than [refreshInterval] OR missing entirely. Callers
   /// (e.g. `AiHomeService.fetchMarketPulse`) skip the OpenRouter
   /// request when this returns false.
+  ///
+  /// Same read order as [readAiContent]: disk first (instant),
+  /// then Firestore server (the source of truth — pinned to the
+  /// default source, NOT `Source.cache`, so cold installs find
+  /// existing payloads and don't trigger a fresh AI fetch on
+  /// every launch).
   Future<bool> aiNeedsRefresh({
     required AiContentKind kind,
     required String language,
     required String region,
   }) async {
     final disk = _disk;
+    final docRef = _firestore
+        .collection('aiContent')
+        .doc(kind.docKey)
+        .collection('regions')
+        .doc('${language}_${region.toLowerCase()}');
+
     if (disk != null) {
       final raw = await disk.readJson(_aiDiskKey(kind, language, region));
       if (raw != null) {
@@ -372,19 +456,14 @@ class NewsContentRepository {
       }
     }
     try {
-      final snap = await _firestore
-          .collection('aiContent')
-          .doc(kind.docKey)
-          .collection('regions')
-          .doc('${language}_${region.toLowerCase()}')
-          .get(const GetOptions(source: Source.cache))
-          .timeout(const Duration(seconds: 3));
+      final snap = await docRef.get().timeout(const Duration(seconds: 3));
       if (!snap.exists) return true;
       final data = snap.data();
       if (data == null) return true;
       final at = data['updatedAt'];
       if (at is! num) return true;
       final stamped = DateTime.fromMillisecondsSinceEpoch(at.toInt());
+      // Within the refresh window — caller can skip the AI call.
       return DateTime.now().difference(stamped) > _refreshInterval;
     } catch (_) {
       return true;

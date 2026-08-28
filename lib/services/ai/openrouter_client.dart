@@ -58,6 +58,7 @@ class OpenRouterRequest {
     this.responseFormat,
     this.extra = const <String, dynamic>{},
     this.enableWebSearch = true,
+    this.purpose,
   });
 
   final List<OpenRouterMessage> messages;
@@ -88,6 +89,13 @@ class OpenRouterRequest {
   /// See https://openrouter.ai/docs/features/web-search for the
   /// full payload shape.
   final bool enableWebSearch;
+
+  /// Optional short tag identifying the calling feature. Recorded
+  /// in the audit log so the user can tell, when looking at the
+  /// OpenRouter dashboard, whether a request came from the home
+  /// page, an investigation, the script studio, the video pre-pass,
+  /// etc.
+  final String? purpose;
 }
 
 /// Successful response payload.
@@ -211,6 +219,7 @@ class OpenRouterClient {
         statusCode: 0,
         durationMs: 0,
         success: false,
+        purpose: req.purpose,
         errorType: 'config',
         errorMessage: 'OPENROUTER_API_KEY missing',
       ));
@@ -244,6 +253,7 @@ class OpenRouterClient {
               durationMs:
                   DateTime.now().difference(startedAt).inMilliseconds,
               success: true,
+              purpose: req.purpose,
               promptTokens: parsed.promptTokens,
               completionTokens: parsed.completionTokens,
               totalTokens: parsed.totalTokens,
@@ -265,6 +275,7 @@ class OpenRouterClient {
               durationMs:
                   DateTime.now().difference(startedAt).inMilliseconds,
               success: false,
+              purpose: req.purpose,
               errorType: errType.name,
               errorMessage: _extractErrorMessage(response.body),
             ));
@@ -316,6 +327,7 @@ class OpenRouterClient {
       statusCode: lastStatus ?? 0,
       durationMs: durationMs,
       success: false,
+      purpose: req.purpose,
       errorType: err.type.name,
       errorMessage: err.message,
     ));
@@ -360,6 +372,7 @@ class OpenRouterClient {
                   : null,
               extra: req.extra,
               enableWebSearch: req.enableWebSearch,
+              purpose: req.purpose,
             )
           : OpenRouterRequest(
               messages: req.messages,
@@ -369,6 +382,7 @@ class OpenRouterClient {
               responseFormat: req.responseFormat,
               extra: req.extra,
               enableWebSearch: req.enableWebSearch,
+              purpose: req.purpose,
             );
     }
 

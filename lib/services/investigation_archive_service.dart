@@ -269,6 +269,22 @@ class InvestigationArchiveService {
     return remote.watchLatest(_currentUserId, limit: limit);
   }
 
+  /// Admin-only: streams completed investigations from EVERY user
+  /// directly from Firestore via the `investigations` collection
+  /// group. Returns an empty stream when the Firestore writer
+  /// hasn't been enabled. Non-admin callers will receive a
+  /// permission error from Firestore (enforced by the rules) — so
+  /// callers must gate this behind [AdminGate.isAdmin] first.
+  Stream<List<SavedInvestigation>> watchAllUsersFromFirestore({
+    int limit = _kLatestLoadLimit,
+  }) {
+    final remote = _firestoreWriter;
+    if (remote == null) {
+      return const Stream<List<SavedInvestigation>>.empty();
+    }
+    return remote.watchAllUsers(limit: limit);
+  }
+
   /// One-shot read. Used on cold start when subscribing isn't
   /// appropriate yet.
   Future<List<SavedInvestigation>> fetchLatest({
@@ -290,6 +306,37 @@ class InvestigationArchiveService {
   /// authenticated user. Safe to call once after sign-in.
   Future<int> commitPending() =>
       _writer.commitPendingForUser(_currentUserId);
+
+  /// Drops every cached row for the active user. Powers the
+  /// "delete all" buttons on the System Overview screen. Returns
+  /// the number of rows that were removed from the local mirror;
+  /// Firestore rows are intentionally left alone (they're managed
+  /// from the Reports tab / cloud console).
+  Future<int> clearAllForActiveUser() =>
+      _writer.clearAllForUser(_currentUserId);
+
+  /// Admin-only: deletes a single investigation by [id] from both
+  /// the cloud archive (`users/{uid}/investigations/{docId}`) AND
+  /// the local mirror. Returns `true` when the row was found and
+  /// removed from either store. Failures on the cloud side
+  /// propagate so the caller can surface them via a snackbar;
+  /// failures on the local mirror are logged and swallowed.
+  ///
+  /// [userId] is the owning user's uid (from the investigation's
+  /// `userId` field). For the admin overview each row can belong to
+  /// a *different* user, so the caller must pass that row's owning
+  /// [userId] to point the delete at the correct Firestore path —
+  /// otherwise the admin's own collection would be queried and the
+  /// row (belonging to someone else) would never be found. Defaults
+  /// to the current user for backward-compatible single-user calls.
+  ///
+  /// The Firestore snapshot listener will deliver the deletion to
+  /// every active watcher within a few hundred ms, but the
+  /// underlying writer also re-emits its cached snapshot
+  /// optimistically so the UI updates immediately without
+  /// waiting for the listener tick.
+  Future<bool> deleteInvestigation(String id, {String? userId}) =>
+      _writer.deleteOneForUser(userId ?? _currentUserId, id);
 
   /// Hydrates the full [InvestigationResult] for a previously-
   /// saved investigation by [id]. Returns `null` when no

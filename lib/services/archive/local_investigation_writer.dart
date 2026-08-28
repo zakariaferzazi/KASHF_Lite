@@ -126,4 +126,35 @@ class LocalInvestigationWriter implements InvestigationWriter {
     // Kept on the interface so the Firestore writer can take over.
     return 0;
   }
+
+  /// Drops every cached row for [userId] and emits an empty
+  /// snapshot so live watchers update without a full refresh.
+  /// Returns the number of rows that were removed.
+  @override
+  Future<int> clearAllForUser(String userId) async {
+    await _hydrate();
+    final removed = _byUser[userId]?.length ?? 0;
+    _byUser.remove(userId);
+    await _flush();
+    _ctrl.add(_sortedForUser(userId, _kCap));
+    return removed;
+  }
+
+  /// Removes a single row by [id] from the per-user cache and
+  /// emits a fresh snapshot. Returns `true` when the row existed
+  /// in the cache and was removed, `false` otherwise. We always
+  /// re-emit (even on a miss) so watcher UI that was waiting on
+  /// this id gets a deterministic "no change" signal rather than
+  /// having to maintain its own poll.
+  @override
+  Future<bool> deleteOneForUser(String userId, String id) async {
+    await _hydrate();
+    final perUser = _byUser[userId];
+    final removed = perUser?.remove(id) != null;
+    if (removed) {
+      await _flush();
+    }
+    _ctrl.add(_sortedForUser(userId, _kCap));
+    return removed;
+  }
 }

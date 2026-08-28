@@ -226,6 +226,7 @@ language. The summary MUST be in $languageHint.
       responseFormat: const {'type': 'json_object'},
       // No web search — the video is the only source.
       enableWebSearch: false,
+      purpose: 'video.prepass',
     );
 
     final response = await _client.chatCompletion(request);

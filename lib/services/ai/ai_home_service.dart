@@ -17,6 +17,19 @@ import 'market_parser.dart';
 import 'openrouter_client.dart';
 import 'openrouter_config.dart';
 
+/// Hard-pinned model id used by every dashboard fetch on this
+/// service (`fetchMarketPulse`, `fetchQuickActions`,
+/// `fetchMarketDetail`, `fetchExploreDetail`).
+///
+/// Rationale: the OpenRouter dashboard showed mixed-model traffic
+/// (some Luna, some Gemini) and the user explicitly wants every
+/// home-page fetch to land on Gemini 2.5 Flash Lite. The user's
+/// saved `Settings → AI model` choice is therefore ignored here —
+/// only [InvestigationService] honours that pick. If the user ever
+/// needs to surface a different model on the home dashboard again,
+/// change this constant (and the comment) in one place.
+const String _kHomeModelId = 'google/gemini-2.5-flash-lite';
+
 /// High-level service that turns the OpenRouter API into
 /// dashboard-ready data for the Home screen.
 ///
@@ -48,9 +61,15 @@ class AiHomeService {
   /// share the same backing store.
   static DiskCache? _sharedDiskCache;
 
+  /// In-memory copy of the last Market Pulse payload. Each doc is
+  /// already per-locale (see
+  /// `NewsContentRepository.writeAiContent` /
+  /// `aiContent/home_pulse/regions/{lang}_{region}`), so the cache
+  /// key is the (region, language) pair — flipping language falls
+  /// straight through to Firestore / disk for the new locale.
   MarketPulseData? _marketPulseCache;
   DateTime? _marketPulseCachedAt;
-  String? _marketPulseModelId;
+  String? _marketPulseLanguage;
   QuickActionsData? _quickActionsCache;
   DateTime? _quickActionsCachedAt;
   String? _quickActionsModelId;
@@ -77,6 +96,9 @@ class AiHomeService {
   /// refresh.
   Stream<HomeAiData> get stream => _controller.stream;
 
+  /// In-memory copy of the last Market Pulse payload. The
+  /// language is per-locale on Firestore — flipping the app
+  /// language just re-reads the right doc, no extra AI call.
   MarketPulseData? get cachedMarketPulse => _marketPulseCache;
   MarketDetailData? get cachedMarketDetail => _marketDetailCache;
   QuickActionsData? get cachedQuickActions => _quickActionsCache;
@@ -130,25 +152,81 @@ class AiHomeService {
     await disk.clearAll();
   }
 
-  /// Fetches Market Pulse data. If a fresh-enough cache exists the
-  /// call returns immediately. Otherwise it hits OpenRouter and
-  /// parses the response. Failed parses still resolve to a
-  /// [MarketPulseData] with placeholder data so the UI never sees
-  /// `null` mid-render.
-  Future<MarketPulseData> fetchMarketPulse({
+  /// Fetches Market Pulse data. Source of truth is the Firestore
+  /// collection `aiContent/home_pulse/regions/{lang}_{region}` (one
+  /// doc per language × region). Reads go through
+  /// [NewsContentRepository.readAiContent], which hydrates from
+  /// disk first and falls back to Firestore. Writes go through
+  /// [NewsContentRepository.writeAiContent], which mirrors into
+  /// Firestore + disk in a single call.
+  ///
+  /// Resolution rules:
+  ///
+  ///   * **Cached, not expired** — if the same `(language, region)`
+  ///     pair was fetched in the last 5 minutes AND the persisted
+  ///     doc is <24 h old, return the in-memory cache. No Firestore
+  ///     read, no AI call.
+  ///   * **Cached, but `forceRefresh: true` or 24-h expired** — call
+  ///     Gemini, persist the result back to Firestore + disk.
+  ///   * **No cache** (cold disk + cold Firestore) — call Gemini,
+  ///     persist, return.
+  ///   * **No demo data** — on any failure path we return `null`
+  ///     instead of synthesising fake numbers. The home panel
+  ///     renders a clean empty state.
+  ///
+  /// Note: each locale has its own Firestore doc, so flipping
+  /// language is a single fresh read of `{other_lang}_{region}`
+  /// (no AI call, no in-memory reuse of the previous locale).
+  Future<MarketPulseData?> fetchMarketPulse({
     required String language,
     String region = 'Kuwait',
     bool forceRefresh = false,
   }) async {
-    final modelId = _currentModelId();
+    final repo = NewsContentRepository.instance;
+
+    // ---- Path 1: in-memory cache hit (same locale + not expired) ----
     if (!forceRefresh &&
         _marketPulseCache != null &&
+        _marketPulseLanguage == language &&
         _marketPulseCachedAt != null &&
-        _marketPulseModelId == modelId &&
         DateTime.now().difference(_marketPulseCachedAt!) < _cacheTtl) {
-      return _marketPulseCache!;
+      return _marketPulseCache;
     }
 
+    // ---- Path 2: persist doc exists (disk or Firestore) ----
+    final needsAi = forceRefresh ||
+        await repo.aiNeedsRefresh(
+          kind: AiContentKind.homeMarketPulse,
+          language: language,
+          region: region,
+        );
+    if (!needsAi) {
+      try {
+        final stored = await repo.readAiContent(
+          kind: AiContentKind.homeMarketPulse,
+          language: language,
+          region: region,
+        );
+        if (stored != null) {
+          final parsed = AiParser.parseMarketPulse(stored);
+          _marketPulseCache = parsed;
+          _marketPulseLanguage = language;
+          _marketPulseCachedAt = DateTime.now();
+          _emit();
+          return parsed;
+        }
+      } catch (e, st) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print(
+            '[AiHomeService] fetchMarketPulse: persisted read failed '
+            '($e). Falling through to AI path.\n$st',
+          );
+        }
+      }
+    }
+
+    // ---- Path 3: AI generation + persist back ----
     try {
       final nonce = _newNonce();
       final messages = AiPrompts.marketPulseMessages(
@@ -159,9 +237,11 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model(),
+          // Hard-pinned to Gemini 2.5 Flash Lite — see _kHomeModelId.
+          model: _kHomeModelId,
           temperature: 0.7,
           maxTokens: 1800,
+          purpose: 'home.marketPulse',
           // No responseFormat: web search is permanently on (see
           // OpenRouterRequest default), and `response_format:
           // json_object` would silently disable the tool call.
@@ -169,24 +249,45 @@ class AiHomeService {
         ),
       );
       final data = AiParser.parseMarketPulse(json);
+
+      // Persist to Firestore (and disk mirror) under the per-
+      // locale doc. The repository is best-effort: failures here
+      // are logged but never block the user from seeing the new
+      // payload in this session.
+      try {
+        await repo.writeAiContent(
+          kind: AiContentKind.homeMarketPulse,
+          language: language,
+          region: region,
+          payload: json,
+        );
+      } catch (saveErr, saveSt) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print(
+            '[AiHomeService] fetchMarketPulse: persist failed '
+            '(continuing in-memory): $saveErr\n$saveSt',
+          );
+        }
+      }
+
       _marketPulseCache = data;
+      _marketPulseLanguage = language;
       _marketPulseCachedAt = DateTime.now();
-      _marketPulseModelId = modelId;
-      _persist('market_pulse', language, region, modelId, json);
       _emit();
       return data;
     } catch (e, st) {
       if (kDebugMode) {
         // ignore: avoid_print
-        print('[AiHomeService] fetchMarketPulse failed: $e\n$st');
+        print('[AiHomeService] fetchMarketPulse AI path failed: $e\n$st');
       }
-      final fallback = _buildFallbackMarketPulse(nonce: _newNonce());
-      _marketPulseCache = fallback;
-      _marketPulseCachedAt = DateTime.now(); // back-off until next refresh
-      _marketPulseModelId = modelId;
-      _emit();
-      return fallback;
     }
+
+    // ---- Path 4: clean empty state, no fake data ----
+    _marketPulseCache = null;
+    _marketPulseLanguage = language;
+    _emit();
+    return null;
   }
 
   /// Fetches Quick Actions + Recent Updates. Same caching story as
@@ -215,9 +316,11 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model(),
+          // Hard-pinned to Gemini 2.5 Flash Lite — see _kHomeModelId.
+          model: _kHomeModelId,
           temperature: 0.8,
           maxTokens: 2500,
+          purpose: 'home.quickActions',
           // No responseFormat: web search is permanently on (see
           // OpenRouterRequest default), and `response_format:
           // json_object` would silently disable the tool call.
@@ -278,9 +381,11 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model(),
+          // Hard-pinned to Gemini 2.5 Flash Lite — see _kHomeModelId.
+          model: _kHomeModelId,
           temperature: 0.7,
           maxTokens: 3000,
+          purpose: 'home.marketDetail',
           // No responseFormat: web search is permanently on (see
           // OpenRouterRequest default), and `response_format:
           // json_object` would silently disable the tool call.
@@ -346,9 +451,11 @@ class AiHomeService {
       final json = await _client.chatCompletionJson(
         OpenRouterRequest(
           messages: messages,
-          model: OpenRouterConfig.model(),
+          // Hard-pinned to Gemini 2.5 Flash Lite — see _kHomeModelId.
+          model: _kHomeModelId,
           temperature: 0.7,
           maxTokens: 2500,
+          purpose: 'home.explore',
           // No responseFormat: web search is permanently on (see
           // OpenRouterRequest default), and `response_format:
           // json_object` would silently disable the tool call.
@@ -401,8 +508,7 @@ class AiHomeService {
   /// different model.
   void clearCache() {
     _marketPulseCache = null;
-    _marketPulseCachedAt = null;
-    _marketPulseModelId = null;
+    _marketPulseLanguage = null;
     _quickActionsCache = null;
     _quickActionsCachedAt = null;
     _quickActionsModelId = null;
@@ -546,10 +652,25 @@ class AiHomeService {
       }
     }
 
+    // Market Pulse: the legacy local-only cache lives under
+    // `market_pulse`, but the source of truth is the
+    // `aiContent/home_pulse/regions/{lang}_{region}` Firestore
+    // doc. We MUST hydrate it here, otherwise a cold launch
+    // renders an empty panel until the user taps refresh — at
+    // which point we burn an OpenRouter token unnecessarily.
+    //
+    // The disk-write key is `_diskKey('market_pulse', ...)`
+    // (see [_persist]) which is model-scoped. The Firestore
+    // mirror lives in `NewsContentRepository` under its own
+    // key. On a brand-new install the local prefs slot will
+    // be empty for either key, so we also fall back to
+    // reading via the repository — which in turn checks
+    // disk → Firestore server → Source.cache — to find the
+    // last-known-good payload.
     await tryHydrate('market_pulse', (json) async {
       _marketPulseCache = AiParser.parseMarketPulse(json);
       _marketPulseCachedAt = DateTime.now();
-      _marketPulseModelId = modelId;
+      _marketPulseLanguage = language;
     });
     await tryHydrate('quick_actions', (json) async {
       _quickActionsCache = AiParser.parseQuickActions(json);
@@ -571,80 +692,11 @@ class AiHomeService {
   }
 
   // ---------- Fallback builders ----------
-
-  MarketPulseData _buildFallbackMarketPulse({int? nonce}) {
-    final rng = math.Random(nonce ?? math.Random().nextInt(0x7FFFFFFF));
-    final gainerPct = 8 + rng.nextInt(48); // 8% .. 55%
-    final loserPct = -(5 + rng.nextInt(30)); // -5% .. -34%
-    final campaigns = 4 + rng.nextInt(20); // 4 .. 23
-    const tradedBrands = <String>[
-      '#Lattafa',
-      '#Dior',
-      '#Bvlgari',
-      '#Shein',
-      '#Nivea',
-      '#Adidas',
-      '#Apple',
-      '#Samsung',
-    ];
-    const tradedSubs = <String>[
-      'Perfume',
-      'Beauty',
-      'Fashion',
-      'Tech',
-      'F&B',
-      'Electronics',
-    ];
-    return MarketPulseData(
-      metrics: <MarketPulseMetric>[
-        MarketPulseMetric(
-          id: 'gainers',
-          label: 'Top Gainers',
-          value: '+$gainerPct%',
-          sub: tradedBrands[rng.nextInt(tradedBrands.length)],
-          color: PulseColor.green,
-          bg: PulseColor.green,
-          points: generateFallbackSparkline(seed: rng.nextDouble()),
-        ),
-        MarketPulseMetric(
-          id: 'traded',
-          label: 'Top Traded',
-          value: tradedBrands[rng.nextInt(tradedBrands.length)],
-          sub: tradedSubs[rng.nextInt(tradedSubs.length)],
-          color: PulseColor.blue,
-          bg: PulseColor.blue,
-          points: generateFallbackSparkline(seed: rng.nextDouble()),
-        ),
-        MarketPulseMetric(
-          id: 'losers',
-          label: 'Top Losers',
-          value: '$loserPct%',
-          sub: tradedBrands[rng.nextInt(tradedBrands.length)],
-          color: PulseColor.red,
-          bg: PulseColor.red,
-          points: generateFallbackSparkline(seed: rng.nextDouble()),
-        ),
-        MarketPulseMetric(
-          id: 'campaigns',
-          label: 'Top Campaigns',
-          value: '$campaigns',
-          sub: 'Live',
-          color: PulseColor.gold,
-          bg: PulseColor.gold,
-          points: generateFallbackSparkline(seed: rng.nextDouble()),
-        ),
-      ],
-      activity: MarketPulseActivity(
-        title: 'Market active',
-        subtitle: 'Live snapshot',
-        alertTitle: 'Trend',
-        alertValue: '—',
-        comparisonText: '',
-        color: PulseColor.green,
-        points: generateFallbackSparkline(seed: rng.nextDouble()),
-      ),
-    );
-  }
+  //
+  // The Market Pulse has no synthetic fallback builder. The
+  // dashboard renders whatever the AI / Firestore pipeline
+  // produces — when both paths return nothing the home panel
+  // renders the clean empty state instead of invented numbers.
 
   QuickActionsData _buildFallbackQuickActions({int? nonce}) {
     const fallbackImages = <String>[
@@ -943,6 +995,11 @@ class AiHomeService {
 @immutable
 class HomeAiData {
   const HomeAiData({this.marketPulse, this.quickActions});
+
+  /// Market pulse payload for the *active* locale. The Firestore
+  /// doc itself is per-locale (see
+  /// `aiContent/home_pulse/regions/{lang}_{region}`), so the
+  /// service always emits the slice for the current language.
   final MarketPulseData? marketPulse;
   final QuickActionsData? quickActions;
 }

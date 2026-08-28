@@ -10,6 +10,7 @@ import '../../l10n/theme_scope.dart';
 import '../../main.dart';
 import '../../services/ai/ai_model_options.dart';
 import '../../services/auth_service.dart';
+import '../../services/admin_gate.dart';
 import '../../services/news/news_models.dart';
 import '../../services/settings_preferences.dart';
 import '../../services/settings_scope.dart';
@@ -52,6 +53,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeCtrl = ThemeScope.of(context);
     final prefs = SettingsScope.of(context);
     final palette = KashfPalette.active;
+    // The System Overview tile below is admin-only. Non-admin users
+    // (any email other than nawaff89@gmail.com) are treated as normal
+    // users and must not see the admin overview entry point.
+    final isAdmin = AdminGate.isAdmin(AuthService().currentUser);
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -100,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 20),
                 sliver: SliverToBoxAdapter(
                   child: _buildPersonalizationSection(
-                      l, localeCtrl, themeCtrl, palette, prefs),
+                    l, localeCtrl, themeCtrl, palette, prefs, isAdmin),
                 ),
               ),
               SliverPadding(
@@ -425,6 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ThemeController themeCtrl,
     KashfPalette palette,
     SettingsPreferences prefs,
+    bool isAdmin,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -434,17 +440,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          _buildTile(
-            palette: palette,
-            icon: Icons.dashboard_customize_outlined,
-            iconColor: KashfColors.gold,
-            title: l.t('settings_system_overview'),
-            subtitle: l.t('settings_system_overview_sub'),
-            onTap: () => Navigator.of(context).push(
-              kashfRoute(const SystemOverviewScreen()),
+          // The "System Overview" (admin overview) tile is reserved
+          // for the admin account (nawaff89@gmail.com). Normal users
+          // don't see it at all.
+          if (isAdmin) ...[
+            _buildTile(
+              palette: palette,
+              icon: Icons.dashboard_customize_outlined,
+              iconColor: KashfColors.gold,
+              title: l.t('settings_system_overview'),
+              subtitle: l.t('settings_system_overview_sub'),
+              onTap: () => Navigator.of(context).push(
+                kashfRoute(const SystemOverviewScreen()),
+              ),
             ),
-          ),
-          _buildDivider(palette),
+            _buildDivider(palette),
+          ],
           _buildTile(
             palette: palette,
             icon: Icons.dark_mode_outlined,

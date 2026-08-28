@@ -260,6 +260,14 @@ class AppLocalizations {
       'home_pulse_market_active_h': 'Last update: 2 min ago',
       'home_pulse_market_vs': '+18% vs yesterday',
       'home_pulse_market_alert': 'Notable rise in perfume sector',
+      // Market Pulse empty state — shown when the persisted
+      // doc is missing AND the AI call fails (or returns
+      // nothing). We keep this honest: no fake "Top Gainers
+      // +42%" placeholders.
+      'home_pulse_empty_title': 'No market pulse yet',
+      'home_pulse_empty_sub':
+          'Tap refresh to generate your first market pulse. '
+          'It will be saved to your account.',
       'home_quick_new': 'New investigation',
       'home_quick_reports': 'Generate report',
       'home_quick_monitor': 'Add monitor',
@@ -1359,6 +1367,59 @@ class AppLocalizations {
       'so_action2': 'تصدير البيانات',
       'so_action3': 'تنبيهات',
       'so_action4': 'حذف جميع البيانات',
+      // System Overview → live data placeholders + delete flows
+      'so_kpi_empty_sub': 'No data yet',
+      'so_kpi_completed': 'Completed',
+      'so_kpi_completed_sub': 'archived',
+      'so_inv_empty':
+          'No investigations yet — start one from the + button.',
+      'so_delete_confirm_title': 'Delete all data?',
+      'so_delete_confirm_message':
+          'This clears the local cache. Cloud rows stay intact.',
+      'so_delete_done': 'Local data cleared.',
+      'so_delete_failed': 'Could not clear data',
+      // Admin-only: delete one investigation from the overview table.
+      'so_inv_delete_title': 'Delete this investigation?',
+      'so_inv_delete_message':
+          'This removes the report from your cloud archive. '
+              'This cannot be undone.',
+      'so_inv_delete_action': 'Delete',
+      'so_inv_delete_done': 'Investigation removed.',
+      'so_inv_delete_failed': 'Could not delete investigation',
+      'so_inv_delete_aria': 'Delete investigation',
+      'so_action_share_done': 'Overview summary copied to clipboard.',
+      'so_action_export_done': 'Latest report copied to clipboard.',
+      'so_export_empty': 'No reports to export yet.',
+      'so_export_unavailable': 'Could not open the latest report.',
+      'so_export_failed': 'Could not export',
+      // Admin Content Studio
+      'adm_studio_admin_only': 'This feature is admin-only.',
+      'adm_studio_reel_picker_title': 'Pick a report for a reel',
+      'adm_studio_reel_picker_sub':
+          "We'll turn the chosen investigation into a 30-second reel script.",
+      'adm_studio_podcast_picker_title': 'Pick a report for a podcast',
+      'adm_studio_podcast_picker_sub':
+          "We'll turn the chosen investigation into a ~15-minute podcast script.",
+      'adm_picker_error_title': 'Could not load reports',
+      'adm_picker_error_sub':
+          'Check your connection and try again.',
+      'adm_picker_empty_title': 'No completed reports yet',
+      'adm_picker_empty_sub':
+          'Run an investigation first, then come back to turn it into a script.',
+      'adm_script_reel_title': 'Reel script',
+      'adm_script_podcast_title': 'Podcast script',
+      'adm_script_generating': 'Generating script…',
+      'adm_script_edit_hint':
+          'Edit the script freely before exporting.',
+      'adm_script_source_label': 'Built from',
+      'adm_script_copied': 'Script copied to clipboard.',
+      'adm_script_export': 'Export',
+      'adm_script_exported': 'Saved to',
+      'adm_script_export_failed': 'Could not export',
+      'adm_script_regenerate': 'Regenerate',
+      'adm_script_copy': 'Copy',
+      'adm_script_retry': 'Try again',
+      'adm_script_unknown_error': 'Something went wrong.',
       // نظرة عامة على التوقعات والنشاط
       'so_analytics_title': 'نظرة عامة على التوقعات',
       'so_analytics_subtitle': 'آخر 30 يوم',
@@ -1800,6 +1861,13 @@ class AppLocalizations {
       'home_pulse_market_active_h': 'آخر تحديث: منذ 2 دقيقة',
       'home_pulse_market_vs': '+18% مقارنة بالأمس',
       'home_pulse_market_alert': 'ارتفاع ملحوظ في قطاع العطور',
+      // Market Pulse empty state — shown when the user has no
+      // saved pulse doc AND the AI path returned nothing.
+      // Arabic phrasing stays short to match the panel height.
+      'home_pulse_empty_title': 'لا يوجد نبض للسوق بعد',
+      'home_pulse_empty_sub':
+          'اضغط زر التحديث لتوليد أول نبض للسوق. سيتم حفظه '
+          'في حسابك.',
       'home_quick_new': 'تحقيق جديد',
       'home_quick_reports': 'إنشاء تقرير',
       'home_quick_monitor': 'إضافة مراقبة',
@@ -2767,6 +2835,58 @@ class AppLocalizations {
       'so_action2': 'تصدير البيانات',
       'so_action3': 'تنبيهات',
       'so_action4': 'حذف جميع البيانات',
+      // System Overview → live data placeholders + delete flows
+      'so_kpi_empty_sub': 'لا توجد بيانات',
+      'so_kpi_completed': 'تحقيقات مكتملة',
+      'so_kpi_completed_sub': 'مؤرشفة',
+      'so_inv_empty': 'لا توجد تحقيقات بعد — أنشئ أول تحقيق من علامة +.',
+      'so_delete_confirm_title': 'حذف جميع البيانات؟',
+      'so_delete_confirm_message':
+          'سيتم مسح ذاكرة التخزين المؤقت المحلية. لن تتأثر بيانات السحابة.',
+      'so_delete_done': 'تم مسح البيانات المحلية.',
+      'so_delete_failed': 'تعذّر مسح البيانات',
+      // Admin-only: حذف تحقيق واحد من جدول نظرة عامة.
+      'so_inv_delete_title': 'حذف هذا التحقيق؟',
+      'so_inv_delete_message':
+          'سيتم حذف التقرير من أرشيفك على السحابة. لا يمكن التراجع.',
+      'so_inv_delete_action': 'حذف',
+      'so_inv_delete_done': 'تم حذف التحقيق.',
+      'so_inv_delete_failed': 'تعذّر حذف التحقيق',
+      'so_inv_delete_aria': 'حذف التحقيق',
+      'so_action_share_done': 'تم نسخ ملخص اللوحة إلى الحافظة.',
+      'so_action_export_done': 'تم نسخ التقرير الأخير إلى الحافظة.',
+      'so_export_empty': 'لا توجد تقارير لتصديرها.',
+      'so_export_unavailable': 'تعذّر فتح التقرير الأخير.',
+      'so_export_failed': 'تعذّر التصدير',
+      // Admin Content Studio
+      'adm_studio_admin_only':
+          'هذه الميزة متاحة لحساب المسؤول فقط.',
+      'adm_studio_reel_picker_title': 'اختر تحقيقاً لإنشاء ريل',
+      'adm_studio_reel_picker_sub':
+          'سنحوّل التحقيق المختار إلى سكريبت ريل 30 ثانية.',
+      'adm_studio_podcast_picker_title': 'اختر تحقيقاً لإنشاء بودكاست',
+      'adm_studio_podcast_picker_sub':
+          'سنحوّل التحقيق المختار إلى سكريبت بودكاست ~15 دقيقة.',
+      'adm_picker_error_title': 'تعذّر تحميل التقارير',
+      'adm_picker_error_sub':
+          'تحقق من الاتصال وحاول مجدداً.',
+      'adm_picker_empty_title': 'لا توجد تقارير جاهزة',
+      'adm_picker_empty_sub':
+          'أنشئ تحقيقاً أولاً ثم ارجع لتحويله إلى سكريبت.',
+      'adm_script_reel_title': 'ريل جاهز',
+      'adm_script_podcast_title': 'سكريبت بودكاست',
+      'adm_script_generating': 'جاري إنشاء السكريبت…',
+      'adm_script_edit_hint':
+          'حرّر السكريبت كما تشاء قبل التصدير.',
+      'adm_script_source_label': 'مبني على التحقيق',
+      'adm_script_copied': 'تم نسخ السكريبت إلى الحافظة.',
+      'adm_script_export': 'تصدير',
+      'adm_script_exported': 'تم حفظ السكريبت في',
+      'adm_script_export_failed': 'تعذّر التصدير',
+      'adm_script_regenerate': 'إعادة التوليد',
+      'adm_script_copy': 'نسخ',
+      'adm_script_retry': 'حاول مجدداً',
+      'adm_script_unknown_error': 'حدث خطأ غير متوقع.',
       // نظرة عامة على التوقعات والنشاط
       'so_analytics_title': 'نظرة عامة على التوقعات',
       'so_analytics_subtitle': 'آخر 30 يوم',

@@ -113,13 +113,30 @@ void main() async {
 
 /// Loads `.env` if present. Silently no-ops if the file is missing
 /// so first-launch / unsigned builds continue to work.
+///
+/// IMPORTANT: Without `.env` loaded, any `dotenv.maybeGet(...)` call
+/// inside `OpenRouterConfig` throws a `NotInitializedError` from
+/// `flutter_dotenv` (it refuses to read before `load()` succeeds).
+/// That exception is what surfaced to the user as
+/// "Could not generate script (NotInitializedError)" the first time
+/// they tapped Create Reel — the AI call bubbled up the un-wrapped
+/// dotenv error. Logging it here makes the root cause visible in
+/// `adb logcat | grep flutter` on the next deployment.
 Future<void> _loadEnv() async {
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
+  } catch (e, st) {
     // Missing or unreadable .env — the AI service will fall back
     // to demo data and surface a "configure API key" hint in the
-    // audit log.
+    // audit log. We log the original error so devs don't have to
+    // grep for "NotInitializedError" downstream.
+    debugPrint(
+      '[KASHF/Startup] dotenv.load(.env) failed: $e. '
+      'The OpenRouter integration will return "API key not '
+      'configured" until a .env (or .env.example copied to .env) '
+      'is shipped with the build.',
+    );
+    debugPrint('[KASHF/Startup] dotenv stack: $st');
   }
 }
 

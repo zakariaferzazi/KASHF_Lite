@@ -19,4 +19,20 @@ abstract class InvestigationWriter {
   /// Flushes any locally-cached "anonymous" rows into [userId].
   /// Returns the number of documents actually written remotely.
   Future<int> commitPendingForUser(String userId);
+
+  /// Removes every cached row for [userId]. Used by the
+  /// destructive "delete all" actions exposed in the System
+  /// Overview → Tools and Quick Actions sections. Implementations
+  /// that have no local cache (e.g. the Firestore writer) should
+  /// return 0 — Firestore deletes are routed through cloud-side
+  /// rules and not driven from this interface.
+  Future<int> clearAllForUser(String userId) async => 0;
+
+  /// Removes a single row by id for [userId]. Used by the
+  /// admin-only "delete one" affordance on the System Overview's
+  /// investigations table. Returns `true` if the row was found
+  /// and removed, `false` otherwise. Implementations MUST emit a
+  /// fresh snapshot on their internal broadcast controller so
+  /// every active watcher updates without a manual refresh.
+  Future<bool> deleteOneForUser(String userId, String id) async => false;
 }
