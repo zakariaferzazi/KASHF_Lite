@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../services/auth_service.dart';
 import '../../l10n/theme_scope.dart';
 import '../../models/saved_investigation.dart';
 import '../../models/today_case.dart';
@@ -547,7 +548,7 @@ class _NotificationBell extends StatelessWidget {
 
 // ============================ Greeting ============================
 // Compact greeting line shown between the top bar and the featured card:
-// "Good morning, Noor" + a softer "Welcome to KASHF Lite" subtitle.
+// "Good morning, [user name]" + a softer "Welcome to KASHF Lite" subtitle.
 class _Greeting extends StatelessWidget {
   const _Greeting({required this.l});
   final AppLocalizations l;
@@ -569,7 +570,7 @@ class _Greeting extends StatelessWidget {
                 TextSpan(text: l.t('home_greeting')),
                 TextSpan(text: ', '),
                 TextSpan(
-                  text: l.t('home_user_name'),
+                  text: AuthService().currentUser?.displayName ?? l.t('home_user_name'),
                   style: TextStyle(color: KashfColors.gold),
                 ),
               ],
@@ -1814,7 +1815,7 @@ class _UpdateItem {
       views: '',
       status: l.t('home_latest_band_medium'),
       time: '',
-      score: 'â€“',
+      score: '0%',
       scoreColor: neutral,
       dotColor: neutral,
       thumbnailUrl: null,

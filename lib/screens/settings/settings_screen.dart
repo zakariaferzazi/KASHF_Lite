@@ -313,35 +313,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            badgeIcon,
-                            size: 12,
-                            color: badgeColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            badgeLabel,
-                            style: TextStyle(
-                              color: badgeColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(
+                    //     horizontal: 8,
+                    //     vertical: 4,
+                    //   ),
+                    //   decoration: BoxDecoration(
+                    //     color: badgeColor.withValues(alpha: 0.15),
+                    //     borderRadius: BorderRadius.circular(6),
+                    //   ),
+                    //   child: Row(
+                    //     mainAxisSize: MainAxisSize.min,
+                    //     children: [
+                    //       Icon(
+                    //         badgeIcon,
+                    //         size: 12,
+                    //         color: badgeColor,
+                    //       ),
+                    //       const SizedBox(width: 4),
+                    //       Text(
+                    //         badgeLabel,
+                    //         style: TextStyle(
+                    //           color: badgeColor,
+                    //           fontSize: 10,
+                    //           fontWeight: FontWeight.w700,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

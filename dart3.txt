@@ -1,8 +1,0 @@
-Analyzing report_pdf_writer.dart...
-
-warning - report_pdf_writer.dart:547:9 - The declaration '_buildCoverPage' isn't referenced. Try removing the declaration of '_buildCoverPage'. - unused_element
-warning - report_pdf_writer.dart:783:11 - The declaration '_buildSummarySection' isn't referenced. Try removing the declaration of '_buildSummarySection'. - unused_element
-warning - report_pdf_writer.dart:932:11 - The declaration '_buildSectionBlock' isn't referenced. Try removing the declaration of '_buildSectionBlock'. - unused_element
-warning - report_pdf_writer.dart:1174:11 - The declaration '_buildSourcesBlock' isn't referenced. Try removing the declaration of '_buildSourcesBlock'. - unused_element
-
-4 issues found.

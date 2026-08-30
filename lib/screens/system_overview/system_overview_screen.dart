@@ -1127,7 +1127,6 @@ class _StudioSection extends StatelessWidget {
                 title: l.t('so_studio1_title'),
                 description: l.t('so_studio1_desc'),
                 cta: l.t('so_studio1_cta'),
-                lastTitle: l.t('so_studio1_last_title'),
                 icon: Icons.mic_none_outlined,
                 enabled: isAdmin,
                 onTap: () => _onPodcastTap(context),
@@ -1140,7 +1139,6 @@ class _StudioSection extends StatelessWidget {
                 title: l.t('so_studio2_title'),
                 description: l.t('so_studio2_desc'),
                 cta: l.t('so_studio2_cta'),
-                lastTitle: l.t('so_studio2_last_title'),
                 icon: Icons.movie_creation_outlined,
                 enabled: isAdmin,
                 onTap: () => _onReelTap(context),
@@ -1212,7 +1210,6 @@ class _StudioCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.cta,
-    required this.lastTitle,
     required this.icon,
     required this.enabled,
     required this.onTap,
@@ -1221,7 +1218,6 @@ class _StudioCard extends StatelessWidget {
   final String title;
   final String description;
   final String cta;
-  final String lastTitle;
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
@@ -1310,20 +1306,7 @@ class _StudioCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          // Title only — the subtitle line was removed per the
-          // admin's request to keep the "Last script" readout
-          // compact.
-          Text(
-            lastTitle,
-            style: TextStyle(
-              color: palette.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        
         ],
       ),
     );

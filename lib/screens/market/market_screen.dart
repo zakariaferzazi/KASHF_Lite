@@ -733,7 +733,8 @@ class _LineChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (final idx in xIndices) _XLabel(trendPoints[idx].label),
+              for (final idx in xIndices)
+                Expanded(child: _XLabel(trendPoints[idx].label)),
             ],
           ),
         ],
@@ -798,6 +799,8 @@ class _XLabel extends StatelessWidget {
         fontSize: 9,
         fontWeight: FontWeight.w600,
       ),
+      textAlign: TextAlign.center,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -882,7 +885,7 @@ class _DonutCard extends StatelessWidget {
                 if (i > 0) const SizedBox(width: 4),
                 Expanded(
                   child: _LegendItem(
-                    color: _colorForName(segments[i].colorName),
+                    color: _colorForSegment(i),
                     label: '${(segments[i].fraction * 100).round()}%',
                     name: segments[i].name,
                   ),
@@ -905,6 +908,27 @@ class _DonutCard extends StatelessWidget {
       default:
         return const Color(0xFF22C55E);
     }
+  }
+
+  /// Expanded palette of distinct colors for source segments.
+  /// Each color is carefully chosen to be visually distinct from others.
+  static const List<Color> _sourcePalette = [
+    Color(0xFF22C55E), // green
+    Color(0xFF3B82F6), // blue
+    Color(0xFFEF4444), // red
+    Color(0xFFFBBF24), // amber
+    Color(0xFF8B5CF6), // purple
+    Color(0xFFEC4899), // pink
+    Color(0xFF14B8A6), // teal
+    Color(0xFFF97316), // orange
+    Color(0xFF6366F1), // indigo
+    Color(0xFF84CC16), // lime
+  ];
+
+  /// Returns a unique color for each segment index to ensure no two
+  /// adjacent sources share the same color.
+  static Color _colorForSegment(int index) {
+    return _sourcePalette[index % _sourcePalette.length];
   }
 }
 
@@ -970,6 +994,25 @@ class _DonutPainter extends CustomPainter {
       : _segments = segments;
   final List<MarketSourceSegment> _segments;
 
+  /// Expanded palette of distinct colors for source segments.
+  static const List<Color> _sourcePalette = [
+    Color(0xFF22C55E), // green
+    Color(0xFF3B82F6), // blue
+    Color(0xFFEF4444), // red
+    Color(0xFFFBBF24), // amber
+    Color(0xFF8B5CF6), // purple
+    Color(0xFFEC4899), // pink
+    Color(0xFF14B8A6), // teal
+    Color(0xFFF97316), // orange
+    Color(0xFF6366F1), // indigo
+    Color(0xFF84CC16), // lime
+  ];
+
+  /// Returns a unique color for each segment index.
+  static Color _colorForSegment(int index) {
+    return _sourcePalette[index % _sourcePalette.length];
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
@@ -978,8 +1021,9 @@ class _DonutPainter extends CustomPainter {
 
     var start = -math.pi / 2;
     const gap = 0.012; // small gap between segments, in radians
-    for (final s in _segments) {
-      final color = _colorForName(s.colorName);
+    for (var i = 0; i < _segments.length; i++) {
+      final s = _segments[i];
+      final color = _colorForSegment(i);
       final sweep = s.fraction * 2 * math.pi - gap;
       final paint = Paint()
         ..color = color
@@ -995,18 +1039,6 @@ class _DonutPainter extends CustomPainter {
         paint,
       );
       start += s.fraction * 2 * math.pi;
-    }
-  }
-
-  static Color _colorForName(String name) {
-    switch (name) {
-      case 'amber':
-        return const Color(0xFFFBBF24);
-      case 'red':
-        return const Color(0xFFEF4444);
-      case 'green':
-      default:
-        return const Color(0xFF22C55E);
     }
   }
 
