@@ -20,6 +20,7 @@ import '../investigation/investigation_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/notifications_bell_screen.dart';
 import '../settings/settings_screen.dart';
+import 'admin_image_detector_screen.dart';
 import 'admin_report_picker_screen.dart';
 import 'admin_script_viewer_screen.dart';
 
@@ -1119,6 +1120,19 @@ class _StudioSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(title: l.t('so_studio_title')),
+        // 1. Featured AI Image Forensics Tool
+        _StudioFeaturedCard(
+          color: const Color(0xFF3B82F6),
+          title: l.t('so_studio3_title'),
+          description: l.t('so_studio3_desc'),
+          cta: l.t('so_studio3_cta'),
+          icon: Icons.document_scanner_outlined,
+          badge: 'AI Vision Engine',
+          enabled: isAdmin,
+          onTap: () => _onImageDetectorTap(context),
+        ),
+        const SizedBox(height: 10),
+        // 2. Podcast & Reel Script Studios
         Row(
           children: [
             Expanded(
@@ -1147,6 +1161,22 @@ class _StudioSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  void _onImageDetectorTap(BuildContext context) {
+    if (!isAdmin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.t('adm_studio_admin_only')),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      kashfRoute(const AdminImageDetectorScreen()),
     );
   }
 
@@ -1200,6 +1230,132 @@ class _StudioSection extends StatelessWidget {
         title: title,
         subtitleKey: subtitleKey,
       )),
+    );
+  }
+}
+
+class _StudioFeaturedCard extends StatelessWidget {
+  const _StudioFeaturedCard({
+    required this.color,
+    required this.title,
+    required this.description,
+    required this.cta,
+    required this.icon,
+    required this.badge,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final Color color;
+  final String title;
+  final String description;
+  final String cta;
+  final IconData icon;
+  final String badge;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = KashfPalette.active;
+    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
+
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: enabled
+              ? effectiveColor.withValues(alpha: 0.35)
+              : palette.cardBorder,
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: effectiveColor.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: effectiveColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 20, color: effectiveColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: effectiveColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      badge,
+                      style: TextStyle(
+                        color: KashfColors.gold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            description,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.bolt, size: 16),
+              label: Text(
+                cta,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: effectiveColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(11),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
